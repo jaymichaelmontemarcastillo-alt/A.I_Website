@@ -45,3 +45,16 @@
             <button>Search</button>
         </div>
     </header>
+
+    <script>
+        // simple toggle for mobile nav
+        document.addEventListener('DOMContentLoaded', function() {
+            var menu = document.querySelector('.menu-toggle');
+            var nav = document.querySelector('header .top-header nav');
+            if (menu && nav) {
+                menu.addEventListener('click', function() {
+                    nav.classList.toggle('open');
+                });
+            }
+        });
+    </script>

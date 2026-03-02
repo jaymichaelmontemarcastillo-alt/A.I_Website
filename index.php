@@ -38,7 +38,7 @@
             </div>
 
             <div class="hero-image">
-                <img src="assets/images/gift-banner.png" alt="Gift Banner">
+                <img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=600">
             </div>
         </div>
     </section>

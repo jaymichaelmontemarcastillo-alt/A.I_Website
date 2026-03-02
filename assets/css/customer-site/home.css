@@ -8,8 +8,10 @@
   --font-inter: "Inter", sans-serif;
   --font-Playfair: "Playfair Display", serif;
 }
+
 main {
   width: 100%;
+  min-height: 100vh;
 }
 
 /* ================= HERO ================= */
@@ -181,7 +183,7 @@ main {
 
 .featured-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 25px;
 }
 
@@ -315,4 +317,129 @@ main {
 
 .icon-btn.cart:hover {
   background: #0f3d67;
+}
+
+/* ================= Responisve ================= */
+
+/* ================= MOBILE RESPONSIVE ================= */
+
+@media (max-width: 768px) {
+  /* HERO */
+  .hero {
+    min-height: auto;
+    max-height: none;
+    padding: 60px 20px;
+  }
+
+  .hero-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 40px;
+  }
+
+  .hero-text h1 {
+    font-size: 32px;
+  }
+
+  .hero-text p {
+    font-size: 14px;
+  }
+
+  .hero-buttons button {
+    margin-bottom: 10px;
+    width: 100%;
+    max-width: 250px;
+  }
+
+  .hero-image img {
+    width: 280px;
+  }
+
+  /* FEATURES BAR */
+  .features-bar {
+    flex-direction: column;
+    gap: 30px;
+    padding: 30px 20px;
+  }
+
+  .feature-item {
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* CATEGORY */
+  .category-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .category-buttons button {
+    font-size: 14px;
+    padding: 8px 18px;
+  }
+
+  /* FEATURED SECTION */
+  .featured-section {
+    padding: 30px 20px;
+  }
+
+  .featured-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .featured-grid {
+    grid-template-columns: 1fr; /* 1 card per row */
+  }
+
+  .gift-img img {
+    height: 200px;
+  }
+}
+
+/* extra small phones (e.g. older iPhone SE, small Android devices) */
+@media (max-width: 480px) {
+  /* HERO adjustments */
+  .hero-text h1 {
+    font-size: 28px;
+  }
+  .hero-text p {
+    font-size: 13px;
+  }
+  .hero-buttons button {
+    padding: 12px 20px;
+  }
+  .hero-image img {
+    max-width: 240px;
+  }
+
+  /* FEATURES BAR tweaks */
+  .features-bar {
+    padding: 20px 10px;
+    gap: 20px;
+  }
+  .feature-item i {
+    font-size: 20px;
+    padding: 12px;
+  }
+
+  /* CATEGORY & BUTTONS */
+  .category-buttons button {
+    padding: 6px 16px;
+    font-size: 13px;
+  }
+
+  /* FEATURED HEADER */
+  .featured-header h2 {
+    font-size: 24px;
+  }
+
+  .gift-img img {
+    height: 180px;
+  }
+
+  .price {
+    font-size: 14px;
+  }
 }
