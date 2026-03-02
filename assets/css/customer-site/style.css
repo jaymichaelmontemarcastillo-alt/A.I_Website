@@ -1,0 +1,250 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+}
+
+:root {
+  --font-inter: "Inter", sans-serif;
+  --font-Playfair: "Playfair Display", serif;
+}
+
+header {
+  background-color: #123b5d;
+  color: white;
+}
+
+.top-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 25px;
+  border-bottom: solid #0d5b9b 1px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand i {
+  background: #ffc107;
+  color: #123b5d;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.brand h1 {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+
+nav a {
+  text-decoration: none;
+  color: #cfd8e3;
+  font-weight: 300;
+  font-size: clamp(12px, 1vw, 18px);
+}
+
+nav a.active,
+nav a:hover {
+  color: white;
+}
+
+.header-icons {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-left: 20px;
+}
+
+.header-icons i {
+  cursor: pointer;
+  color: white;
+  font-size: clamp(12px, 1vw, 18px);
+}
+
+.login-btn {
+  background: #ffc107;
+  color: #123b5d;
+  padding: 8px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+/* Search bar */
+.search-bar {
+  margin-top: 15px;
+  display: flex;
+  gap: 10px;
+}
+
+.search-bar input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 6px;
+  border: none;
+  outline: none;
+}
+
+.search-bar button {
+  background: #ffc107;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo {
+  width: 40px; /* control size */
+  height: 40px;
+  border-radius: 50%; /* makes it circle */
+  object-fit: cover; /* keeps image from stretching */
+  border: 2px solid #ffc107; /* optional yellow accent like your design */
+}
+
+.footer-content {
+  font-family: var(--font-Inter);
+  font-weight: 400;
+  font-size: clamp(12px, 1vw, 16px);
+}
+.footer-links p {
+  gap: 5px;
+  padding-bottom: 10px;
+}
+/* ============================= */
+/* cart and wishlist page */
+.empty-page {
+  height: 80vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-container {
+  text-align: center;
+  background: #ffffff;
+  padding: 50px 60px;
+  border-radius: 12px;
+}
+
+/* Icon */
+.empty-icon {
+  font-size: 70px;
+  color: #cfd6dd;
+  margin-bottom: 20px;
+}
+
+.empty-icon.heart {
+  color: #d6dbe1;
+}
+
+/* Text */
+.empty-container h2 {
+  font-weight: 500;
+  color: #5f6c7b;
+  margin-bottom: 25px;
+}
+
+/* Button */
+.primary-btn {
+  display: inline-block;
+  padding: 12px 28px;
+  background-color: #123b5a;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: 6px;
+  transition: 0.3s ease;
+}
+
+.primary-btn:hover {
+  background-color: #0e2f46;
+  transform: translateY(-2px);
+}
+/* ============================= */
+/* RESPONSIVE HEADER */
+/* ============================= */
+
+@media (max-width: 1024px) {
+  header {
+    padding: 15px 20px;
+  }
+
+  nav {
+    gap: 15px;
+  }
+
+  .header-icons {
+    gap: 15px;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  nav {
+    width: 100%;
+    flex-wrap: wrap;
+    gap: 15px;
+  }
+
+  .header-icons {
+    margin-left: 0;
+  }
+
+  .search-bar {
+    flex-direction: column;
+  }
+
+  .search-bar button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .brand h1 {
+    font-size: 16px;
+  }
+
+  .logo {
+    width: 35px;
+    height: 35px;
+  }
+
+  nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .header-icons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .login-btn {
+    padding: 6px 14px;
+    font-size: 14px;
+  }
+}
