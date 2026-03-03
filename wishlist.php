@@ -8,7 +8,7 @@
 
         <h2>Your wishlist is empty</h2>
 
-        <a href="products.php" class="primary-btn">
+        <a href="shop.php" class="primary-btn">
             Browse Products
         </a>
     </div>

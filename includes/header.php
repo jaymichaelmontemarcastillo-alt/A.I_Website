@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
     <link rel="stylesheet" href="assets/css/customer-site/style.css">
+    <link rel="stylesheet" href="assets/css/customer-site/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
 
@@ -27,14 +28,14 @@
 
             <nav>
                 <a href="index.php" class="active">Home</a>
-                <a href="products.php">Products</a>
+                <a href="shop.php">Products</a>
                 <a href="wishlist.php">Wishlist</a>
                 <a href="cart.php">Cart</a>
 
                 <div class="header-icons">
                     <i class="fas fa-search"></i>
-                    <i class="far fa-heart"></i>
-                    <i class="fas fa-shopping-cart"></i>
+                    <a href="wishlist.php"> <i class="far fa-heart"></i></a>
+                    <a href="cart.php"> <i class="fas fa-shopping-cart"></i></a>
                     <a href="#" class="login-btn">Login</a>
                 </div>
             </nav>

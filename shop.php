@@ -1,74 +1,14 @@
 <?php include 'api/products_list.php'; ?>
 <?php include 'includes/header.php'; ?>
-<link rel="stylesheet" href="assets/css/customer-site/home.css">
 
+
+<link rel="stylesheet" href="assets/css/customer-site/home.css">
 <main>
 
-    <!-- ================= HERO ================= -->
-    <section class="hero">
-        <div class="hero-content">
-            <div class="hero-text">
-                <h1>
-                    Find the <span>Perfect Gift</span><br>
-                    for Every Occasion
-                </h1>
-
-                <p>
-                    Curated gift collections crafted with love. From birthdays to weddings,
-                    we've got something special inside for everyone.
-                </p>
-
-                <div class="hero-buttons">
-                    <a href="shop.php" style="color:inherit; text-decoration:none;">
-                        <button class="btn-primary">
-                            Shop Now <i class="fa-solid fa-arrow-right"></i>
-                        </button>
-                    </a>
-                    <a href="shop.php" style="color:inherit; text-decoration:none;">
-                        <button class="btn-secondary" style="border:0.35px solid rgb(219, 219, 219)">
-                            Browse Categories
-                        </button>
-                    </a>
-                </div>
-            </div>
-
-            <div class="hero-image">
-                <img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=600">
-            </div>
-        </div>
-    </section>
-
-    <!-- ================= FEATURES ================= -->
-    <section class="features-bar">
-        <div class="feature-item">
-            <i class="fa-solid fa-gift"></i>
-            <div>
-                <h4>Curated Gifts</h4>
-                <p>Hand-picked selections</p>
-            </div>
-        </div>
-
-        <div class="feature-item">
-            <i class="fa-solid fa-truck-fast"></i>
-            <div>
-                <h4>Fast Delivery</h4>
-                <p>Nationwide shipping</p>
-            </div>
-        </div>
-
-        <div class="feature-item">
-            <i class="fa-solid fa-shield-halved"></i>
-            <div>
-                <h4>Secure Payment</h4>
-                <p>Safe transactions</p>
-            </div>
-        </div>
-    </section>
-
     <!-- ================= CATEGORY ================= -->
-    <section class="category-section">
+    <section class="category-section-prod-page">
         <div class="section-title">
-            <h2>Shop by Category</h2>
+            <h2>Our Products</h2>
             <p>Browse our collection of thoughtfully curated gifts for every special moment.</p>
         </div>
 
@@ -84,13 +24,8 @@
 
     <!-- ================= FEATURED GIFTS ================= -->
     <section class="featured-section">
-        <div class="featured-header">
-            <h2>Featured Gifts</h2>
-            <a href="shop.php">View all →</a>
-        </div>
 
         <div class="featured-grid">
-
 
             <?php foreach ($products as $product): ?>
 
@@ -131,7 +66,9 @@
             <?php endforeach; ?>
 
         </div>
-    </section>
 
+        </div>
+    </section>
 </main>
+
 <?php include 'includes/footer.php'; ?>

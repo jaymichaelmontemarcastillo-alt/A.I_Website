@@ -160,7 +160,7 @@ main {
 } /* ================= FEATURED ================= */
 
 .featured-section {
-  padding: 30px 40px;
+  padding: 25px 25px;
 }
 
 .featured-header {
@@ -189,11 +189,15 @@ main {
 
 /* CARD */
 .gift-card {
+  justify-content: space-between;
   background: #fff;
-  border-radius: 16px;
-  overflow: hidden; /* removes inner image padding */
+  border-radius: 7px;
+  overflow: hidden;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border: solid #ececec 1px;
   transition: 0.3s ease;
+  min-height: 410px;
+  min-width: 250px;
 }
 
 .gift-card:hover {
@@ -207,7 +211,7 @@ main {
 
 .gift-img img {
   width: 100%;
-  height: 220px;
+  height: 350px;
   object-fit: cover;
   display: block;
 }
@@ -227,12 +231,13 @@ main {
 
 /* INFO */
 .gift-info {
-  padding: 18px;
+  padding: 15px;
 }
 
 .gift-info h4 {
-  font-weight: 600;
+  font-weight: bolder;
   margin-bottom: 6px;
+  font-family: var(--font-Playfair);
 }
 
 .gift-info p {
