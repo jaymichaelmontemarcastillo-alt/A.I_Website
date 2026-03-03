@@ -9,11 +9,13 @@
         <div class="hero-content">
             <div class="hero-text">
                 <h1>
-                    Find the <span>Perfect Gift</span><br>
-                    for Every Occasion
+                    Finding the <span>Perfect Gift</span><br>
+                    shouldn't be stressfull.
                 </h1>
 
                 <p>
+                    <span> Let us help you make it effortless and personal.</span>
+                    <br>
                     Curated gift collections crafted with love. From birthdays to weddings,
                     we've got something special inside for everyone.
                 </p>

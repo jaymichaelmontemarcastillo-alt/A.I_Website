@@ -81,30 +81,6 @@ nav a:hover {
   font-weight: 600;
 }
 
-/* Search bar */
-.search-bar {
-  margin-top: 15px;
-  display: flex;
-  gap: 10px;
-}
-
-.search-bar input {
-  flex: 1;
-  padding: 10px;
-  border-radius: 6px;
-  border: none;
-  outline: none;
-}
-
-.search-bar button {
-  background: #ffc107;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
 .brand {
   display: flex;
   align-items: center;
@@ -177,6 +153,46 @@ nav a:hover {
 .primary-btn:hover {
   background-color: #0e2f46;
   transform: translateY(-2px);
+}
+
+/* SEARCH BAR */
+
+.search-bar {
+  width: 100%;
+  display: none;
+  padding: 5px 0;
+  border-color: #0f3d67;
+}
+
+.search-container {
+  width: 90%;
+  max-width: 600px;
+  margin: auto;
+  position: relative;
+}
+
+.search-container input {
+  width: 100%;
+  padding: 10px 12px 10px 40px;
+  border-radius: 30px;
+  border: 1px solid #ddd;
+  outline: none;
+  font-size: 15px;
+  transition: 0.3s ease;
+  border-color: #0f3d67;
+}
+
+.search-container input:focus {
+  border-color: #0f3d67;
+  box-shadow: 0 0 8px rgba(15, 61, 103, 0.2);
+}
+
+.search-container i {
+  position: absolute;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
 }
 /* ============================= */
 /* RESPONSIVE HEADER */

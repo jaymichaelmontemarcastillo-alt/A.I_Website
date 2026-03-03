@@ -30,8 +30,10 @@
             <?php foreach ($products as $product): ?>
 
                 <div class="gift-card"
+                    data-name="<?= strtolower($product['name']); ?>"
+                    data-category="<?= strtolower($product['category']); ?>"
+                    data-description="<?= strtolower($product['description']); ?>"
                     onclick="window.location.href='product.php?id=<?= $product['id']; ?>'">
-
                     <div class="gift-img">
                         <span class="badge"><?= $product['category']; ?></span>
                         <img src="<?= $product['image']; ?>">

@@ -12,9 +12,7 @@
     <link rel="stylesheet" href="assets/css/customer-site/style.css">
     <link rel="stylesheet" href="assets/css/customer-site/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
 
-    </style>
 </head>
 
 <body>
@@ -33,29 +31,18 @@
                 <a href="cart.php">Cart</a>
 
                 <div class="header-icons">
-                    <i class="fas fa-search"></i>
+                    <i id="search_icon" class="fas fa-search"></i>
                     <a href="wishlist.php"> <i class="far fa-heart"></i></a>
                     <a href="cart.php"> <i class="fas fa-shopping-cart"></i></a>
                     <a href="#" class="login-btn">Login</a>
                 </div>
             </nav>
         </div>
-
-        <div class="search-bar" style="display:none; margin-top:10px;">
-            <input type="text" placeholder="Search products...">
-            <button>Search</button>
+        <div class="search-bar">
+            <div class="search-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="searchInput" placeholder="Search products...">
+            </div>
         </div>
     </header>
-
-    <script>
-        // simple toggle for mobile nav
-        document.addEventListener('DOMContentLoaded', function() {
-            var menu = document.querySelector('.menu-toggle');
-            var nav = document.querySelector('header .top-header nav');
-            if (menu && nav) {
-                menu.addEventListener('click', function() {
-                    nav.classList.toggle('open');
-                });
-            }
-        });
-    </script>
+    <script src="assets/js/customer-site-functions/search_product.js"></script>

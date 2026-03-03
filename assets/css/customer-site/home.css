@@ -183,10 +183,10 @@ main {
 
 .featured-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(250px, 305px));
   gap: 25px;
+  justify-content: center; /* important */
 }
-
 /* CARD */
 .gift-card {
   justify-content: space-between;
@@ -196,8 +196,8 @@ main {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
   border: solid #ececec 1px;
   transition: 0.3s ease;
-  min-height: 410px;
-  min-width: 250px;
+  width: 100%;
+  max-width: 305px;
 }
 
 .gift-card:hover {

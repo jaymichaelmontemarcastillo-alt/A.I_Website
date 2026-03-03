@@ -1,4 +1,8 @@
 /* ================= PRODUCT PAGE ================= */
+:root {
+  --font-inter: "Inter", sans-serif;
+  --font-Playfair: "Playfair Display", serif;
+}
 
 .product-page {
   padding: 25px 25px;
@@ -229,11 +233,13 @@
 .cart-title {
   font-size: 32px;
   font-weight: 600;
+  font-family: var(--font-Playfair);
 }
 
 .cart-subtitle {
   color: #777;
   margin-bottom: 30px;
+  font-size: clamp(12px, 1vw, 16px);
 }
 
 .cart-layout {

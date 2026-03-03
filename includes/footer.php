@@ -19,9 +19,9 @@
         <div class="footer-links">
             <h3 style="color:#FFC107; margin-bottom:15px;">QUICK LINKS</h3>
             <p><a href="index.php" style="color:#cfd8e3; text-decoration:none;">Home</a></p>
-            <p><a href="products.php" style="color:#cfd8e3; text-decoration:none;">Products</a></p>
-            <p><a href="#" style="color:#cfd8e3; text-decoration:none;">Cart</a></p>
-            <p><a href="#" style="color:#cfd8e3; text-decoration:none;">Wishlist</a></p>
+            <p><a href="shop.php" style="color:#cfd8e3; text-decoration:none;">Products</a></p>
+            <p><a href="cart.php" style="color:#cfd8e3; text-decoration:none;">Cart</a></p>
+            <p><a href="wishlist.php" style="color:#cfd8e3; text-decoration:none;">Wishlist</a></p>
         </div>
 
         <!-- Contact -->
