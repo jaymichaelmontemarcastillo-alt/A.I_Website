@@ -72,15 +72,6 @@ nav a:hover {
   font-size: clamp(12px, 1vw, 18px);
 }
 
-.login-btn {
-  background: #ffc107;
-  color: #123b5d;
-  padding: 8px 18px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 600;
-}
-
 .brand {
   display: flex;
   align-items: center;
@@ -259,8 +250,5 @@ nav a:hover {
     justify-content: space-between;
   }
 
-  .login-btn {
-    padding: 6px 14px;
-    font-size: 14px;
-  }
+  
 }
