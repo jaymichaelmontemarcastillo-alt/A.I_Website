@@ -1,0 +1,354 @@
+:root {
+  --primary-blue: #0d3b56;
+  --primary-hover: #164e70;
+
+  --bg-light: #f8fafc;
+  --border-color: #e2e8f0;
+
+  --text-main: #0d3b56;
+  --text-muted: #8da2b5;
+
+  --white: #ffffff;
+
+  --font-heading: "Playfair Display", serif;
+  --font-body: "Inter", sans-serif;
+
+  --radius: 12px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-body);
+  background: #f1f5f9;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* MAIN LAYOUT */
+
+.login-wrapper {
+  width: 100%;
+  max-width: 1100px;
+  display: flex;
+  align-items: stretch;
+  background: var(--white);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
+  min-height: 520px;
+}
+
+/* LEFT BRAND SIDE */
+
+.login-brand {
+  flex: 1;
+  background: linear-gradient(135deg, #0d3b56, #164e70);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.brand-content {
+  text-align: center;
+  max-width: 300px;
+}
+
+.brand-logo {
+  font-size: 3rem;
+  margin-bottom: 1.5rem;
+}
+
+.login-brand h1 {
+  font-family: var(--font-heading);
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.login-brand p {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  opacity: 0.9;
+}
+
+/* RIGHT FORM */
+
+.login-form-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+}
+
+.login-card h2 {
+  font-family: var(--font-heading);
+  color: var(--text-main);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+}
+
+/* INPUT */
+
+.input-group {
+  margin-bottom: 1.25rem;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-light);
+  font-size: 0.9rem;
+  outline: none;
+  transition: 0.2s;
+}
+
+input:focus {
+  border-color: var(--primary-blue);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(13, 59, 86, 0.1);
+}
+
+/* FORGOT PASSWORD */
+
+.forgot-password {
+  text-align: right;
+  margin-bottom: 1.5rem;
+}
+
+.forgot-password a {
+  font-size: 0.8rem;
+  color: var(--primary-blue);
+  text-decoration: none;
+}
+
+.forgot-password a:hover {
+  text-decoration: underline;
+}
+
+/* BUTTON */
+
+.sign-in-btn {
+  width: 100%;
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 1rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+
+  transition: 0.2s;
+}
+
+.sign-in-btn:hover {
+  background: var(--primary-hover);
+}
+
+.sign-in-btn:active {
+  transform: scale(0.98);
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+  .login-wrapper {
+    flex-direction: column;
+  }
+
+  .login-brand {
+    display: none;
+  }
+
+  .login-form-container {
+    padding: 2rem;
+  }
+}
+
+/* BACK TO LOGIN LINK */
+
+.back-login {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+
+.back-login a {
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--primary-blue);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.back-login a:hover {
+  text-decoration: underline;
+}
+
+/* STEP CONTROL */
+
+.step {
+  display: none;
+}
+
+.step.active {
+  display: block;
+}
+
+/* CODE INPUT */
+
+.code-inputs {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.code-inputs input {
+  width: 50px;
+  height: 55px;
+  font-size: 1.5rem;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-light);
+}
+
+.code-inputs input:focus {
+  border-color: var(--primary-blue);
+  background: white;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(13, 59, 86, 0.1);
+}
+
+/* Modal Loading for redirecting MESSAGE */
+/* MODAL BACKGROUND */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  background: rgba(0, 0, 0, 0.4);
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  z-index: 1000;
+}
+
+/* MODAL BOX */
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+
+  text-align: center;
+  max-width: 350px;
+  width: 90%;
+
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+
+  animation: modalFade 0.25s ease;
+}
+
+@keyframes modalFade {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ICON */
+
+.modal-icon {
+  font-size: 2rem;
+  margin-bottom: 10px;
+  color: #0d3b56;
+}
+
+/* MESSAGE */
+
+#modalMessage {
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+}
+
+/* BUTTON */
+
+.modal-btn {
+  background: #0d3b56;
+  color: white;
+
+  border: none;
+  padding: 0.7rem 1.2rem;
+
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.modal-btn:hover {
+  background: #164e70;
+}
+
+/* Signing in icon animation */
+.spinner {
+  border: 3px solid #aaaaaa; /* Light grey */
+  border-top: 3px solid white; /* White for spinner */
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
