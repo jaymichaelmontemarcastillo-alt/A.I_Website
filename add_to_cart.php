@@ -1,18 +1,12 @@
 <?php
 session_start();
+header('Content-Type: application/json');
 
-$id = $_POST['id'];
-$quantity = $_POST['quantity'];
+$cart = $_SESSION['cart'] ?? [];
+$count = array_sum(array_column($cart, 'quantity'));
 
-if (!isset($_SESSION['cart'])) {
-    $_SESSION['cart'] = [];
-}
-
-if (isset($_SESSION['cart'][$id])) {
-    $_SESSION['cart'][$id] += $quantity;
-} else {
-    $_SESSION['cart'][$id] = $quantity;
-}
-
-header("Location: cart.php");
-exit;
+echo json_encode([
+    'success' => true,
+    'count' => $count
+]);
+?>

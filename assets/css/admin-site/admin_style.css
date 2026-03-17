@@ -24,15 +24,15 @@
 
 body {
   font-family: var(--font-body);
-  background: #f1f5f9;
+  background: url('../../images/admin-site/northfolk--hwrUZ2FLM4-unsplash.jpg') no-repeat center center/cover;
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
 /* MAIN LAYOUT */
 
+/* Initial hidden state */
 .login-wrapper {
   width: 100%;
   max-width: 1100px;
@@ -43,8 +43,19 @@ body {
   overflow: hidden;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
   min-height: 520px;
+
+  /* Animation */
+  transform: translateY(-50px);
+  opacity: 0;
+  animation: slideDown 0.6s ease-out forwards;
 }
 
+@keyframes slideDown {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 /* LEFT BRAND SIDE */
 
 .login-brand {
