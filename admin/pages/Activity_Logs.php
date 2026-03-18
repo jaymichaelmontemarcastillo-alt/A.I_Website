@@ -1,5 +1,4 @@
 <?php
-
 include '../includes/header.php';
 ?>
 
@@ -7,8 +6,8 @@ include '../includes/header.php';
 
     <div class="admin-wrapper">
         <?php
-        // Inventory.php
-        $current_page = 'Inventory';
+        // Admin_Profile.php
+        $current_page = 'Activity_Logs';
         include 'admin_sidebar.php';
         ?>
 
@@ -18,14 +17,12 @@ include '../includes/header.php';
                     <i class="fa-solid fa-chevron-left toggle-arrow"></i>
                 </button>
             </header>
-
             <section class="content-body">
-                <h1 class="page-title">Inventory</h1>
+                <h1 class="page-title">Activity Logs</h1>
 
             </section>
         </main>
     </div>
-
 </body>
 <script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
 

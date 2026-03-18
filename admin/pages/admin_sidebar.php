@@ -22,8 +22,10 @@
         <a href="Payments.php" class="nav-item <?php echo ($current_page == 'Payments') ? 'active' : ''; ?>">
             <i class="fa-solid fa-credit-card"></i> <span>Payments</span>
         </a>
-
-        <span style="margin-bottom: 30px;"></span>
+        <a href="Activity_Logs.php" class="nav-item <?php echo ($current_page == 'Activity_Logs') ? 'active' : ''; ?>">
+            <i class="fa-solid fa-clock"></i> <span>Activity Logs</span>
+        </a>
+        <span class="margin"></span>
         <span class="nav-title">MANAGEMENT</span>
         <a href="Customers.php" class="nav-item <?php echo ($current_page == 'Customers') ? 'active' : ''; ?>">
             <i class="fa-solid fa-users"></i> <span>Customers</span>

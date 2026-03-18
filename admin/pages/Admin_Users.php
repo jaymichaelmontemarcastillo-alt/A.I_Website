@@ -24,8 +24,7 @@ include '../includes/header.php';
             </section>
         </main>
     </div>
-
-    <script src="script.js"></script>
 </body>
+<script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
 
 </html>

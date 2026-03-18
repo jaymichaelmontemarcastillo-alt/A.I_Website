@@ -1,6 +1,7 @@
 :root {
-  --primary-yellow:#f6c34a;
-  --primary-blue: #00537B;
+  --primary-yellow: #f6c34a;
+  --primary-blue: #0f3d67;
+  --hover-blue: #1a4d80;
   --dark-blue: #003a5a;
   --sidebar-white: #ffffff;
   --bg-light: #f4f7f9;
@@ -8,7 +9,7 @@
   --text-muted: #d1d1d1;
   --sidebar-width: 260px;
   --sidebar-collapsed: 80px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition: all 0.25s ease;
 }
 
 * {
@@ -27,23 +28,27 @@ body {
   display: flex;
   flex-direction: column;
   position: sticky; /* make it sticky */
-  top: 0;           /* stick to the top */
-  height: 100vh;    /* full viewport height */
+  top: 0; /* stick to the top */
+  height: 100vh; /* full viewport height */
   overflow-y: auto; /* allow sidebar scroll if content overflows */
- 
+
   overflow: visible;
 }
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  background-color: var(--dark-blue);
+  background-color: var(--primary-blue);
 }
-.nav-title{
+.nav-title {
   color: var(--text-muted);
   margin-bottom: 10px;
   font-family: Inter, "sans-serif";
-  font-size: clamp(0.75rem, 1vw, 1rem);
+  font-size: clamp(0.5rem, 1vw, 0.75rem);
+  transition:
+    transform 0.2s ease,
+    padding 0.2s ease,
+    height 0.2s ease;
 }
 .admin-wrapper {
   display: grid;
@@ -60,7 +65,7 @@ body {
   gap: 12px;
   font-family: "Playfair Display", serif;
   position: relative;
-  border-bottom: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   background-color: var(--dark-blue);
 }
 
@@ -73,7 +78,7 @@ body {
   transition: all 0.3s ease;
 }
 .logo-text {
-  font-size: clamp(0.50rem, 1vw, 1rem);
+  font-size: clamp(0.5rem, 1vw, 1rem);
   font-weight: 600;
   color: var(--sidebar-white);
   transition:
@@ -123,7 +128,7 @@ body {
   align-items: center;
   gap: 15px;
   padding: 11px 16px;
-  background-color: var(--dark-blue);
+  background-color: var(--primary-blue);
   text-decoration: none;
   color: var(--text-muted);
   border-radius: 5px;
@@ -140,7 +145,8 @@ body {
 }
 
 /* Collapsed Nav Text */
-.admin-wrapper.collapsed .nav-item span, .admin-wrapper.collapsed .nav-title {
+.admin-wrapper.collapsed .nav-item span,
+.admin-wrapper.collapsed .nav-title {
   opacity: 0;
   transform: translateX(-10px);
   pointer-events: none;
@@ -152,7 +158,7 @@ body {
   background: var(--dark-blue);
   color: var(--text-muted);
   height: 100%;
-  border-top: 1px solid rgba(255,255,255,0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 
   display: flex;
   flex-direction: column;
@@ -214,9 +220,8 @@ body {
 }
 
 .logout-link:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: #fff;
-
 }
 
 .admin-wrapper.collapsed .sidebar-footer .user-info,
@@ -228,8 +233,8 @@ body {
 
 /* Hover Effects */
 .nav-item:hover:not(.active) {
-  background: var(--primary-blue);
-  color:var(--bg-light);
+  background: var(--hover-blue);
+  color: var(--bg-light);
 }
 
 .nav-item.active {
@@ -277,17 +282,16 @@ body {
   background: white;
   border-bottom: 1px solid #e2e8f0;
 
-  span{
+  span {
     font-size: clamp(1.25rem, 1vw, 1.75rem);
     font-weight: 500;
     color: var(--text-dark);
     padding: 15px;
   }
-
 }
 .content-body {
   padding: 20px;
-   overflow-y: auto;
+  overflow-y: auto;
 }
 .page-title {
   font-family: "Playfair Display", serif;
@@ -344,12 +348,39 @@ body {
 .admin-wrapper.collapsed {
   grid-template-columns: var(--sidebar-collapsed) 1fr;
 }
-
-.collapsed .logo-text,
-.collapsed .nav-item span{
-    display: none;
+.margin {
+  margin-bottom: 10px;
+  transition:
+    margin-bottom 0.3s ease,
+    height 0.3s ease;
+}
+.admin-wrapper.collapsed .margin {
+  margin-bottom: 0px;
+  height: 0px;
+}
+.admin-wrapper.collapsed .nav-title {
+  padding: 0;
+  opacity: 0;
+  transform: translateX(-10px);
+  pointer-events: none;
+  height: 0px;
+}
+.admin-wrapper.collapsed .logo-text,
+.admin-wrapper.collapsed .nav-item span {
+  opacity: 0;
+  display: none;
 }
 
+.logo-text,
+.nav-item span,
+.nav-title,
+.sidebar-footer span {
+  will-change: opacity, transform;
+}
+.toggle-arrow {
+  display: inline-block;
+  will-change: transform;
+}
 /* Charts Grid */
 .charts-grid {
   display: grid;
