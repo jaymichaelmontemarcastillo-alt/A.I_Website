@@ -1,0 +1,153 @@
+.content-body {
+  padding: 20px;
+  font-family: "Inter", sans-serif;
+}
+
+/* Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.page-title {
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.page-subtitle {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.btn-add {
+  background: #0f3d5e;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.btn-add i {
+  margin-right: 6px;
+}
+
+/* Admin List */
+.admin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Card */
+.admin-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 15px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
+}
+
+/* Left */
+.admin-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-left h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.admin-left p {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Avatar */
+.avatar {
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar.gold {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.avatar.gray {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* Right */
+.admin-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Badges */
+.badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.badge.role {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.badge.role.gold {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.badge.status.active {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.badge.status.inactive {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+/* Last login */
+.last-login {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .admin-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .admin-right {
+    justify-content: flex-start;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
