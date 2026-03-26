@@ -36,11 +36,9 @@ include '../includes/header.php';
         ?>
 
         <main class="main-content">
-            <header class="top-nav">
-                <button id="toggle-btn">
-                    <i class="fa-solid fa-chevron-left toggle-arrow"></i>
-                </button>
-            </header>
+            <?php
+            include 'admin_page_header.php';
+            ?>
 
             <section class="content-body">
                 <div class="products-header">
@@ -50,6 +48,7 @@ include '../includes/header.php';
                 </div>
 
                 <form method="get" class="search-form">
+                    <i class="fa-solid fa-magnifying-glass"></i>
                     <input type="text" name="search" placeholder="Search products..." value="<?php echo htmlspecialchars($search); ?>">
                 </form>
 

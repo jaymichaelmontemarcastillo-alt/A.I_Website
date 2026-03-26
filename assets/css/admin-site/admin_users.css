@@ -1,60 +1,130 @@
+/* ============================= */
+/* 🎨 DESIGN SYSTEM (SHARED) */
+/* ============================= */
+:root {
+  --primary-blue: #0f3d5e;
+
+  --bg-main: #f4f7f9;
+  --card-bg: #ffffff;
+
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+
+  --border: #e5e7eb;
+
+  --success-bg: #d1fae5;
+  --success-text: #059669;
+
+  --warning-bg: #fef3c7;
+  --warning-text: #d97706;
+
+  --neutral-bg: #e5e7eb;
+  --neutral-text: #374151;
+
+  --radius: 10px;
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  --transition: all 0.25s ease;
+}
+
+/* 🌙 DARK MODE */
+body.dark-mode {
+  --bg-main: #0f172a;
+  --card-bg: #111827;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+
+  --border: #1f2937;
+}
+
+/* ============================= */
+/* 🧱 BASE */
+/* ============================= */
 .content-body {
   padding: 20px;
   font-family: "Inter", sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
 }
 
-/* Header */
+/* ============================= */
+/* 📌 HEADER */
+/* ============================= */
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 }
 
 .page-title {
   font-size: 26px;
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .page-subtitle {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
+/* BUTTON */
 .btn-add {
-  background: #0f3d5e;
+  background: var(--primary-blue);
   color: #fff;
   border: none;
   padding: 10px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 14px;
+  transition: var(--transition);
 }
 
 .btn-add i {
   margin-right: 6px;
 }
 
-/* Admin List */
+.btn-add:hover {
+  opacity: 0.9;
+}
+
+/* ============================= */
+/* 👥 ADMIN LIST */
+/* ============================= */
 .admin-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
-/* Card */
+/* ============================= */
+/* 🧾 CARD */
+/* ============================= */
 .admin-card {
-  background: #fff;
-  border-radius: 14px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
   padding: 15px 18px;
+
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
   flex-wrap: wrap;
+
+  transition: var(--transition);
 }
 
-/* Left */
+.admin-card:hover {
+  transform: translateY(-3px);
+}
+
+/* ============================= */
+/* 🔹 LEFT */
+/* ============================= */
 .admin-left {
   display: flex;
   align-items: center;
@@ -69,30 +139,35 @@
 .admin-left p {
   margin: 0;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
-/* Avatar */
+/* ============================= */
+/* 👤 AVATAR */
+/* ============================= */
 .avatar {
   width: 45px;
   height: 45px;
   border-radius: 50%;
+
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .avatar.gold {
-  background: #fef3c7;
-  color: #d97706;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .avatar.gray {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
 }
 
-/* Right */
+/* ============================= */
+/* ⚙️ RIGHT */
+/* ============================= */
 .admin-right {
   display: flex;
   align-items: center;
@@ -100,40 +175,48 @@
   flex-wrap: wrap;
 }
 
-/* Badges */
+/* ============================= */
+/* 🏷️ BADGES */
+/* ============================= */
 .badge {
   padding: 5px 10px;
   border-radius: 999px;
   font-size: 12px;
 }
 
+/* ROLE */
 .badge.role {
-  background: #e5e7eb;
-  color: #374151;
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
 }
 
 .badge.role.gold {
-  background: #fef3c7;
-  color: #d97706;
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
+/* STATUS */
 .badge.status.active {
-  background: #d1fae5;
-  color: #059669;
+  background: var(--success-bg);
+  color: var(--success-text);
 }
 
 .badge.status.inactive {
-  background: #e5e7eb;
-  color: #6b7280;
+  background: var(--neutral-bg);
+  color: var(--text-secondary);
 }
 
-/* Last login */
+/* ============================= */
+/* 🕒 LAST LOGIN */
+/* ============================= */
 .last-login {
   font-size: 12px;
-  color: #6b7280;
+  color: var(--text-secondary);
 }
 
-/* Responsive */
+/* ============================= */
+/* 📱 RESPONSIVE */
+/* ============================= */
 @media (max-width: 768px) {
   .admin-card {
     flex-direction: column;

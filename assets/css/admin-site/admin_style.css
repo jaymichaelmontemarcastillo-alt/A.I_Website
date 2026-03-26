@@ -24,7 +24,8 @@
 
 body {
   font-family: var(--font-body);
-  background: url('../../images/admin-site/northfolk--hwrUZ2FLM4-unsplash.jpg') no-repeat center center/cover;
+  background: url("../../images/admin-site/northfolk--hwrUZ2FLM4-unsplash.jpg")
+    no-repeat center center/cover;
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -57,7 +58,12 @@ body {
   }
 }
 /* LEFT BRAND SIDE */
-
+.brand-logo-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 90%;
+}
 .login-brand {
   flex: 1;
   background: linear-gradient(135deg, #0d3b56, #164e70);
@@ -65,11 +71,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3rem;
+
+  padding: 15px;
 }
 
 .brand-content {
   text-align: center;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: space-between;
   max-width: 300px;
 }
 
@@ -89,7 +100,35 @@ body {
   line-height: 1.6;
   opacity: 0.9;
 }
+/* LOGO IMAGE STYLE */
 
+.brand-logo-img {
+  width: 100px;
+  height: 100px;
+  margin: 0 auto 20px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo-img img {
+  width: 60%;
+}
+
+/* TEXT STYLE LIKE IMAGE */
+
+.login-brand h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.login-brand p {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
 /* RIGHT FORM */
 
 .login-form-container {

@@ -11,7 +11,21 @@
   --sidebar-collapsed: 80px;
   --transition: all 0.25s ease;
 }
+/* 🌙 DARK MODE */
+body.dark-mode {
+  --primary-yellow: #f6c34a;
+  --primary-blue: #0b2a47;
+  --hover-blue: #12395f;
+  --dark-blue: #071e33;
 
+  --sidebar-white: #0f172a; /* sidebar bg */
+  --bg-light: #0b1220; /* main background */
+  --text-dark: #e2e8f0; /* main text */
+  --text-muted: #94a3b8; /* muted text */
+
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+}
 * {
   margin: 0;
   padding: 0;
@@ -31,7 +45,6 @@ body {
   top: 0; /* stick to the top */
   height: 100vh; /* full viewport height */
   overflow-y: auto; /* allow sidebar scroll if content overflows */
-
   overflow: visible;
 }
 .sidebar-nav {
@@ -80,7 +93,7 @@ body {
 .logo-text {
   font-size: clamp(0.5rem, 1vw, 1rem);
   font-weight: 600;
-  color: var(--sidebar-white);
+  color: white;
   transition:
     opacity 0.3s ease,
     transform 0.3s ease;
@@ -411,4 +424,61 @@ body {
   .charts-grid {
     grid-template-columns: 1fr;
   }
+}
+/* Sidebar */
+body.dark-mode .sidebar {
+  background-color: var(--sidebar-white);
+}
+
+/* Top Nav */
+body.dark-mode .top-nav {
+  background: #0f172a;
+  border-bottom: 1px solid #1e293b;
+}
+
+/* Cards */
+body.dark-mode .stat-card,
+body.dark-mode .chart-card {
+  background: #0f172a;
+  box-shadow: none;
+}
+
+/* Text inside header */
+body.dark-mode .top-nav span {
+  color: var(--text-dark);
+}
+
+/* Nav items */
+body.dark-mode .nav-item {
+  background-color: var(--primary-blue);
+  color: var(--text-muted);
+}
+
+/* Hover */
+body.dark-mode .nav-item:hover:not(.active) {
+  background: var(--hover-blue);
+  color: #fff;
+}
+#theme-toggle {
+  margin-left: auto;
+  margin-right: 20px;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary-blue);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+body.dark-mode #theme-toggle {
+  background: var(--primary-yellow);
+  color: var(--dark-blue);
+}
+body.dark-mode .nav-item.active {
+  background: var(--primary-yellow);
+  color: var(--dark-blue);
 }

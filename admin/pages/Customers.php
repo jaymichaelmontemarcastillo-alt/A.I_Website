@@ -13,12 +13,9 @@ include '../includes/header.php';
         ?>
 
         <main class="main-content">
-            <header class="top-nav">
-                <button id="toggle-btn" aria-label="Toggle Sidebar">
-                    <i class="fa-solid fa-chevron-left toggle-arrow"></i>
-                </button>
-            </header>
-
+            <?php
+            include 'admin_page_header.php';
+            ?>
             <section class="content-body">
 
                 <!-- Header -->
@@ -55,7 +52,10 @@ include '../includes/header.php';
                 <div class="table-container">
 
                     <div class="table-header">
-                        <input type="text" placeholder="Search customers..." class="search-input">
+                        <div class="search-bar">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" placeholder="Search customers..." class="search-input">
+                        </div>
                     </div>
 
                     <table>

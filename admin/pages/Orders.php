@@ -13,11 +13,9 @@ include '../includes/header.php';
         ?>
 
         <main class="main-content">
-            <header class="top-nav">
-                <button id="toggle-btn" aria-label="Toggle Sidebar">
-                    <i class="fa-solid fa-chevron-left toggle-arrow"></i>
-                </button>
-            </header>
+            <?php
+            include 'admin_page_header.php';
+            ?>
 
             <section class="content-body">
                 <h1 class="page-title">Orders</h1>

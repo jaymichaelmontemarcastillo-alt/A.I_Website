@@ -26,21 +26,19 @@
 
             <div class="brand-content">
 
-                <div class="brand-logo">
-                    <i class="fa-solid fa-gift"></i>
+                <div class="brand-logo-text">
+                    <div class="brand-logo-img">
+                        <img src="../assets/images/AI_Logo.jpg" alt="Logo">
+                    </div>
+
+                    <h2>Finding the perfect gift<br>shouldn't be stressful.</h2>
                 </div>
 
-                <h1>Anything Inside</h1>
-
-                <p>
-                    Recover your admin account securely and continue managing your
-                    gift shop products and orders.
-                </p>
+                <p>Let us help you make it effortless and personal.</p>
 
             </div>
 
         </div>
-
 
 
         <!-- RIGHT FORM SIDE -->
