@@ -31,6 +31,7 @@
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_category.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/orders_styles.css">
 
+    <link rel="stylesheet" href="../../assets/css/admin-site/activity_logs.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/products.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_dashboard.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_sidebar.css">

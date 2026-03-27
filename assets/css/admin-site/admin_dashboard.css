@@ -1,34 +1,23 @@
-/* ============================= */
-/* 🎨 DESIGN SYSTEM (ROOT) */
-/* ============================= */
 :root {
-  /* BACKGROUNDS */
   --bg-main: #f5f7fa;
   --bg-card: #ffffff;
   --bg-card-soft: #f8f9fb;
 
-  /* TEXT */
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --text-heading: #374151;
 
-  /* BORDER */
   --border-color: #e5e7eb;
 
-  /* STATUS COLORS */
   --success: #16a34a;
   --warning: #f59e0b;
   --info: #3b82f6;
   --danger: #ef4444;
 
-  /* BORDER RADIUS & TRANSITION */
   --radius: 8px;
   --transition: all 0.25s ease;
 }
 
-/* ============================= */
-/* 🌙 DARK MODE (for future toggle) */
-/* ============================= */
 body.dark-mode {
   --bg-main: #0b1220;
   --bg-card: #0f172a;
@@ -41,37 +30,26 @@ body.dark-mode {
   --border-color: #1f2937;
 }
 
-/* ============================= */
-/* 🧱 BASE LAYOUT */
-/* ============================= */
 .content-body {
   padding: 30px;
   overflow-y: auto;
-  gap: 30px;
+  gap: 10px;
   background: var(--bg-main);
   display: flex;
   flex-direction: column;
 }
 
-/* ============================= */
-/* 🏷 TYPOGRAPHY */
-/* ============================= */
 .page-title {
   font-size: 28px;
   font-weight: 700;
-  margin-bottom: 5px;
   color: var(--text-primary);
 }
 
 .subtitle {
   font-size: 0.95rem;
   color: var(--text-secondary);
-  margin-bottom: 25px;
 }
 
-/* ============================= */
-/* 🧩 STATS GRID / CARDS */
-/* ============================= */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -142,7 +120,7 @@ body.dark-mode {
   gap: 20px;
 }
 .chart-card {
-  background: #f8f9fb; /* light gray like screenshot */
+  background: #f8f9fb;
   border-radius: 8px;
   padding: 20px;
   height: 300px;
@@ -168,9 +146,7 @@ body.dark-mode {
   width: 100% !important;
   height: 300px !important;
 }
-/* ============================= */
-/* 📋 TABLE CARD */
-/* ============================= */
+
 .table-card {
   margin-top: 30px;
   background: var(--bg-card);
@@ -205,9 +181,6 @@ body.dark-mode {
   border-bottom: 1px solid #f3f4f6;
 }
 
-/* ============================= */
-/* 🏷️ BADGES */
-/* ============================= */
 .badge {
   padding: 5px 12px;
   border-radius: 20px;
@@ -236,9 +209,6 @@ body.dark-mode {
   color: #b91c1c;
 }
 
-/* ============================= */
-/* 📱 RESPONSIVE */
-/* ============================= */
 @media (max-width: 768px) {
   .charts-grid {
     grid-template-columns: 1fr;

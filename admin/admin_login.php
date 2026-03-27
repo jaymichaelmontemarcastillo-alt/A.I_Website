@@ -1,3 +1,5 @@
+<?php session_start(); ?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -11,7 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="stylesheet" href="../assets/css/admin-site/admin_style.css">
-    <script src="../assets/js/admin-site-functions/admin_auth.js"></script>
+
 </head>
 
 <body>
@@ -40,29 +42,22 @@
 
         <!-- RIGHT SIDE LOGIN -->
         <div class="login-form-container">
-
             <div class="login-card">
-
                 <h2>Admin Login</h2>
                 <p class="subtitle">Sign in to your admin account</p>
 
-                <form id="loginForm">
+                <form id="loginForm" method="POST" action="admin_authentication/admin_login_validation.php">
 
                     <div class="input-group">
                         <label>Email</label>
-                        <input type="email" id="email" placeholder="admin@giftshop.com" required>
-                    </div>
-
-                    <div class="input-group">
-                        <label>Username</label>
-                        <input type="text" id="username" placeholder="admin" required>
+                        <input type="email" name="email" placeholder="admin@giftshop.com" required>
                     </div>
 
                     <div class="input-group">
                         <label>Password</label>
-                        <input type="password" id="password" placeholder="••••••••" required>
+                        <input type="password" name="password" id="passwordInput" placeholder="••••••••" required>
+                        <i class="fa-solid fa-eye toggle-password" id="togglePassword"></i>
                     </div>
-
                     <div class="forgot-password">
                         <a href="reset_password.php">Forgot Password?</a>
                     </div>
@@ -71,33 +66,60 @@
                         <i class="fa-solid fa-lock"></i>
                         Sign In
                     </button>
-
+                    <div class="admin-signup-link">
+                        Don't have an account? <a href="admin_register.php">Sign Up</a>
+                    </div>
                 </form>
 
-                <div id="authModal" class="modal">
-
-                    <div class="modal-content">
-
-                        <div class="modal-icon" id="modalIcon">
-                            <i class="fa-solid fa-circle-info"></i>
-                        </div>
-
-                        <p id="modalMessage"></p>
-
-                        <button id="modalClose" class="modal-btn">
-                            OK
-                        </button>
-
-                    </div>
-
-                </div>
 
             </div>
-
         </div>
 
     </div>
 
 </body>
+<!-- TOAST ALERT -->
+<div id="authToast" class="toast">
+    <i class="fa-solid fa-circle-xmark toast-icon"></i>
+    <span id="toastMessage"></span>
+</div>
+<?php include 'includes/auth_toast.php'; ?>
+<script>
+    // Show/Hide password
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('passwordInput');
+
+    togglePassword.addEventListener('click', () => {
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            togglePassword.classList.remove('fa-eye');
+            togglePassword.classList.add('fa-eye-slash');
+        } else {
+            passwordInput.type = 'password';
+            togglePassword.classList.remove('fa-eye-slash');
+            togglePassword.classList.add('fa-eye');
+        }
+    });
+
+    // Loading animation on form submit
+    const loginForm = document.getElementById('loginForm');
+    const signInBtn = loginForm.querySelector('.sign-in-btn');
+    const spinner = document.createElement('span');
+    spinner.classList.add('spinner');
+    signInBtn.appendChild(spinner);
+
+    loginForm.addEventListener('submit', function(e) {
+        // Optional: prevent default if you want AJAX submit
+        // e.preventDefault();
+
+        signInBtn.classList.add('loading');
+        // Lock icon is hidden via CSS, spinner shows in same place
+    });
+
+    // Reset loading state when page loads (to prevent infinite spinner)
+    window.addEventListener('load', () => {
+        signInBtn.classList.remove('loading');
+    });
+</script>
 
 </html>

@@ -1,19 +1,34 @@
 <?php
 session_start();
-require_once '../../connect/config.php';
+require_once '../../connect/config.php'; // make sure path is correct
 
+// Get PDO connection
+$pdo = getDBConnection();
 
-// Fetch products
+// Get search query if any
 $search = $_GET['search'] ?? '';
 
-if ($search) {
-    $stmt = $pdo->prepare("SELECT * FROM products WHERE name LIKE ? OR category LIKE ? ORDER BY created_at DESC");
-    $stmt->execute(["%$search%", "%$search%"]);
-} else {
-    $stmt = $pdo->query("SELECT * FROM products ORDER BY created_at DESC");
+try {
+    if ($search) {
+        // Use prepared statement for search
+        $stmt = $pdo->prepare(
+            "SELECT * FROM products 
+             WHERE LOWER(name) LIKE LOWER(?) OR LOWER(category) LIKE LOWER(?) 
+             ORDER BY created_at DESC"
+        );
+        $stmt->execute(["%$search%", "%$search%"]);
+    } else {
+        // Fetch all products
+        $stmt = $pdo->query("SELECT * FROM products ORDER BY created_at DESC");
+    }
+
+    $products = $stmt->fetchAll(); // fetch results as associative array
+
+} catch (PDOException $e) {
+    die("Error fetching products: " . $e->getMessage());
 }
 
-$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+// Include header
 include '../includes/header.php';
 ?>
 
@@ -52,22 +67,40 @@ include '../includes/header.php';
                     <input type="text" name="search" placeholder="Search products..." value="<?php echo htmlspecialchars($search); ?>">
                 </form>
 
-                <div class="products-grid">
-                    <?php foreach ($products as $product): ?>
-                        <div class="product-card" onclick='openEditModal(<?php echo json_encode($product); ?>)'>
-                            <div class="product-image">
-                                <img src="../../<?php echo htmlspecialchars($product['image']); ?>" alt="Product Image">
-                            </div>
-                            <div class="product-info">
-                                <h3><?php echo htmlspecialchars($product['name']); ?></h3>
-                                <span class="category"><?php echo htmlspecialchars($product['category']); ?></span>
-                                <div class="card-footer">
-                                    <p class="price">$<?php echo number_format($product['price'], 2); ?></p>
-                                    <span class="stock"><?php echo $product['stock'] ?? 0; ?> in stock</span>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
+                <!-- TABLE -->
+                <div class="table-container">
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($products as $product): ?>
+                                <tr onclick='openEditModal(<?php echo json_encode($product); ?>)'>
+                                    <td>
+                                        <img src="../../<?php echo htmlspecialchars($product['image']); ?>" class="table-img">
+                                    </td>
+                                    <td><?php echo htmlspecialchars($product['name']); ?></td>
+                                    <td>
+                                        <span class="category"><?php echo htmlspecialchars($product['category']); ?></span>
+                                    </td>
+                                    <td class="price">$<?php echo number_format($product['price'], 2); ?></td>
+                                    <td>
+                                        <span class="stock"><?php echo $product['stock'] ?? 0; ?></span>
+                                    </td>
+                                    <td>
+                                        <button class="edit-btn">Edit</button>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
             </section>
         </main>

@@ -43,7 +43,7 @@ body {
   border-radius: var(--radius);
   overflow: hidden;
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15);
-  min-height: 520px;
+  min-height: 580px;
 
   /* Animation */
   transform: translateY(-50px);
@@ -194,19 +194,25 @@ input:focus {
   margin-bottom: 1.5rem;
 }
 
-.forgot-password a {
-  font-size: 0.8rem;
+.forgot-password a,
+.admin-signup-link a {
+  font-size: 0.9rem;
   color: var(--primary-blue);
   text-decoration: none;
 }
 
-.forgot-password a:hover {
+.forgot-password a:hover,
+.admin-signup-link a:hover {
   text-decoration: underline;
 }
-
+.admin-signup-link {
+  text-align: center;
+  margin-top: 1rem;
+}
 /* BUTTON */
 
-.sign-in-btn {
+.sign-in-btn,
+.sign-up-btn {
   width: 100%;
   background: var(--primary-blue);
   color: white;
@@ -384,7 +390,53 @@ input:focus {
   background: #164e70;
 }
 
-/* Signing in icon animation */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.input-group {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 70%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: #888;
+}
+
+/* Loading spinner inside button (same place as lock icon) */
+.sign-in-btn {
+  position: relative;
+}
+
+.sign-in-btn .spinner {
+  position: absolute;
+  left: 40%; /* same as lock icon position */
+  top: 30%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-top: 2px solid transparent;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  display: none; /* initially hidden */
+}
+
+.sign-in-btn.loading .spinner {
+  display: inline-block;
+}
+
+.sign-in-btn.loading i.fa-lock {
+  visibility: hidden; /* hide lock icon when loading */
+} /* Signing in icon animation */
 .spinner {
   border: 3px solid #aaaaaa; /* Light grey */
   border-top: 3px solid white; /* White for spinner */
@@ -393,7 +445,6 @@ input:focus {
   height: 18px;
   animation: spin 0.8s linear infinite;
 }
-
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -401,4 +452,27 @@ input:focus {
   100% {
     transform: rotate(360deg);
   }
+}
+/* Toast Alert */
+.toast {
+  position: fixed;
+  top: -80px; /* start hidden above top */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #f44336; /* red */
+  color: white;
+  padding: 15px 25px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  font-size: 16px;
+  z-index: 9999;
+  transition: top 0.5s ease-in-out; /* animation */
+}
+
+.toast-icon {
+  font-size: 20px;
 }
