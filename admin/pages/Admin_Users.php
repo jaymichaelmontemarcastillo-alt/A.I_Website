@@ -1,5 +1,4 @@
 <?php
-
 include '../includes/header.php';
 ?>
 
@@ -24,90 +23,85 @@ include '../includes/header.php';
                         <p class="page-subtitle">Manage admin accounts and roles</p>
                     </div>
 
-                    <button class="btn-add">
-                        <i class="fa-solid fa-plus"></i> Add Admin
-                    </button>
+                    <div class="page-header-actions">
+                        <button class="btn-secondary" id="pendingRequestsBtn" type="button">
+                            <i class="fa-solid fa-clock"></i>
+                            Pending Requests
+                            <span class="request-badge" id="pendingRequestsCount">0</span>
+                        </button>
+                        <button class="btn-add" type="button" onclick="window.location.href='../admin_register.php'">
+                            <i class="fa-solid fa-plus"></i> Add Admin
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Admin List -->
-                <div class="admin-list" id="adminList">
-                    <div class="admin-list-loading">Loading admin accounts...</div>
+                <!-- Admin List Table -->
+                <div class="admin-table-wrapper">
+                    <table class="admin-table" id="adminList">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody">
+                            <tr class="loading-row">
+                                <td colspan="5">
+                                    <div class="admin-list-loading">Loading admin accounts...</div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
+
+                <div class="modal-backdrop" id="pendingRequestsModal" aria-hidden="true">
+                    <div class="modal-panel">
+                        <div class="modal-header">
+                            <div>
+                                <h2>Admin Requests</h2>
+                                <p class="modal-subtitle">Review and approve or reject pending admin requests.</p>
+                            </div>
+                            <button type="button" class="modal-close" onclick="closePendingRequestsModal()" aria-label="Close modal">&times;</button>
+                        </div>
+
+                        <div class="modal-body">
+                            <div class="modal-toolbar">
+                                <span id="pendingRequestsCountLabel" class="request-summary">0 pending requests</span>
+                                <button class="btn-secondary" type="button" onclick="fetchPendingRequests()">Refresh</button>
+                            </div>
+
+                            <div id="pendingRequestsError" class="modal-error"></div>
+
+                            <div class="table-responsive">
+                                <table class="request-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Email</th>
+                                            <th>Submitted</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pendingRequestsList"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="request-empty hidden" id="pendingRequestsEmpty">
+                                No pending admin requests found.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="toast-alert" id="toastAlert" role="status" aria-live="polite"></div>
 
             </section>
         </main>
     </div>
 </body>
-<script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const adminListEl = document.getElementById('adminList');
 
-        function formatDateTime(dateTimeString) {
-            const date = new Date(dateTimeString);
-            if (isNaN(date.getTime())) {
-                return dateTimeString;
-            }
-            return date.toLocaleString();
-        }
-
-        function renderAdminCard(admin) {
-            const card = document.createElement('div');
-            card.className = 'admin-card';
-
-            card.innerHTML = `
-                <div class="admin-left">
-                    <div class="avatar ${admin.Role === 'Super Admin' ? 'gold' : 'gray'}">
-                        <i class="fa-solid fa-user-gear"></i>
-                    </div>
-                    <div>
-                        <h3>${admin.FullName}</h3>
-                        <p>${admin.Email}</p>
-                    </div>
-                </div>
-                <div class="admin-right">
-                    <span class="badge role ${admin.Role === 'Super Admin' ? 'gold' : ''}">${admin.Role}</span>
-                    <span class="badge status ${admin.AccountStatus && admin.AccountStatus.toLowerCase() === 'active' ? 'active' : 'inactive'}">${admin.AccountStatus || 'Unknown'}</span>
-                    <span class="last-login">Created: ${formatDateTime(admin.CreatedAt)}</span>
-                </div>
-            `;
-
-            return card;
-        }
-
-        function showError(message) {
-            adminListEl.innerHTML = `<div class="admin-list-error">${message}</div>`;
-        }
-
-        fetch('../../api/admin_site/fetch_admin_list.php', {
-                credentials: 'include',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                adminListEl.innerHTML = '';
-
-                if (data.status !== 'success' || !Array.isArray(data.data)) {
-                    showError(data.message || 'Unable to load admin list.');
-                    return;
-                }
-
-                if (data.data.length === 0) {
-                    adminListEl.innerHTML = '<div class="admin-list-empty">No admin accounts found.</div>';
-                    return;
-                }
-
-                data.data.forEach(admin => {
-                    adminListEl.appendChild(renderAdminCard(admin));
-                });
-            })
-            .catch(error => {
-                showError('Failed to load admin list.');
-                console.error('Admin list fetch error:', error);
-            });
-    });
-</script>
 
 </html>

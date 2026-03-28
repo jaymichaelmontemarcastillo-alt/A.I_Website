@@ -118,6 +118,5 @@ include '../includes/header.php';
     </div>
 
 </body>
-<script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
 
 </html>

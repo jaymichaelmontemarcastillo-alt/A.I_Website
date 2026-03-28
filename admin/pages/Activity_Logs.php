@@ -156,7 +156,7 @@ include '../includes/header.php';
         </main>
     </div>
 
-    <script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
+
 </body>
 
 </html>

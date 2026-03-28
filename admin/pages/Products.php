@@ -157,8 +157,8 @@ include '../includes/header.php';
         </div>
     </div>
 
-    <script src="../../assets/js/admin-site-functions/admin_products.js"></script>
-    <script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
+
 </body>
+
 
 </html>

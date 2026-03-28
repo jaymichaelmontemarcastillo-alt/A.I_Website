@@ -14,7 +14,11 @@ try {
     $stmt->execute();
     $admins = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo json_encode(['status' => 'success', 'data' => $admins]);
+    echo json_encode([
+        'status' => 'success',
+        'data' => $admins,
+        'currentAdminId' => $_SESSION['AdminID'] ?? null,
+    ]);
 } catch (PDOException $e) {
     echo json_encode(['status' => 'error', 'message' => 'Unable to fetch admin list: ' . $e->getMessage()]);
 }
