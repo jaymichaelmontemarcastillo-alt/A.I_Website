@@ -30,11 +30,12 @@
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_payment.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_category.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/orders_styles.css">
-
+    <link rel="stylesheet" href="../../assets/css/admin-site/admin_header.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/activity_logs.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/products.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_dashboard.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_sidebar.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../../assets/js/admin-site-functions/admin_data_fetch.js"></script>
 </head>

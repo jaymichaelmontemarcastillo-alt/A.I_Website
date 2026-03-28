@@ -1,60 +1,44 @@
 <?php
 session_start();
 require_once '../../connect/config.php';
+
 $pdo = getDBConnection();
 
-header('Content-Type: application/json');
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-function sendResponse($status, $message)
-{
-    echo json_encode(['status' => $status, 'message' => $message]);
-    exit();
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
+
+    if (empty($email) || empty($password)) {
+        $_SESSION['status'] = 'error';
+        $_SESSION['message'] = 'Please fill in all fields.';
+        header("Location: ../admin_login.php");
+        exit;
+    }
+
+    $stmt = $pdo->prepare("SELECT * FROM admins WHERE Email = ?");
+    $stmt->execute([$email]);
+    $admin = $stmt->fetch();
+
+    if ($admin && $admin['AccountStatus'] !== 'Disabled' && password_verify($password, $admin['Password'])) {
+
+        session_regenerate_id(true);
+
+        $_SESSION['AdminID'] = $admin['AdminID'];
+        $_SESSION['FullName'] = $admin['FullName'];
+        $_SESSION['Email'] = $admin['Email'];
+        $_SESSION['Role'] = $admin['Role'];
+
+        $pdo->prepare("UPDATE admins SET LastLogin = NOW() WHERE AdminID = ?")
+            ->execute([$admin['AdminID']]);
+
+        header("Location: ../pages/Dashboard.php");
+        exit;
+    }
+
+    // ❌ ONE unified error (best practice)
+    $_SESSION['status'] = 'error';
+    $_SESSION['message'] = 'Wrong email or password.';
+    header("Location: ../admin_login.php");
+    exit;
 }
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    sendResponse('error', 'Invalid request.');
-}
-
-$username = trim($_POST['username']);
-$email = trim($_POST['email']);
-$password = $_POST['password'];
-$confirm_password = $_POST['confirm_password'];
-
-if (empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
-    sendResponse('error', 'All fields are required.');
-}
-
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    sendResponse('error', 'Invalid email address.');
-}
-
-if ($password !== $confirm_password) {
-    sendResponse('error', 'Passwords do not match.');
-}
-
-if (
-    !preg_match('/[A-Z]/', $password) ||
-    !preg_match('/[a-z]/', $password) ||
-    !preg_match('/[0-9]/', $password) ||
-    !preg_match('/[!@#$%^&*(),.?":{}|<>]/', $password) ||
-    strlen($password) < 8
-) {
-    sendResponse('error', 'Password must be at least 8 characters and include uppercase, lowercase, number, and special character.');
-}
-
-// Check pending_admins
-$stmt = $pdo->prepare("SELECT * FROM pending_admins WHERE email = ? LIMIT 1");
-$stmt->execute([$email]);
-if ($stmt->rowCount() > 0) sendResponse('error', 'You already have a pending registration. Wait for admin approval.');
-
-// Check admins
-$stmt = $pdo->prepare("SELECT * FROM admins WHERE Email = ? LIMIT 1");
-$stmt->execute([$email]);
-if ($stmt->rowCount() > 0) sendResponse('error', 'Email is already registered.');
-
-// Insert into pending_admins
-$hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-$stmt = $pdo->prepare("INSERT INTO pending_admins (username, email, password) VALUES (?, ?, ?)");
-$stmt->execute([$username, $email, $hashedPassword]);
-
-sendResponse('success', 'Registration submitted successfully! Wait for admin approval.');

@@ -40,12 +40,6 @@
     </nav>
 
     <div class="sidebar-footer">
-        <div class="user-info">
-            <div class="avatar">A</div>
-            <div class="logo-text">
-                <span>Super Admin</span>
-            </div>
-        </div>
 
         <a href="Logout.php" class="logout-link">
             <i class="fa-solid fa-right-from-bracket"></i>

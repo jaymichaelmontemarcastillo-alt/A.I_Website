@@ -46,11 +46,8 @@ body {
   min-height: 580px;
 
   /* Animation */
-  transform: translateY(-50px);
-  opacity: 0;
-  animation: slideDown 0.6s ease-out forwards;
 }
-
+/*
 @keyframes slideDown {
   to {
     transform: translateY(0);
