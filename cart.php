@@ -5,24 +5,24 @@ include 'includes/header.php';
 
 $cart = $_SESSION['cart'] ?? [];
 $total = 0;
-
+$pdo = getDBConnection();
 // Get fresh product data from database for items in cart
 $cartItems = [];
 if (!empty($cart)) {
     $productIds = array_keys($cart);
     $placeholders = implode(',', array_fill(0, count($productIds), '?'));
-    
+
     // Fetch current product details from database
     $stmt = $pdo->prepare("SELECT * FROM products WHERE id IN ($placeholders)");
     $stmt->execute($productIds);
     $dbProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     // Create associative array with product id as key
     $productDetails = [];
     foreach ($dbProducts as $product) {
         $productDetails[$product['id']] = $product;
     }
-    
+
     // Merge cart data with fresh database info
     foreach ($cart as $id => $item) {
         if (isset($productDetails[$id])) {
@@ -36,7 +36,7 @@ if (!empty($cart)) {
                 'stock' => $productDetails[$id]['stock'],
                 'quantity' => $item['quantity']
             ];
-            
+
             // Calculate subtotal
             $subtotal = $productDetails[$id]['price'] * $item['quantity'];
             $total += $subtotal;
@@ -45,7 +45,7 @@ if (!empty($cart)) {
             unset($_SESSION['cart'][$id]);
         }
     }
-    
+
     // Update cart in session with fresh data
     $_SESSION['cart'] = $cartItems;
     $cart = $cartItems; // Use the updated cart for display
@@ -56,370 +56,371 @@ if (!empty($cart)) {
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <style>
-/* Modal Styles */
-.modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-    overflow: auto;
-}
-
-.modal-content {
-    background-color: #fefefe;
-    margin: 30px auto;
-    padding: 25px;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 500px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.2);
-    animation: modalSlideIn 0.3s ease;
-}
-
-.modal-content.large {
-    max-width: 700px;
-}
-
-@keyframes modalSlideIn {
-    from {
-        transform: translateY(-50px);
-        opacity: 0;
+    /* Modal Styles */
+    .cart-modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        overflow: auto;
     }
-    to {
-        transform: translateY(0);
-        opacity: 1;
+
+    .cart-modal .modal-content {
+        background-color: #fefefe;
+        margin: 30px auto;
+        padding: 25px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        animation: modalSlideIn 0.3s ease;
     }
-}
 
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid #f0f0f0;
-}
+    .modal-content.large {
+        max-width: 700px;
+    }
 
-.modal-header h2 {
-    margin: 0;
-    color: #333;
-    font-size: 24px;
-}
+    @keyframes modalSlideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
 
-.close-modal {
-    font-size: 28px;
-    font-weight: bold;
-    color: #888;
-    cursor: pointer;
-    transition: color 0.3s;
-}
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
 
-.close-modal:hover {
-    color: #333;
-}
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+    }
 
-.modal-body {
-    margin-bottom: 20px;
-}
+    .modal-header h2 {
+        margin: 0;
+        color: #333;
+        font-size: 24px;
+    }
 
-.form-group {
-    margin-bottom: 15px;
-}
+    .close-modal {
+        font-size: 28px;
+        font-weight: bold;
+        color: #888;
+        cursor: pointer;
+        transition: color 0.3s;
+    }
 
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    color: #555;
-    font-weight: 500;
-    font-size: 14px;
-}
+    .close-modal:hover {
+        color: #333;
+    }
 
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 14px;
-    transition: border-color 0.3s;
-}
+    .modal-body {
+        margin-bottom: 20px;
+    }
 
-.form-group input:focus,
-.form-group select:focus {
-    outline: none;
-    border-color: #0f3d67;
-}
+    .form-group {
+        margin-bottom: 15px;
+    }
 
-.payment-options {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin: 15px 0;
-}
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: #555;
+        font-weight: 500;
+        font-size: 14px;
+    }
 
-.payment-option {
-    display: flex;
-    align-items: center;
-    padding: 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
+    .form-group input,
+    .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
 
-.payment-option:hover {
-    border-color: #0f3d67;
-    background-color: #f0f7ff;
-}
+    .form-group input:focus,
+    .form-group select:focus {
+        outline: none;
+        border-color: #0f3d67;
+    }
 
-.payment-option input[type="radio"] {
-    margin-right: 12px;
-    width: 18px;
-    height: 18px;
-    accent-color: #0f3d67;
-}
+    .payment-options {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        margin: 15px 0;
+    }
 
-.payment-option span {
-    font-size: 15px;
-    color: #333;
-}
+    .payment-option {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
 
-.payment-option i {
-    margin-right: 10px;
-    font-size: 20px;
-    color: #0f3d67;
-}
+    .payment-option:hover {
+        border-color: #0f3d67;
+        background-color: #f0f7ff;
+    }
 
-.modal-footer {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    margin-top: 20px;
-    padding-top: 15px;
-    border-top: 2px solid #f0f0f0;
-}
+    .payment-option input[type="radio"] {
+        margin-right: 12px;
+        width: 18px;
+        height: 18px;
+        accent-color: #0f3d67;
+    }
 
-.modal-footer button {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s;
-}
+    .payment-option span {
+        font-size: 15px;
+        color: #333;
+    }
 
-.cancel-btn {
-    background-color: #f0f0f0;
-    color: #666;
-}
+    .payment-option i {
+        margin-right: 10px;
+        font-size: 20px;
+        color: #0f3d67;
+    }
 
-.cancel-btn:hover {
-    background-color: #e0e0e0;
-}
+    .modal-footer {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 2px solid #f0f0f0;
+    }
 
-.confirm-btn {
-    background-color: #0f3d67;
-    color: white;
-}
+    .modal-footer button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
 
-.confirm-btn:hover {
-    background-color: #0a2e4a;
-}
+    .cancel-btn {
+        background-color: #f0f0f0;
+        color: #666;
+    }
 
-.confirm-btn:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
-}
+    .cancel-btn:hover {
+        background-color: #e0e0e0;
+    }
 
-.order-summary-modal {
-    background-color: #f9f9f9;
-    padding: 15px;
-    border-radius: 8px;
-    margin: 15px 0;
-    max-height: 200px;
-    overflow-y: auto;
-}
+    .confirm-btn {
+        background-color: #0f3d67;
+        color: white;
+    }
 
-.order-summary-modal h4 {
-    margin: 0 0 10px 0;
-    color: #333;
-}
+    .confirm-btn:hover {
+        background-color: #0a2e4a;
+    }
 
-.summary-item-modal {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 8px;
-    font-size: 14px;
-    color: #666;
-}
+    .confirm-btn:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+    }
 
-.total-modal {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 2px dashed #ddd;
-    font-weight: bold;
-    color: #333;
-}
+    .order-summary-modal {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 15px 0;
+        max-height: 200px;
+        overflow-y: auto;
+    }
 
-.empty-cart {
-    text-align: center;
-    padding: 50px 20px;
-    background: #f9f9f9;
-    border-radius: 8px;
-    margin: 20px 0;
-}
+    .order-summary-modal h4 {
+        margin: 0 0 10px 0;
+        color: #333;
+    }
 
-.empty-cart p {
-    font-size: 18px;
-    color: #666;
-    margin-bottom: 20px;
-}
+    .summary-item-modal {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #666;
+    }
 
-.empty-cart .continue-shopping {
-    display: inline-block;
-    padding: 12px 30px;
-    background: #0f3d67;
-    color: white;
-    text-decoration: none;
-    border-radius: 5px;
-    transition: background 0.3s;
-}
+    .total-modal {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 2px dashed #ddd;
+        font-weight: bold;
+        color: #333;
+    }
 
-.empty-cart .continue-shopping:hover {
-    background: #0a2e4a;
-}
+    .empty-cart {
+        text-align: center;
+        padding: 50px 20px;
+        background: #f9f9f9;
+        border-radius: 8px;
+        margin: 20px 0;
+    }
 
-/* Receipt Modal Styles */
-.receipt-header {
-    text-align: center;
-    margin-bottom: 20px;
-}
+    .empty-cart p {
+        font-size: 18px;
+        color: #666;
+        margin-bottom: 20px;
+    }
 
-.receipt-header i {
-    font-size: 60px;
-    color: #4CAF50;
-    margin-bottom: 10px;
-}
+    .empty-cart .continue-shopping {
+        display: inline-block;
+        padding: 12px 30px;
+        background: #0f3d67;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background 0.3s;
+    }
 
-.receipt-header h2 {
-    color: #333;
-    margin-bottom: 5px;
-}
+    .empty-cart .continue-shopping:hover {
+        background: #0a2e4a;
+    }
 
-.receipt-header p {
-    color: #666;
-}
+    /* Receipt Modal Styles */
+    .receipt-header {
+        text-align: center;
+        margin-bottom: 20px;
+    }
 
-.receipt-details {
-    background: #f9f9f9;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 20px;
-}
+    .receipt-header i {
+        font-size: 60px;
+        color: #4CAF50;
+        margin-bottom: 10px;
+    }
 
-.receipt-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
-}
+    .receipt-header h2 {
+        color: #333;
+        margin-bottom: 5px;
+    }
 
-.receipt-row:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-    padding-bottom: 0;
-}
+    .receipt-header p {
+        color: #666;
+    }
 
-.receipt-label {
-    color: #666;
-    font-weight: 500;
-}
+    .receipt-details {
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
 
-.receipt-value {
-    color: #333;
-    font-weight: 600;
-}
+    .receipt-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
 
-.receipt-items {
-    margin-bottom: 20px;
-}
+    .receipt-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+    }
 
-.receipt-items h4 {
-    color: #333;
-    margin-bottom: 10px;
-}
+    .receipt-label {
+        color: #666;
+        font-weight: 500;
+    }
 
-.receipt-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px dashed #eee;
-}
+    .receipt-value {
+        color: #333;
+        font-weight: 600;
+    }
 
-.receipt-item-name {
-    color: #555;
-}
+    .receipt-items {
+        margin-bottom: 20px;
+    }
 
-.receipt-item-price {
-    color: #333;
-    font-weight: 500;
-}
+    .receipt-items h4 {
+        color: #333;
+        margin-bottom: 10px;
+    }
 
-.receipt-total {
-    background: #0f3d67;
-    color: white;
-    padding: 15px;
-    border-radius: 8px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 18px;
-    font-weight: bold;
-    margin-top: 15px;
-}
+    .receipt-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px dashed #eee;
+    }
 
-.receipt-footer {
-    text-align: center;
-    margin-top: 20px;
-    padding-top: 20px;
-    border-top: 2px solid #f0f0f0;
-}
+    .receipt-item-name {
+        color: #555;
+    }
 
-.receipt-footer p {
-    color: #888;
-    font-size: 14px;
-}
+    .receipt-item-price {
+        color: #333;
+        font-weight: 500;
+    }
 
-.print-btn {
-    background: #0f3d67;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-    transition: background 0.3s;
-}
+    .receipt-total {
+        background: #0f3d67;
+        color: white;
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 18px;
+        font-weight: bold;
+        margin-top: 15px;
+    }
 
-.print-btn:hover {
-    background: #0a2e4a;
-}
+    .receipt-footer {
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 20px;
+        border-top: 2px solid #f0f0f0;
+    }
 
-.order-number {
-    font-family: monospace;
-    font-size: 18px;
-    letter-spacing: 1px;
-}
+    .receipt-footer p {
+        color: #888;
+        font-size: 14px;
+    }
+
+    .print-btn {
+        background: #0f3d67;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        transition: background 0.3s;
+    }
+
+    .print-btn:hover {
+        background: #0a2e4a;
+    }
+
+    .order-number {
+        font-family: monospace;
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
 </style>
 
 <main class="cart-page">
@@ -449,9 +450,9 @@ if (!empty($cart)) {
 
                     <div class="cart-card">
                         <div class="cart-product-info">
-                            <img src="<?= htmlspecialchars($item['image'] ?? 'assets/images/default.jpg') ?>" 
-                                 class="cart-img" 
-                                 alt="<?= htmlspecialchars($item['name'] ?? 'Product') ?>">
+                            <img src="<?= htmlspecialchars($item['image'] ?? 'assets/images/default.jpg') ?>"
+                                class="cart-img"
+                                alt="<?= htmlspecialchars($item['name'] ?? 'Product') ?>">
 
                             <div class="cart-text">
                                 <h4><?= htmlspecialchars($item['name'] ?? 'Unknown Product') ?></h4>
@@ -465,7 +466,7 @@ if (!empty($cart)) {
                                     <span class="qty-number"><?= $quantity ?></span>
                                     <button class="qty-btn" onclick="updateQuantity(<?= $id ?>, 'increase')">+</button>
                                 </div>
-                                
+
                                 <?php if (isset($item['stock']) && $item['stock'] < 5): ?>
                                     <small style="color: #ff6b6b;">Only <?= $item['stock'] ?> left in stock!</small>
                                 <?php endif; ?>
@@ -486,56 +487,56 @@ if (!empty($cart)) {
 
         <!-- ================= RIGHT SUMMARY ================= -->
         <?php if (!empty($cart)): ?>
-        <div class="cart-summary">
-            <h3>Order Summary</h3>
+            <div class="cart-summary">
+                <h3>Order Summary</h3>
 
-            <div class="summary-list">
-                <?php foreach ($cart as $item): ?>
-                    <?php
-                    $quantity = (int)($item['quantity'] ?? 0);
-                    $price = (float)($item['price'] ?? 0);
-                    ?>
-                    <div class="summary-item">
-                        <span><?= htmlspecialchars($item['name'] ?? 'Product') ?> × <?= $quantity ?></span>
-                        <span>₱<?= number_format($price * $quantity, 2) ?></span>
-                    </div>
-                <?php endforeach; ?>
+                <div class="summary-list">
+                    <?php foreach ($cart as $item): ?>
+                        <?php
+                        $quantity = (int)($item['quantity'] ?? 0);
+                        $price = (float)($item['price'] ?? 0);
+                        ?>
+                        <div class="summary-item">
+                            <span><?= htmlspecialchars($item['name'] ?? 'Product') ?> × <?= $quantity ?></span>
+                            <span>₱<?= number_format($price * $quantity, 2) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="summary-total">
+                    <h4>Total</h4>
+                    <h2 id="totalAmount">₱<?= number_format($total, 2) ?></h2>
+                </div>
+
+                <button id="checkoutBtn" class="checkout-btn">
+                    <span>🛍️ Process Checkout</span>
+                </button>
+
+                <a href="shop.php" class="continue-shopping">
+                    Continue Shopping
+                </a>
             </div>
-
-            <div class="summary-total">
-                <h4>Total</h4>
-                <h2 id="totalAmount">₱<?= number_format($total, 2) ?></h2>
-            </div>
-
-            <button id="checkoutBtn" class="checkout-btn">
-                <span>🛍️ Process Checkout</span>
-            </button>
-
-            <a href="shop.php" class="continue-shopping">
-                Continue Shopping
-            </a>
-        </div>
         <?php endif; ?>
     </div>
 </main>
 
 <!-- Checkout Modal -->
-<div id="checkoutModal" class="modal">
+<div id="checkoutModal" class="cart-modal">
     <div class="modal-content">
         <div class="modal-header">
             <h2>Complete Your Order</h2>
             <span class="close-modal">&times;</span>
         </div>
-        
+
         <div class="modal-body">
             <!-- Order Summary -->
             <div class="order-summary-modal">
                 <h4>Order Summary</h4>
                 <?php foreach ($cart as $item): ?>
-                <div class="summary-item-modal">
-                    <span><?= htmlspecialchars($item['name'] ?? 'Product') ?> × <?= $item['quantity'] ?></span>
-                    <span>₱<?= number_format(($item['price'] ?? 0) * $item['quantity'], 2) ?></span>
-                </div>
+                    <div class="summary-item-modal">
+                        <span><?= htmlspecialchars($item['name'] ?? 'Product') ?> × <?= $item['quantity'] ?></span>
+                        <span>₱<?= number_format(($item['price'] ?? 0) * $item['quantity'], 2) ?></span>
+                    </div>
                 <?php endforeach; ?>
                 <div class="total-modal">
                     <span>Total Amount:</span>
@@ -590,34 +591,34 @@ if (!empty($cart)) {
 </div>
 
 <!-- Receipt Confirmation Modal -->
-<div id="receiptModal" class="modal">
+<div id="receiptModal" class="cart-modal">
     <div class="modal-content large">
         <div class="modal-header">
             <h2>Order Confirmation</h2>
             <span class="close-modal" onclick="closeReceiptModal()">&times;</span>
         </div>
-        
+
         <div class="modal-body">
             <div class="receipt-header">
                 <i class="fa-solid fa-circle-check"></i>
                 <h2>Thank You for Your Order!</h2>
                 <p>A confirmation email has been sent to your email address.</p>
             </div>
-            
+
             <div class="receipt-details" id="receiptDetails">
                 <!-- Will be filled by JavaScript -->
             </div>
-            
+
             <div class="receipt-items" id="receiptItems">
                 <!-- Will be filled by JavaScript -->
             </div>
-            
+
             <div class="receipt-footer">
                 <button class="print-btn" onclick="printReceipt()">
                     <i class="fa-solid fa-print"></i> Print Receipt
                 </button>
                 <p style="margin-top: 15px;">
-                    <i class="fa-regular fa-clock"></i> 
+                    <i class="fa-regular fa-clock"></i>
                     You will receive your order within 3-5 business days.
                 </p>
             </div>
@@ -630,156 +631,156 @@ if (!empty($cart)) {
 </div>
 
 <script>
-// Cart data from PHP session
-let cart = <?= json_encode(array_values($cart), JSON_PRETTY_PRINT) ?>;
-let totalAmount = <?= $total ?>;
+    // Cart data from PHP session
+    let cart = <?= json_encode(array_values($cart), JSON_PRETTY_PRINT) ?>;
+    let totalAmount = <?= $total ?>;
 
-// ========== REMOVE FROM CART WITH NOTIFICATION ==========
-async function removeFromCart(productId) {
-    const confirmed = await notif.confirm({
-        title: 'Remove from Cart',
-        message: 'Are you sure you want to remove this item from your cart?',
-        type: 'warning',
-        confirmText: 'Remove',
-        confirmClass: 'danger',
-        cancelText: 'Keep'
-    });
+    // ========== REMOVE FROM CART WITH NOTIFICATION ==========
+    async function removeFromCart(productId) {
+        const confirmed = await notif.confirm({
+            title: 'Remove from Cart',
+            message: 'Are you sure you want to remove this item from your cart?',
+            type: 'warning',
+            confirmText: 'Remove',
+            confirmClass: 'danger',
+            cancelText: 'Keep'
+        });
 
-    if (!confirmed) return;
+        if (!confirmed) return;
 
-    const button = event.currentTarget;
-    const originalIcon = button.innerHTML;
-    button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
-    button.disabled = true;
+        const button = event.currentTarget;
+        const originalIcon = button.innerHTML;
+        button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
+        button.disabled = true;
 
-    const loading = notif.loading('Removing item from cart...');
+        const loading = notif.loading('Removing item from cart...');
 
-    const formData = new FormData();
-    formData.append('id', productId);
+        const formData = new FormData();
+        formData.append('id', productId);
 
-    fetch('api/remove_cart.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        loading.hide();
-        
-        if (data.success) {
-            notif.toast('Item removed from cart', 'success');
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            notif.toast(data.error || 'Failed to remove item', 'error');
-            button.innerHTML = originalIcon;
-            button.disabled = false;
-        }
-    })
-    .catch(error => {
-        loading.hide();
-        console.error('Error:', error);
-        notif.toast('Failed to remove item', 'error');
-        button.innerHTML = originalIcon;
-        button.disabled = false;
-    });
-}
+        fetch('api/remove_cart.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.hide();
 
-// ========== UPDATE QUANTITY ==========
-function updateQuantity(productId, action) {
-    const loading = notif.loading('Updating cart...');
-    
-    fetch('api/update_cart.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            id: productId,
-            action: action
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        loading.hide();
-        
-        if (data.success) {
-            notif.toast('Cart updated', 'success');
-            setTimeout(() => location.reload(), 500);
-        } else {
-            notif.toast(data.error || 'Failed to update cart', 'error');
-        }
-    })
-    .catch(error => {
-        loading.hide();
-        console.error('Error:', error);
-        notif.toast('Failed to update cart', 'error');
-    });
-}
-
-// ========== CHECKOUT MODAL FUNCTIONALITY ==========
-const checkoutModal = document.getElementById('checkoutModal');
-const receiptModal = document.getElementById('receiptModal');
-const checkoutBtn = document.getElementById('checkoutBtn');
-const closeModal = document.querySelector('.close-modal');
-const cancelBtn = document.querySelector('.cancel-btn');
-const confirmBtn = document.getElementById('confirmCheckoutBtn');
-
-// Open modal when checkout button is clicked
-if (checkoutBtn) {
-    checkoutBtn.addEventListener('click', function() {
-        if (cart.length === 0) {
-            notif.toast('Your cart is empty', 'warning');
-            return;
-        }
-        
-        // Reset form fields
-        document.getElementById('modalCustomerName').value = '';
-        document.getElementById('modalCustomerEmail').value = '';
-        document.getElementById('modalCustomerPhone').value = '';
-        document.querySelector('input[name="modalPaymentMethod"][value="cash"]').checked = true;
-        
-        checkoutModal.style.display = 'block';
-    });
-}
-
-// Close checkout modal functions
-function closeCheckoutModal() {
-    checkoutModal.style.display = 'none';
-}
-
-// Close receipt modal function
-function closeReceiptModal() {
-    receiptModal.style.display = 'none';
-}
-
-if (closeModal) closeModal.addEventListener('click', closeCheckoutModal);
-if (cancelBtn) cancelBtn.addEventListener('click', closeCheckoutModal);
-
-// Close modal when clicking outside
-window.addEventListener('click', function(event) {
-    if (event.target == checkoutModal) {
-        closeCheckoutModal();
+                if (data.success) {
+                    notif.toast('Item removed from cart', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    notif.toast(data.error || 'Failed to remove item', 'error');
+                    button.innerHTML = originalIcon;
+                    button.disabled = false;
+                }
+            })
+            .catch(error => {
+                loading.hide();
+                console.error('Error:', error);
+                notif.toast('Failed to remove item', 'error');
+                button.innerHTML = originalIcon;
+                button.disabled = false;
+            });
     }
-    if (event.target == receiptModal) {
-        closeReceiptModal();
-    }
-});
 
-// ========== RECEIPT FUNCTIONS ==========
-function showReceipt(orderData) {
-    const receiptDetails = document.getElementById('receiptDetails');
-    const receiptItems = document.getElementById('receiptItems');
-    
-    // Format date
-    const orderDate = new Date().toLocaleString('en-PH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+    // ========== UPDATE QUANTITY ==========
+    function updateQuantity(productId, action) {
+        const loading = notif.loading('Updating cart...');
+
+        fetch('api/update_cart.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: productId,
+                    action: action
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.hide();
+
+                if (data.success) {
+                    notif.toast('Cart updated', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    notif.toast(data.error || 'Failed to update cart', 'error');
+                }
+            })
+            .catch(error => {
+                loading.hide();
+                console.error('Error:', error);
+                notif.toast('Failed to update cart', 'error');
+            });
+    }
+
+    // ========== CHECKOUT MODAL FUNCTIONALITY ==========
+    const checkoutModal = document.getElementById('checkoutModal');
+    const receiptModal = document.getElementById('receiptModal');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+    const closeModal = document.querySelector('.close-modal');
+    const cancelBtn = document.querySelector('.cancel-btn');
+    const confirmBtn = document.getElementById('confirmCheckoutBtn');
+
+    // Open modal when checkout button is clicked
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', function() {
+            if (cart.length === 0) {
+                notif.toast('Your cart is empty', 'warning');
+                return;
+            }
+
+            // Reset form fields
+            document.getElementById('modalCustomerName').value = '';
+            document.getElementById('modalCustomerEmail').value = '';
+            document.getElementById('modalCustomerPhone').value = '';
+            document.querySelector('input[name="modalPaymentMethod"][value="cash"]').checked = true;
+
+            checkoutModal.style.display = 'block';
+        });
+    }
+
+    // Close checkout modal functions
+    function closeCheckoutModal() {
+        checkoutModal.style.display = 'none';
+    }
+
+    // Close receipt modal function
+    function closeReceiptModal() {
+        receiptModal.style.display = 'none';
+    }
+
+    if (closeModal) closeModal.addEventListener('click', closeCheckoutModal);
+    if (cancelBtn) cancelBtn.addEventListener('click', closeCheckoutModal);
+
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+        if (event.target == checkoutModal) {
+            closeCheckoutModal();
+        }
+        if (event.target == receiptModal) {
+            closeReceiptModal();
+        }
     });
-    
-    // Build receipt details HTML
-    receiptDetails.innerHTML = `
+
+    // ========== RECEIPT FUNCTIONS ==========
+    function showReceipt(orderData) {
+        const receiptDetails = document.getElementById('receiptDetails');
+        const receiptItems = document.getElementById('receiptItems');
+
+        // Format date
+        const orderDate = new Date().toLocaleString('en-PH', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        // Build receipt details HTML
+        receiptDetails.innerHTML = `
         <div class="receipt-row">
             <span class="receipt-label">Order Number:</span>
             <span class="receipt-value order-number">${orderData.order_number}</span>
@@ -805,38 +806,38 @@ function showReceipt(orderData) {
             <span class="receipt-value">${orderData.paymentMethod.toUpperCase()}</span>
         </div>
     `;
-    
-    // Build receipt items HTML
-    let itemsHtml = '<h4>Items Ordered:</h4>';
-    orderData.items.forEach(item => {
-        itemsHtml += `
+
+        // Build receipt items HTML
+        let itemsHtml = '<h4>Items Ordered:</h4>';
+        orderData.items.forEach(item => {
+            itemsHtml += `
             <div class="receipt-item">
                 <span class="receipt-item-name">${item.name} × ${item.quantity}</span>
                 <span class="receipt-item-price">₱${(item.price * item.quantity).toFixed(2)}</span>
             </div>
         `;
-    });
-    
-    itemsHtml += `
+        });
+
+        itemsHtml += `
         <div class="receipt-total">
             <span>TOTAL AMOUNT:</span>
             <span>₱${orderData.total.toFixed(2)}</span>
         </div>
     `;
-    
-    receiptItems.innerHTML = itemsHtml;
-    
-    // Close checkout modal and open receipt modal
-    checkoutModal.style.display = 'none';
-    receiptModal.style.display = 'block';
-}
 
-// Print receipt function
-function printReceipt() {
-    const receiptContent = document.getElementById('receiptModal').cloneNode(true);
-    const printWindow = window.open('', '_blank');
-    
-    printWindow.document.write(`
+        receiptItems.innerHTML = itemsHtml;
+
+        // Close checkout modal and open receipt modal
+        checkoutModal.style.display = 'none';
+        receiptModal.style.display = 'block';
+    }
+
+    // Print receipt function
+    function printReceipt() {
+        const receiptContent = document.getElementById('receiptModal').cloneNode(true);
+        const printWindow = window.open('', '_blank');
+
+        printWindow.document.write(`
         <html>
             <head>
                 <title>Order Receipt</title>
@@ -865,156 +866,156 @@ function printReceipt() {
             </body>
         </html>
     `);
-    
-    printWindow.document.close();
-}
 
-// Continue shopping function
-function continueShopping() {
-    receiptModal.style.display = 'none';
-    window.location.href = 'shop.php';
-}
+        printWindow.document.close();
+    }
 
-// ========== CHECKOUT PROCESS ==========
-if (confirmBtn) {
-    confirmBtn.addEventListener('click', async function() {
-        // Get form values
-        const customerName = document.getElementById('modalCustomerName').value.trim();
-        const customerEmail = document.getElementById('modalCustomerEmail').value.trim();
-        const customerPhone = document.getElementById('modalCustomerPhone').value.trim();
-        const paymentMethod = document.querySelector('input[name="modalPaymentMethod"]:checked')?.value;
+    // Continue shopping function
+    function continueShopping() {
+        receiptModal.style.display = 'none';
+        window.location.href = 'shop.php';
+    }
 
-        if (!paymentMethod) {
-            notif.toast('Please select a payment method', 'warning');
-            return;
-        }
+    // ========== CHECKOUT PROCESS ==========
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async function() {
+            // Get form values
+            const customerName = document.getElementById('modalCustomerName').value.trim();
+            const customerEmail = document.getElementById('modalCustomerEmail').value.trim();
+            const customerPhone = document.getElementById('modalCustomerPhone').value.trim();
+            const paymentMethod = document.querySelector('input[name="modalPaymentMethod"]:checked')?.value;
 
-        // Validate form
-        if (!customerName || !customerEmail || !customerPhone) {
-            notif.toast('Please fill in all required fields', 'warning');
-            return;
-        }
+            if (!paymentMethod) {
+                notif.toast('Please select a payment method', 'warning');
+                return;
+            }
 
-        if (!validateEmail(customerEmail)) {
-            notif.toast('Please enter a valid email address', 'warning');
-            return;
-        }
+            // Validate form
+            if (!customerName || !customerEmail || !customerPhone) {
+                notif.toast('Please fill in all required fields', 'warning');
+                return;
+            }
 
-        if (!validatePhone(customerPhone)) {
-            notif.toast('Please enter a valid phone number (e.g., 09123456789)', 'warning');
-            return;
-        }
+            if (!validateEmail(customerEmail)) {
+                notif.toast('Please enter a valid email address', 'warning');
+                return;
+            }
 
-        // Show confirmation modal
-        const confirmed = await notif.confirm({
-            title: 'Confirm Order',
-            message: 'Are you sure you want to place this order?',
-            type: 'info',
-            confirmText: 'Place Order',
-            confirmClass: 'confirm',
-            cancelText: 'Review'
+            if (!validatePhone(customerPhone)) {
+                notif.toast('Please enter a valid phone number (e.g., 09123456789)', 'warning');
+                return;
+            }
+
+            // Show confirmation modal
+            const confirmed = await notif.confirm({
+                title: 'Confirm Order',
+                message: 'Are you sure you want to place this order?',
+                type: 'info',
+                confirmText: 'Place Order',
+                confirmClass: 'confirm',
+                cancelText: 'Review'
+            });
+
+            if (!confirmed) return;
+
+            // Disable button and show processing
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = 'Processing...';
+
+            // Process checkout
+            processCheckout({
+                customerName: customerName,
+                customerEmail: customerEmail,
+                customerPhone: customerPhone,
+                paymentMethod: paymentMethod
+            });
         });
+    }
 
-        if (!confirmed) return;
+    // Email validation
+    function validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
 
-        // Disable button and show processing
-        confirmBtn.disabled = true;
-        confirmBtn.textContent = 'Processing...';
+    // Phone validation (simple Philippine number format)
+    function validatePhone(phone) {
+        const cleanPhone = phone.replace(/\s/g, '');
+        const re = /^(09|\+639)\d{9}$/;
+        return re.test(cleanPhone);
+    }
 
-        // Process checkout
-        processCheckout({
-            customerName: customerName,
-            customerEmail: customerEmail,
-            customerPhone: customerPhone,
-            paymentMethod: paymentMethod
-        });
-    });
-}
+    function processCheckout(customerData) {
+        // Prepare order data with clean values
+        const orderData = {
+            items: cart.map(item => ({
+                id: parseInt(item.id),
+                name: item.name || 'Unknown Product',
+                quantity: parseInt(item.quantity) || 1,
+                price: parseFloat(item.price) || 0
+            })),
+            total: parseFloat(totalAmount),
+            customerName: customerData.customerName,
+            customerEmail: customerData.customerEmail,
+            customerPhone: customerData.customerPhone.replace(/\s/g, ''),
+            paymentMethod: customerData.paymentMethod
+        };
 
-// Email validation
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
-}
+        const loading = notif.loading('Processing your order...');
 
-// Phone validation (simple Philippine number format)
-function validatePhone(phone) {
-    const cleanPhone = phone.replace(/\s/g, '');
-    const re = /^(09|\+639)\d{9}$/;
-    return re.test(cleanPhone);
-}
-
-function processCheckout(customerData) {
-    // Prepare order data with clean values
-    const orderData = {
-        items: cart.map(item => ({
-            id: parseInt(item.id),
-            name: item.name || 'Unknown Product',
-            quantity: parseInt(item.quantity) || 1,
-            price: parseFloat(item.price) || 0
-        })),
-        total: parseFloat(totalAmount),
-        customerName: customerData.customerName,
-        customerEmail: customerData.customerEmail,
-        customerPhone: customerData.customerPhone.replace(/\s/g, ''),
-        paymentMethod: customerData.paymentMethod
-    };
-
-    const loading = notif.loading('Processing your order...');
-
-    // Send order to backend
-    fetch('api/save_order.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(orderData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(orderResult => {
-        if (orderResult.success) {
-            // Add order number to customer data for receipt
-            orderData.order_number = orderResult.order_number;
-            
-            // Clear cart from session via API
-            return fetch('api/clear_cart.php', {
+        // Send order to backend
+        fetch('api/save_order.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(orderData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(orderResult => {
+                if (orderResult.success) {
+                    // Add order number to customer data for receipt
+                    orderData.order_number = orderResult.order_number;
+
+                    // Clear cart from session via API
+                    return fetch('api/clear_cart.php', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(clearResult => {
+                            loading.hide();
+                            notif.toast('Order placed successfully!', 'success');
+
+                            // Show receipt modal with order details
+                            showReceipt(orderData);
+
+                            // Reset confirm button
+                            confirmBtn.disabled = false;
+                            confirmBtn.textContent = 'Confirm Order';
+                        });
+                } else {
+                    loading.hide();
+                    notif.toast(orderResult.error || 'Failed to place order', 'error');
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm Order';
                 }
             })
-            .then(response => response.json())
-            .then(clearResult => {
+            .catch(error => {
                 loading.hide();
-                notif.toast('Order placed successfully!', 'success');
-                
-                // Show receipt modal with order details
-                showReceipt(orderData);
-                
-                // Reset confirm button
+                console.error('Error saving order:', error);
+                notif.toast('Error saving order: ' + error.message, 'error');
                 confirmBtn.disabled = false;
                 confirmBtn.textContent = 'Confirm Order';
             });
-        } else {
-            loading.hide();
-            notif.toast(orderResult.error || 'Failed to place order', 'error');
-            confirmBtn.disabled = false;
-            confirmBtn.textContent = 'Confirm Order';
-        }
-    })
-    .catch(error => {
-        loading.hide();
-        console.error('Error saving order:', error);
-        notif.toast('Error saving order: ' + error.message, 'error');
-        confirmBtn.disabled = false;
-        confirmBtn.textContent = 'Confirm Order';
-    });
-}
+    }
 </script>
 
 <?php include 'includes/footer.php'; ?>

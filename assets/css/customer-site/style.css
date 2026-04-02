@@ -98,7 +98,7 @@ nav a:hover {
 /* ============================= */
 /* cart and wishlist page */
 .empty-page {
-  height: 80vh;
+  height: 50px;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -124,7 +124,7 @@ nav a:hover {
 
 /* Text */
 .empty-container h2 {
-  font-weight: 500;
+  font-weight: 400;
   color: #5f6c7b;
   margin-bottom: 25px;
 }
@@ -252,3 +252,160 @@ nav a:hover {
 
   
 }
+
+/* Quotations Styles */
+.quotations-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.quotations-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.quotations-header h2 {
+  color: #123b5d;
+  font-size: 28px;
+  margin: 0;
+}
+
+.btn {
+  display: inline-block;
+  padding: 10px 20px;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: 0.3s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #123b5d;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0e2f46;
+}
+
+.quotations-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.quotations-table th {
+  background: #f8f9fa;
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.quotations-table td {
+  padding: 15px 12px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.quotations-table tr:hover {
+  background: #f8f9fa;
+}
+
+.status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status.draft {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status.sent {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status.accepted {
+  background: #d4edda;
+  color: #155724;
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  margin-right: 5px;
+}
+
+.btn-view {
+  background: #007bff;
+  color: white;
+}
+
+.btn-edit {
+  background: #ffc107;
+  color: #123b5d;
+}
+
+.btn-delete {
+  background: #dc3545;
+  color: white;
+}
+
+.no-quotations {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6c757d;
+  font-size: 18px;
+}
+
+.no-quotations a {
+  color: #123b5d;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.no-quotations a:hover {
+  text-decoration: underline;
+}
+
+/* Create Quotation Form */
+.create-quotation-container fieldset {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+legend {
+  color: #123b5d;
+  font-size: 16px;
+}
+
+@media (max-width: 768px) {
+  .quotations-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .quotations-table {
+    font-size: 14px;
+  }
+  
+  .quotations-table th,
+  .quotations-table td {
+    padding: 10px 8px;
+  }
+}
+

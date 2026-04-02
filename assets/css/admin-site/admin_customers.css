@@ -1,0 +1,242 @@
+/* ============================= */
+/* 🎨 DESIGN SYSTEM (SHARED) */
+/* ============================= */
+:root {
+  --primary-blue: #0f3d5e;
+
+  --bg-main: #f4f7f9;
+  --card-bg: #ffffff;
+
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+
+  --border: #e5e7eb;
+
+  --success-bg: #d1fae5;
+  --success-text: #059669;
+
+  --neutral-bg: #e5e7eb;
+  --neutral-text: #6b7280;
+
+  --radius: 10px;
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+
+  --transition: all 0.25s ease;
+}
+
+/* 🌙 DARK MODE */
+body.dark-mode {
+  --bg-main: #0f172a;
+  --card-bg: #111827;
+
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+
+  --border: #1f2937;
+}
+
+/* ============================= */
+/* 🧱 BASE */
+/* ============================= */
+.content-body {
+  padding: 20px;
+  font-family: "Inter", sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+}
+
+/* ============================= */
+/* 📌 HEADER */
+/* ============================= */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.page-title {
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.page-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+/* BUTTON */
+.btn-add {
+  background: var(--primary-blue);
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-add:hover {
+  opacity: 0.9;
+}
+
+/* ============================= */
+/* 📊 STATS */
+/* ============================= */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: var(--card-bg);
+  padding: 15px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+
+.stat-card h3 {
+  margin: 0;
+}
+
+/* ============================= */
+/* 📋 TABLE CONTAINER */
+/* ============================= */
+.table-container {
+  background: var(--card-bg);
+  padding: 15px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+}
+body.dark-mode .table-container {
+  background-color: var(--primary-blue);
+}
+.table-header {
+  margin-bottom: 10px;
+}
+
+/* ============================= */
+/* 🔍 SEARCH */
+/* ============================= */
+.search-bar {
+  display: flex;
+  width: 40%;
+  padding: 10px;
+
+  border-radius: 50px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+
+  transition: var(--transition);
+  margin-bottom: 15px;
+}
+
+.search-bar:focus-within {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(15, 61, 94, 0.12);
+}
+
+.search-bar i {
+  color: var(--text-secondary);
+  margin-right: 0.5rem;
+}
+
+.search-bar input {
+  width: 100%;
+  border: none;
+  font-size: 0.92rem;
+  outline: none;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+/* ============================= */
+/* 📊 TABLE */
+/* ============================= */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+thead {
+  border-bottom: 1px solid var(--border);
+}
+
+tbody tr {
+  border-bottom: 1px solid var(--border);
+}
+
+/* ============================= */
+/* 👤 CUSTOMER CELL */
+/* ============================= */
+.customer-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  background: var(--primary-blue);
+  color: #fff;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 14px;
+}
+
+/* ============================= */
+/* 🏷️ BADGES */
+/* ============================= */
+.badge {
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.badge.active {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.badge.inactive {
+  background: var(--neutral-bg);
+  color: var(--neutral-text);
+}
+
+/* ============================= */
+/* 📱 RESPONSIVE */
+/* ============================= */
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .search-bar {
+    width: 100%;
+  }
+
+  table {
+    font-size: 12px;
+  }
+}

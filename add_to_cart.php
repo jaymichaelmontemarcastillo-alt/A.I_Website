@@ -9,4 +9,3 @@ echo json_encode([
     'success' => true,
     'count' => $count
 ]);
-?>

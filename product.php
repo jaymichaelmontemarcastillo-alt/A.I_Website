@@ -2,6 +2,7 @@
 session_start();
 require_once 'connect/config.php'; // Use database instead of products_list.php
 
+$pdo = getDBConnection();
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // Get product from database
@@ -12,7 +13,7 @@ $product = $stmt->fetch();
 if (!$product) {
     // Product not found
     include 'includes/header.php';
-    ?>
+?>
     <main class="product-page">
         <div class="error-container" style="text-align: center; padding: 100px 20px;">
             <i class="fa-solid fa-exclamation-circle" style="font-size: 80px; color: #ff6b6b; margin-bottom: 20px;"></i>
@@ -24,7 +25,7 @@ if (!$product) {
             </a>
         </div>
     </main>
-    <?php
+<?php
     include 'includes/footer.php';
     exit;
 }
@@ -34,169 +35,175 @@ include 'includes/header.php';
 
 <link rel="stylesheet" href="assets/css/customer-site/product.css">
 <style>
-/* Additional styles for product page */
-.toast {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    background-color: #4CAF50;
-    color: white;
-    padding: 15px 25px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    display: none;
-    align-items: center;
-    gap: 10px;
-    z-index: 1000;
-    animation: slideIn 0.3s ease;
-}
-
-.toast i {
-    font-size: 20px;
-}
-
-.toast.show {
-    display: flex;
-}
-
-.toast.error {
-    background-color: #ff4444;
-}
-
-@keyframes slideIn {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
+    /* Additional styles for product page */
+    .toast {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background-color: #4CAF50;
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        align-items: center;
+        gap: 10px;
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
     }
-    to {
-        transform: translateX(0);
-        opacity: 1;
+
+    .toast i {
+        font-size: 20px;
     }
-}
 
-.error-container {
-    text-align: center;
-    padding: 100px 20px;
-}
+    .toast.show {
+        display: flex;
+    }
 
-.fa-spinner {
-    animation: spin 1s linear infinite;
-}
+    .toast.error {
+        background-color: #ff4444;
+    }
 
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
 
-.quantity-wrapper {
-    margin: 20px 0;
-}
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
 
-.quantity-wrapper label {
-    display: block;
-    margin-bottom: 8px;
-    color: #555;
-    font-weight: 500;
-}
+    .error-container {
+        text-align: center;
+        padding: 100px 20px;
+    }
 
-.quantity-wrapper input {
-    width: 100px;
-    padding: 10px;
-    border: 2px solid #e0e0e0;
-    border-radius: 5px;
-    font-size: 16px;
-}
+    .fa-spinner {
+        animation: spin 1s linear infinite;
+    }
 
-.quantity-wrapper input:focus {
-    outline: none;
-    border-color: #0f3d67;
-}
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
 
-.btn-cart {
-    width: 100%;
-    padding: 15px;
-    background: #0f3d67;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    font-size: 18px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: background 0.3s;
-    margin-bottom: 15px;
-}
+        100% {
+            transform: rotate(360deg);
+        }
+    }
 
-.btn-cart:hover {
-    background: #0a2e4a;
-}
+    .quantity-wrapper {
+        margin: 20px 0;
+    }
 
-.btn-cart:disabled {
-    background: #cccccc;
-    cursor: not-allowed;
-}
+    .quantity-wrapper label {
+        display: block;
+        margin-bottom: 8px;
+        color: #555;
+        font-weight: 500;
+    }
 
-.btn-wishlist {
-    width: 100%;
-    padding: 15px;
-    background: white;
-    color: #ff4444;
-    border: 2px solid #ff4444;
-    border-radius: 5px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    transition: all 0.3s;
-}
+    .quantity-wrapper input {
+        width: 100px;
+        padding: 10px;
+        border: 2px solid #e0e0e0;
+        border-radius: 5px;
+        font-size: 16px;
+    }
 
-.btn-wishlist:hover {
-    background: #fff0f0;
-}
+    .quantity-wrapper input:focus {
+        outline: none;
+        border-color: #0f3d67;
+    }
 
-.btn-wishlist.in-wishlist {
-    background: #ff4444;
-    color: white;
-}
+    .btn-cart {
+        width: 100%;
+        padding: 15px;
+        background: #0f3d67;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: background 0.3s;
+        margin-bottom: 15px;
+    }
 
-.stock {
-    margin: 15px 0;
-    padding: 10px;
-    background: #f0f8ff;
-    border-radius: 5px;
-    color: #0f3d67;
-}
+    .btn-cart:hover {
+        background: #0a2e4a;
+    }
 
-.stock.low-stock {
-    background: #fff3cd;
-    color: #856404;
-}
+    .btn-cart:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+    }
 
-.stock.out-of-stock {
-    background: #f8d7da;
-    color: #721c24;
-}
+    .btn-wishlist {
+        width: 100%;
+        padding: 15px;
+        background: white;
+        color: #ff4444;
+        border: 2px solid #ff4444;
+        border-radius: 5px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s;
+    }
 
-.product-category {
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 1px solid #eee;
-}
+    .btn-wishlist:hover {
+        background: #fff0f0;
+    }
 
-.product-category a {
-    color: #0f3d67;
-    text-decoration: none;
-}
+    .btn-wishlist.in-wishlist {
+        background: #ff4444;
+        color: white;
+    }
 
-.product-category a:hover {
-    text-decoration: underline;
-}
+    .stock {
+        margin: 15px 0;
+        padding: 10px;
+        background: #f0f8ff;
+        border-radius: 5px;
+        color: #0f3d67;
+    }
+
+    .stock.low-stock {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .stock.out-of-stock {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .product-category {
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #eee;
+    }
+
+    .product-category a {
+        color: #0f3d67;
+        text-decoration: none;
+    }
+
+    .product-category a:hover {
+        text-decoration: underline;
+    }
 </style>
 
 <!-- Toast notification -->
@@ -211,7 +218,7 @@ include 'includes/header.php';
         <i class="fa-solid fa-arrow-left"></i>
         Back to Products
     </a>
-    
+
     <div class="product-container">
 
         <!-- LEFT: IMAGE -->
@@ -271,20 +278,20 @@ include 'includes/header.php';
                         <?= $product['stock'] <= 0 ? 'disabled' : '' ?>>
                 </div>
 
-                <button type="button" 
-                        id="addToCartBtn"
-                        class="btn-cart"
-                        onclick="addToCart(<?= $product['id'] ?>)"
-                        <?= $product['stock'] <= 0 ? 'disabled' : '' ?>>
+                <button type="button"
+                    id="addToCartBtn"
+                    class="btn-cart"
+                    onclick="addToCart(<?= $product['id'] ?>)"
+                    <?= $product['stock'] <= 0 ? 'disabled' : '' ?>>
 
                     <i class="fa-solid fa-cart-shopping"></i>
                     <span id="btnText">Add to Cart</span>
                 </button>
 
-                <button type="button" 
-                        id="addToWishlistBtn"
-                        class="btn-wishlist"
-                        onclick="addToWishlist(<?= $product['id'] ?>)">
+                <button type="button"
+                    id="addToWishlistBtn"
+                    class="btn-wishlist"
+                    onclick="addToWishlist(<?= $product['id'] ?>)">
 
                     <i class="fa-regular fa-heart" id="wishlistIcon"></i>
                     <span id="wishlistBtnText">Add to Wishlist</span>
@@ -295,7 +302,7 @@ include 'includes/header.php';
             <div class="product-category">
                 <p>
                     <i class="fa-solid fa-tag"></i>
-                    Category: 
+                    Category:
                     <a href="shop.php?category=<?= urlencode(strtolower($product['category'])) ?>">
                         <?= htmlspecialchars($product['category']) ?>
                     </a>
@@ -307,196 +314,196 @@ include 'includes/header.php';
 </main>
 
 <script>
-// Toast function
-function showToast(message, isError = false) {
-    const toast = document.getElementById('toast');
-    const toastMessage = document.getElementById('toastMessage');
-    const toastIcon = toast.querySelector('i');
-    
-    toastMessage.textContent = message;
-    
-    if (isError) {
-        toast.style.backgroundColor = '#ff4444';
-        toastIcon.className = 'fa-solid fa-exclamation-circle';
-    } else {
-        toast.style.backgroundColor = '#4CAF50';
-        toastIcon.className = 'fa-solid fa-check-circle';
-    }
-    
-    toast.classList.add('show');
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-    }, 3000);
-}
+    // Toast function
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        const toastMessage = document.getElementById('toastMessage');
+        const toastIcon = toast.querySelector('i');
 
-// Add to cart function
-function addToCart(productId) {
-    const button = document.getElementById('addToCartBtn');
-    const btnText = document.getElementById('btnText');
-    const quantity = document.getElementById('quantity').value;
-    
-    // Validate quantity
-    if (quantity < 1) {
-        showToast('Please enter a valid quantity', true);
-        return;
-    }
-    
-    const maxStock = <?= $product['stock'] ?>;
-    if (quantity > maxStock) {
-        showToast('Only ' + maxStock + ' items available in stock', true);
-        return;
-    }
-    
-    // Show loading state
-    const originalText = btnText.textContent;
-    btnText.textContent = 'Adding...';
-    button.innerHTML = '<i class="fa-solid fa-spinner"></i> Adding...';
-    button.disabled = true;
-    
-    // Prepare cart data
-    const cartData = {
-        id: productId,
-        name: '<?= addslashes($product['name']) ?>',
-        price: <?= $product['price'] ?>,
-        category: '<?= addslashes($product['category']) ?>',
-        image: '<?= addslashes($product['image']) ?>',
-        quantity: parseInt(quantity)
-    };
-    
-    // Send to server
-    fetch('api/add_to_cart.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(cartData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('✓ Added to cart!');
-            
-            // Update cart count in header
-            if (typeof updateCartCount === 'function') {
-                updateCartCount(data.cart_count);
-            }
+        toastMessage.textContent = message;
+
+        if (isError) {
+            toast.style.backgroundColor = '#ff4444';
+            toastIcon.className = 'fa-solid fa-exclamation-circle';
         } else {
-            showToast('Error: ' + (data.error || 'Failed to add to cart'), true);
+            toast.style.backgroundColor = '#4CAF50';
+            toastIcon.className = 'fa-solid fa-check-circle';
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('Failed to add to cart', true);
-    })
-    .finally(() => {
-        // Restore button
-        btnText.textContent = originalText;
-        button.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> ' + originalText;
-        button.disabled = false;
-    });
-}
 
-// Add to wishlist function
-function addToWishlist(productId) {
-    const button = document.getElementById('addToWishlistBtn');
-    const btnText = document.getElementById('wishlistBtnText');
-    const icon = document.getElementById('wishlistIcon');
-    
-    // Show loading state
-    const originalText = btnText.textContent;
-    btnText.textContent = 'Adding...';
-    button.innerHTML = '<i class="fa-solid fa-spinner"></i> Adding...';
-    button.disabled = true;
-    
-    // Prepare wishlist data
-    const wishlistData = {
-        id: productId,
-        name: '<?= addslashes($product['name']) ?>',
-        price: <?= $product['price'] ?>,
-        category: '<?= addslashes($product['category']) ?>',
-        image: '<?= addslashes($product['image']) ?>',
-        description: '<?= addslashes($product['description']) ?>'
-    };
-    
-    // Send to server
-    fetch('api/add_to_wishlist.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(wishlistData)
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            showToast('❤️ Added to wishlist!');
-            
-            // Update button to show it's in wishlist
-            button.classList.add('in-wishlist');
-            button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
-            
-            // Update wishlist count in header
-            if (data.wishlist_count !== undefined && typeof updateWishlistCount === 'function') {
-                updateWishlistCount(data.wishlist_count);
-            }
-        } else {
-            if (data.already_exists) {
-                showToast('Product already in wishlist', true);
-                button.classList.add('in-wishlist');
-                button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
-            } else {
-                showToast('Error: ' + (data.error || 'Failed to add to wishlist'), true);
+        toast.classList.add('show');
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // Add to cart function
+    function addToCart(productId) {
+        const button = document.getElementById('addToCartBtn');
+        const btnText = document.getElementById('btnText');
+        const quantity = document.getElementById('quantity').value;
+
+        // Validate quantity
+        if (quantity < 1) {
+            showToast('Please enter a valid quantity', true);
+            return;
+        }
+
+        const maxStock = <?= $product['stock'] ?>;
+        if (quantity > maxStock) {
+            showToast('Only ' + maxStock + ' items available in stock', true);
+            return;
+        }
+
+        // Show loading state
+        const originalText = btnText.textContent;
+        btnText.textContent = 'Adding...';
+        button.innerHTML = '<i class="fa-solid fa-spinner"></i> Adding...';
+        button.disabled = true;
+
+        // Prepare cart data
+        const cartData = {
+            id: productId,
+            name: '<?= addslashes($product['name']) ?>',
+            price: <?= $product['price'] ?>,
+            category: '<?= addslashes($product['category']) ?>',
+            image: '<?= addslashes($product['image']) ?>',
+            quantity: parseInt(quantity)
+        };
+
+        // Send to server
+        fetch('api/add_to_cart.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(cartData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✓ Added to cart!');
+
+                    // Update cart count in header
+                    if (typeof updateCartCount === 'function') {
+                        updateCartCount(data.cart_count);
+                    }
+                } else {
+                    showToast('Error: ' + (data.error || 'Failed to add to cart'), true);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Failed to add to cart', true);
+            })
+            .finally(() => {
+                // Restore button
+                btnText.textContent = originalText;
+                button.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> ' + originalText;
+                button.disabled = false;
+            });
+    }
+
+    // Add to wishlist function
+    function addToWishlist(productId) {
+        const button = document.getElementById('addToWishlistBtn');
+        const btnText = document.getElementById('wishlistBtnText');
+        const icon = document.getElementById('wishlistIcon');
+
+        // Show loading state
+        const originalText = btnText.textContent;
+        btnText.textContent = 'Adding...';
+        button.innerHTML = '<i class="fa-solid fa-spinner"></i> Adding...';
+        button.disabled = true;
+
+        // Prepare wishlist data
+        const wishlistData = {
+            id: productId,
+            name: '<?= addslashes($product['name']) ?>',
+            price: <?= $product['price'] ?>,
+            category: '<?= addslashes($product['category']) ?>',
+            image: '<?= addslashes($product['image']) ?>',
+            description: '<?= addslashes($product['description']) ?>'
+        };
+
+        // Send to server
+        fetch('api/add_to_wishlist.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(wishlistData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('❤️ Added to wishlist!');
+
+                    // Update button to show it's in wishlist
+                    button.classList.add('in-wishlist');
+                    button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
+
+                    // Update wishlist count in header
+                    if (data.wishlist_count !== undefined && typeof updateWishlistCount === 'function') {
+                        updateWishlistCount(data.wishlist_count);
+                    }
+                } else {
+                    if (data.already_exists) {
+                        showToast('Product already in wishlist', true);
+                        button.classList.add('in-wishlist');
+                        button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
+                    } else {
+                        showToast('Error: ' + (data.error || 'Failed to add to wishlist'), true);
+                        button.innerHTML = '<i class="fa-regular fa-heart"></i> ' + originalText;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Failed to add to wishlist', true);
                 button.innerHTML = '<i class="fa-regular fa-heart"></i> ' + originalText;
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        showToast('Failed to add to wishlist', true);
-        button.innerHTML = '<i class="fa-regular fa-heart"></i> ' + originalText;
-    })
-    .finally(() => {
-        button.disabled = false;
+            })
+            .finally(() => {
+                button.disabled = false;
+            });
+    }
+
+    // Check if product is in wishlist on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        const productId = <?= $product['id'] ?>;
+
+        // Check wishlist status
+        fetch('api/check_wishlist.php?id=' + productId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.in_wishlist) {
+                    const button = document.getElementById('addToWishlistBtn');
+                    button.classList.add('in-wishlist');
+                    button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
+                }
+            })
+            .catch(error => console.error('Error checking wishlist:', error));
     });
-}
 
-// Check if product is in wishlist on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const productId = <?= $product['id'] ?>;
-    
-    // Check wishlist status
-    fetch('api/check_wishlist.php?id=' + productId)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success && data.in_wishlist) {
-                const button = document.getElementById('addToWishlistBtn');
-                button.classList.add('in-wishlist');
-                button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
+    // Update cart count function (if not defined globally)
+    if (typeof updateCartCount !== 'function') {
+        window.updateCartCount = function(count) {
+            const cartBadge = document.getElementById('cartCount');
+            if (cartBadge) {
+                cartBadge.textContent = count;
             }
-        })
-        .catch(error => console.error('Error checking wishlist:', error));
-});
+        };
+    }
 
-// Update cart count function (if not defined globally)
-if (typeof updateCartCount !== 'function') {
-    window.updateCartCount = function(count) {
-        const cartBadge = document.getElementById('cartCount');
-        if (cartBadge) {
-            cartBadge.textContent = count;
-        }
-    };
-}
-
-// Update wishlist count function (if not defined globally)
-if (typeof updateWishlistCount !== 'function') {
-    window.updateWishlistCount = function(count) {
-        const wishlistBadge = document.getElementById('wishlistCount');
-        if (wishlistBadge) {
-            wishlistBadge.textContent = count;
-        }
-    };
-}
+    // Update wishlist count function (if not defined globally)
+    if (typeof updateWishlistCount !== 'function') {
+        window.updateWishlistCount = function(count) {
+            const wishlistBadge = document.getElementById('wishlistCount');
+            if (wishlistBadge) {
+                wishlistBadge.textContent = count;
+            }
+        };
+    }
 </script>
 
 <?php include 'includes/footer.php'; ?>
