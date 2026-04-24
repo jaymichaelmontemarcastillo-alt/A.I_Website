@@ -141,7 +141,7 @@ try {
 
     <!-- Add/Edit Product Modal -->
     <div id="productModal" class="product-modal">
-        <div class="modal-content modal-lg">
+        <div class="product-modal-content">
             <div class="modal-header">
                 <h2 id="modalTitle"><i class="fa-solid fa-box"></i> Add Product</h2>
                 <button class="close" type="button" onclick="closeProductModal()"><i class="fa-solid fa-xmark"></i></button>
@@ -161,10 +161,10 @@ try {
                         <label class="upload-btn" for="productImage"><i class="fa-solid fa-upload"></i> Upload Image</label>
                         <input type="file" id="productImage" name="image"
                             accept="image/jpeg,image/png,image/webp,image/avif" hidden>
-                        <p class="help-text">
+                        <!-- <p class="help-text">
                             📁 JPEG, PNG, WEBP, AVIF<br>
                             💾 Max 5MB
-                        </p>
+                        </p>-->
                     </div>
 
                     <!-- Right: Product Fields -->

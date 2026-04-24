@@ -1,122 +1,106 @@
 <?php
-//api/admin_site/products/update_products.php
+error_reporting(E_ALL);
+ini_set('display_errors', 0); // important for JSON APIs
+ini_set('log_errors', 1);
 header('Content-Type: application/json');
 session_start();
-require_once '../../../connect/config.php';
+require_once __DIR__ . '/../../../connect/config.php';
+
+function logActivity(PDO $pdo, string $action, string $details, string $status, $referenceId = null): void
+{
+    $userId   = $_SESSION['AdminID']  ?? null;
+    $userName = $_SESSION['FullName'] ?? 'System/Unknown';
+    $stmt = $pdo->prepare(
+        "INSERT INTO activity_logs (UserID, UserName, ActionType, ActionDetails, ReferenceID, Status)
+         VALUES (?, ?, ?, ?, ?, ?)"
+    );
+    $stmt->execute([$userId, $userName, $action, $details, $referenceId, $status]);
+}
 
 try {
     $pdo = getDBConnection();
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') throw new Exception('Invalid request method');
 
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        throw new Exception('Invalid request method');
-    }
-
-    // Validate product ID
     $id = (int)($_POST['id'] ?? 0);
-    if ($id <= 0) {
-        throw new Exception('Invalid product ID');
-    }
+    if ($id <= 0) throw new Exception('Invalid product ID');
 
-    // Validate required fields
-    $name = trim($_POST['name'] ?? '');
+    $name     = trim($_POST['name'] ?? '');
     $category = trim($_POST['category'] ?? '');
-    $price = $_POST['price'] ?? null;
-    $stock = $_POST['stock'] ?? null;
+    $price    = $_POST['price'] ?? null;
+    $stock    = $_POST['stock'] ?? null;
 
-    if (empty($name) || strlen($name) < 3) {
-        throw new Exception('Product name must be at least 3 characters');
-    }
+    // ─── Validation
+    if (empty($name) || strlen($name) < 3) throw new Exception('Product name must be at least 3 characters');
+    if (empty($category) || strlen($category) < 2) throw new Exception('Category must be at least 2 characters');
+    if ($price === null || !is_numeric($price) || $price < 0) throw new Exception('Price must be a valid number');
+    if ($stock === null || !is_numeric($stock) || $stock < 0) throw new Exception('Stock must be a valid number');
 
-    if (empty($category) || strlen($category) < 2) {
-        throw new Exception('Category must be at least 2 characters');
-    }
-
-    if ($price === null || !is_numeric($price) || $price < 0) {
-        throw new Exception('Price must be a valid number');
-    }
-
-    if ($stock === null || !is_numeric($stock) || $stock < 0) {
-        throw new Exception('Stock must be a valid number');
-    }
-
-    // Get current product image
-    $stmt = $pdo->prepare("SELECT image FROM products WHERE id = ?");
+    // ─── Fetch old product
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
     $stmt->execute([$id]);
-    $product = $stmt->fetch();
+    $old = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$old) throw new Exception('Product not found');
 
-    if (!$product) {
-        throw new Exception('Product not found');
-    }
+    $filename = $old['image'];
+    $imageUpdated = false;
 
-    $filename = $product['image'];
-
-    // Handle image upload if new image provided
+    // ─── Image upload
     if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
         $img = $_FILES['image'];
+        if ($img['size'] > 5 * 1024 * 1024) throw new Exception('Image size must be less than 5MB');
 
-        // Validate file size (5MB)
-        if ($img['size'] > 5 * 1024 * 1024) {
-            throw new Exception('Image size must be less than 5MB');
-        }
-
-        // Validate file type
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime = finfo_file($finfo, $img['tmp_name']);
         finfo_close($finfo);
 
-        $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
-        if (!in_array($mime, $allowed_mimes)) {
-            throw new Exception('Only JPEG, PNG, WEBP, and AVIF images are allowed');
-        }
+        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+        if (!in_array($mime, $allowed)) throw new Exception('Only JPEG, PNG, WEBP, and AVIF images are allowed');
 
-        // Delete old image if it's not the default
         if ($filename && strpos($filename, 'default') === false && file_exists('../../../' . $filename)) {
             @unlink('../../../' . $filename);
         }
 
-        // Create uploads directory if it doesn't exist
         $upload_dir = '../../../uploads/products/';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
-        }
+        if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
 
-        // Generate unique filename
         $ext = pathinfo($img['name'], PATHINFO_EXTENSION);
         $filename = 'uploads/products/' . uniqid('prod_', true) . '.' . $ext;
 
-        if (!move_uploaded_file($img['tmp_name'], '../../../' . $filename)) {
-            throw new Exception('Failed to upload image. Please check directory permissions.');
-        }
+        if (!move_uploaded_file($img['tmp_name'], '../../../' . $filename))
+            throw new Exception('Failed to upload image. Check directory permissions.');
+
+        $imageUpdated = true;
     }
 
-    // Update database
+    // ─── Update product
     $stmt = $pdo->prepare(
-        "UPDATE products 
-         SET name = ?, category = ?, price = ?, stock = ?, image = ?, updated_at = NOW() 
-         WHERE id = ?"
+        "UPDATE products SET name = ?, category = ?, price = ?, stock = ?, image = ?, updated_at = NOW() WHERE id = ?"
     );
+    $stmt->execute([$name, $category, (float)$price, (int)$stock, $filename, $id]);
 
-    $result = $stmt->execute([$name, $category, (float)$price, (int)$stock, $filename, $id]);
+    // ─── Log changes
+    $changes = [];
+    if ($old['name'] !== $name) $changes[] = "Name: \"{$old['name']}\" → \"$name\"";
+    if ($old['category'] !== $category) $changes[] = "Category: \"{$old['category']}\" → \"$category\"";
+    if ((float)$old['price'] !== (float)$price) $changes[] = "Price: ₱" . number_format((float)$old['price'], 2) . " → ₱" . number_format((float)$price, 2);
+    if ((int)$old['stock'] !== (int)$stock) $changes[] = "Stock: {$old['stock']} → $stock";
+    if ($imageUpdated) $changes[] = "Image updated";
 
-    if (!$result) {
-        throw new Exception('Failed to update product');
-    }
+    $detail = empty($changes)
+        ? "Updated product \"$name\" (ID: $id) — no changes"
+        : "Updated product \"$name\" (ID: $id): " . implode(', ', $changes);
 
-    http_response_code(200);
-    echo json_encode([
-        'success' => true,
-        'message' => 'Product updated successfully!'
-    ]);
+    logActivity($pdo, 'Update Product', $detail, 'Success', $id);
+
+    $response = ['success' => true, 'message' => 'Product updated successfully!'];
+    if ($imageUpdated) $response['image'] = $filename;
+    echo json_encode($response);
 } catch (Exception $e) {
-    http_response_code(400);
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
+    if (isset($pdo)) {
+        $attemptedName = trim($_POST['name'] ?? 'Unknown');
+        logActivity($pdo, 'Update Product', "Failed to update \"$attemptedName\" (ID: {$id}): " . $e->getMessage(), 'Failed', $id ?: null);
+    }
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
 } catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'message' => 'Database error: ' . $e->getMessage()
-    ]);
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
 }

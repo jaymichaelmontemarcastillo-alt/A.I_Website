@@ -2,7 +2,7 @@
 session_start();
 require_once '../connect/config.php';
 header('Content-Type: application/json');
-
+$pdo = getDBConnection();
 // Get session ID for non-logged in users
 $sessionId = session_id();
 
@@ -17,17 +17,15 @@ try {
     ");
     $stmt->execute([$sessionId]);
     $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     echo json_encode([
         'success' => true,
         'wishlist' => $wishlist,
         'count' => count($wishlist)
     ]);
-    
 } catch (PDOException $e) {
     echo json_encode([
         'success' => false,
         'error' => 'Database error: ' . $e->getMessage()
     ]);
 }
-?>

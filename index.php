@@ -135,7 +135,7 @@ include 'includes/header.php';
         <div class="hero-content">
             <div class="hero-text">
                 <h1>
-                    Finding the <span>Perfect Gift</span><br>
+                    Finding the Perfect Gift<br>
                     shouldn't be stressful.
                 </h1>
 
@@ -231,9 +231,11 @@ include 'includes/header.php';
 
                     <div class="gift-img">
                         <span class="badge"><?= htmlspecialchars($product['category']) ?></span>
-                        <img src="<?= htmlspecialchars($imageUrl) ?>"
-                            alt="<?= htmlspecialchars($product['name']) ?>"
-                            onerror="this.src='assets/images/placeholder.jpg'">
+                        <div class="gift-img" onclick="viewProduct(<?= $product['id']; ?>)">
+                            <span class="badge"><?= $product['category']; ?></span>
+                            <img src="<?= $product['image']; ?>" alt="<?= $product['name']; ?>">
+                        </div>
+
                     </div>
 
                     <div class="gift-info">
@@ -247,7 +249,7 @@ include 'includes/header.php';
                                 <!-- Wishlist -->
                                 <button class="icon-btn wishlist"
                                     id="wishlistBtn_<?= $productId ?>"
-                                    onclick="event.stopPropagation(); addToWishlist(<?= $productId ?>)">
+                                    onclick="event.stopPropagation(); addToWishlist(event, <?= $productId ?>)">
                                     <i class="fa-regular fa-heart"></i>
                                 </button>
 
@@ -375,17 +377,15 @@ include 'includes/header.php';
     }
 
     // Add to wishlist function
-    function addToWishlist(productId) {
+    function addToWishlist(event, productId) {
         event.stopPropagation();
 
         const button = document.getElementById('wishlistBtn_' + productId);
         const originalIcon = button.innerHTML;
 
-        // Show loading state
         button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
         button.disabled = true;
 
-        // Find product details
         const product = productsMap[productId];
 
         if (!product) {
@@ -395,7 +395,6 @@ include 'includes/header.php';
             return;
         }
 
-        // Prepare wishlist data
         const wishlistData = {
             id: productId,
             name: product.name,
@@ -405,24 +404,20 @@ include 'includes/header.php';
             description: product.description
         };
 
-        // Send to server
         fetch('api/add_to_wishlist.php', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify(wishlistData)
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data.success) {
                     showToast('❤️ Added to wishlist!');
-
-                    // Change button style to indicate it's in wishlist
                     button.classList.add('in-wishlist');
                     button.innerHTML = '<i class="fa-solid fa-heart"></i>';
 
-                    // Update wishlist count in header
                     if (data.wishlist_count !== undefined) {
                         updateWishlistCount(data.wishlist_count);
                     }
@@ -432,13 +427,12 @@ include 'includes/header.php';
                         button.classList.add('in-wishlist');
                         button.innerHTML = '<i class="fa-solid fa-heart"></i>';
                     } else {
-                        showToast('Error: ' + (data.error || 'Failed to add to wishlist'), true);
+                        showToast('Error: ' + (data.error || 'Failed'), true);
                         button.innerHTML = originalIcon;
                     }
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
+            .catch(() => {
                 showToast('Failed to add to wishlist', true);
                 button.innerHTML = originalIcon;
             })

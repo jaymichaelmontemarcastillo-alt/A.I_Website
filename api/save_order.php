@@ -1,115 +1,143 @@
 <?php
 session_start();
-require_once '../connect/config.php'; // Adjust path as needed
+require_once '../connect/config.php';
 header('Content-Type: application/json');
 
-// Get POST data
-$input = json_decode(file_get_contents('php://input'), true);
-
-if (!$input) {
-    echo json_encode(['success' => false, 'error' => 'Invalid input data']);
-    exit;
-}
-
-// Validate required fields
-if (empty($input['items'])) {
-    echo json_encode(['success' => false, 'error' => 'No items in order']);
-    exit;
-}
-
-if (empty($input['customerName']) || empty($input['customerEmail']) || empty($input['customerPhone'])) {
-    echo json_encode(['success' => false, 'error' => 'Customer information is required']);
-    exit;
-}
+$pdo = getDBConnection();
 
 try {
-    // Start transaction
+    // ── Validate required fields ─────────────────────────────
+    if (
+        empty($_POST['customerName']) ||
+        empty($_POST['customerEmail']) ||
+        empty($_POST['customerPhone']) ||
+        empty($_POST['items']) ||
+        empty($_POST['total']) ||
+        empty($_POST['paymentMethod'])
+    ) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Invalid input data'
+        ]);
+        exit;
+    }
+
+    $items = json_decode($_POST['items'], true);
+    if (!$items || count($items) === 0) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'No items in order'
+        ]);
+        exit;
+    }
+
     $pdo->beginTransaction();
-    
-    // Generate unique order number
+
+    // ── Create order number ─────────────────────────────
     $orderNumber = 'ORD-' . date('Ymd') . '-' . rand(1000, 9999);
-    
-    // Insert order
+
+    // ── Insert order ─────────────────────────────
     $stmt = $pdo->prepare("
         INSERT INTO orders (
-            order_number, 
-            customer_name, 
-            customer_email, 
-            customer_phone, 
-            total_amount, 
-            payment_method, 
-            payment_status, 
-            order_status, 
+            order_number,
+            customer_name,
+            customer_email,
+            customer_phone,
+            total_amount,
+            payment_method,
+            payment_status,
+            order_status,
             created_at
-        ) VALUES (?, ?, ?, ?, ?, ?, 'pending', 'pending', NOW())
+        )
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', 'pending', NOW())
     ");
-    
+
     $stmt->execute([
         $orderNumber,
-        $input['customerName'],
-        $input['customerEmail'],
-        $input['customerPhone'],
-        $input['total'],
-        $input['paymentMethod']
+        $_POST['customerName'],
+        $_POST['customerEmail'],
+        $_POST['customerPhone'],
+        $_POST['total'],
+        $_POST['paymentMethod']
     ]);
-    
+
     $orderId = $pdo->lastInsertId();
-    
-    // Insert order items
-    $stmt = $pdo->prepare("
+
+    // ── Insert order items ─────────────────────────────
+    $stmtItem = $pdo->prepare("
         INSERT INTO order_items (
-            order_id, 
-            product_id, 
-            product_name, 
-            quantity, 
+            order_id,
+            product_id,
+            product_name,
+            quantity,
             price
         ) VALUES (?, ?, ?, ?, ?)
     ");
-    
-    foreach ($input['items'] as $item) {
-        $stmt->execute([
+
+    foreach ($items as $item) {
+        $stmtItem->execute([
             $orderId,
             $item['id'],
             $item['name'],
             $item['quantity'],
             $item['price']
         ]);
-        
-        // Update product stock (optional)
-        $updateStock = $pdo->prepare("UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?");
-        $updateStock->execute([$item['quantity'], $item['id'], $item['quantity']]);
     }
-    
-    // Commit transaction
+
+    // ── PAYMENT (IMPORTANT FIX HERE) ─────────────────────────────
+    $referenceNumber = $_POST['reference_number'] ?? null;
+    $proofPath = null;
+
+    if ($_POST['paymentMethod'] === 'gcash' && isset($_FILES['proof_image'])) {
+
+        $uploadDir = "../uploads/gcash/";
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0777, true);
+        }
+
+        $file = $_FILES['proof_image'];
+        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
+
+        $filename = "gcash_" . $orderNumber . "_" . time() . "." . $ext;
+        $targetPath = $uploadDir . $filename;
+
+        if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+            $proofPath = "uploads/gcash/" . $filename; // store relative path
+        }
+    }
+
+    // ── Insert payment record ─────────────────────────────
+    $stmtPay = $pdo->prepare("
+        INSERT INTO payments (
+            order_id,
+            payment_method,
+            payment_status,
+            reference_number,
+            proof_image
+        ) VALUES (?, ?, 'pending', ?, ?)
+    ");
+
+    $stmtPay->execute([
+        $orderId,
+        $_POST['paymentMethod'],
+        $referenceNumber,
+        $proofPath
+    ]);
+
     $pdo->commit();
-    
-    // Clear the cart
+
+    // ── Clear cart ─────────────────────────────
     $_SESSION['cart'] = [];
-    
-    // Send email receipt (optional - implement your email function)
-    // sendOrderReceipt($input['customerEmail'], $orderNumber, $input);
-    
+
     echo json_encode([
         'success' => true,
-        'order_id' => $orderId,
-        'order_number' => $orderNumber,
-        'message' => 'Order saved successfully'
-    ]);
-    
-} catch (PDOException $e) {
-    // Rollback transaction on error
-    $pdo->rollBack();
-    
-    echo json_encode([
-        'success' => false, 
-        'error' => 'Database error: ' . $e->getMessage()
+        'order_number' => $orderNumber
     ]);
 } catch (Exception $e) {
     $pdo->rollBack();
-    
+
     echo json_encode([
-        'success' => false, 
-        'error' => 'Error: ' . $e->getMessage()
+        'success' => false,
+        'error' => $e->getMessage()
     ]);
 }
-?>

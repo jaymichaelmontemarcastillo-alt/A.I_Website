@@ -1,6 +1,42 @@
-<footer style="background:#123B5D; color:white; padding:50px 40px 20px 40px; margin-top:50px;">
+<style>
+    html,
+    body {
+        min-height: 100vh;
+    }
 
-    <div class="footer-content" style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:40px;">
+    body {
+        display: flex;
+        flex-direction: column;
+        margin: 0;
+    }
+
+    footer {
+        background: #123B5D;
+        color: white;
+        padding: 50px 40px 20px 40px;
+        margin-top: auto;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .footer-content {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 40px;
+    }
+
+    .footer-links h3,
+    .footer-links p,
+    .brand h1,
+    .brand p {
+        margin: 0;
+    }
+</style>
+
+<footer>
+
+    <div class="footer-content">
 
         <!-- Brand -->
         <div style="max-width:250px;">

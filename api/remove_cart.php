@@ -29,16 +29,16 @@ if (!isset($_SESSION['cart'])) {
 // Remove the item from cart
 if (isset($_SESSION['cart'][$productId])) {
     unset($_SESSION['cart'][$productId]);
-    
+
     // Calculate new cart count
     $cartCount = 0;
     foreach ($_SESSION['cart'] as $item) {
         $cartCount += isset($item['quantity']) ? (int)$item['quantity'] : 0;
     }
-    
+
     // Clean output buffer before sending JSON
     if (ob_get_length()) ob_clean();
-    
+
     echo json_encode([
         'success' => true,
         'message' => 'Item removed from cart',
@@ -49,4 +49,3 @@ if (isset($_SESSION['cart'][$productId])) {
     echo json_encode(['success' => false, 'error' => 'Item not found in cart']);
     exit;
 }
-?>

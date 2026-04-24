@@ -67,13 +67,14 @@
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_customers.css">
+
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_users.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_inventory.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_payment.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_category.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/orders_styles.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_header.css">
+
     <link rel="stylesheet" href="../../assets/css/admin-site/activity_logs.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/products.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_dashboard.css">

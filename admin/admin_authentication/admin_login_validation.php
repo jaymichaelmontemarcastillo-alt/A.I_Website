@@ -1,6 +1,10 @@
 <?php
 session_start();
 require_once '../../connect/config.php';
+require_once '../../api/admin_site/activity_logger.php';
+
+// ✅ Set timezone
+date_default_timezone_set('Asia/Manila');
 
 $pdo = getDBConnection();
 
@@ -12,6 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($email) || empty($password)) {
         $_SESSION['status'] = 'error';
         $_SESSION['message'] = 'Please fill in all fields.';
+
+        logActivity($pdo, null, $email, "Login attempt with empty fields", null, "Logins", "Failed");
+
         header("Location: ../admin_login.php");
         exit;
     }
@@ -32,11 +39,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("UPDATE admins SET LastLogin = NOW() WHERE AdminID = ?")
             ->execute([$admin['AdminID']]);
 
+        logActivity(
+            $pdo,
+            $admin['AdminID'],
+            $admin['FullName'],
+            "Admin logged in",
+            null,
+            "Logins",
+            "Success"
+        );
+
         header("Location: ../pages/Dashboard.php");
         exit;
     }
 
-    // ❌ ONE unified error (best practice)
+    logActivity(
+        $pdo,
+        $admin ? $admin['AdminID'] : null,
+        $email,
+        "Failed login attempt",
+        null,
+        "Logins",
+        "Failed"
+    );
+
     $_SESSION['status'] = 'error';
     $_SESSION['message'] = 'Wrong email or password.';
     header("Location: ../admin_login.php");

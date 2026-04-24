@@ -1,14 +1,29 @@
 /* ============================= */
-/* 📦 ADMIN PRODUCTS MANAGEMENT */
+/* 📦 ADMIN PRODUCTS MANAGEMENT  */
+/*      Full AJAX — No Reloads   */
 /* ============================= */
 
 let currentEditingId = null;
 
-/**
- * Show notification message
- * @param {string} message - The notification message
- * @param {string} type - Type: 'success', 'error', or 'info'
- */
+/* ─── DOM refs (resolved once on load) ──────────────────────────────────── */
+let productModal,
+  deleteConfirmModal,
+  productForm,
+  productId,
+  productName,
+  productCategory,
+  productPrice,
+  productStock,
+  previewImg,
+  modalTitle,
+  deleteMessage,
+  deleteConfirmBtn,
+  productTableBody,
+  productCountEl;
+
+/* ============================= */
+/* 🔔 NOTIFICATION               */
+/* ============================= */
 function showNotification(message, type = "success") {
   const notif = document.getElementById("notification");
   if (!notif) return;
@@ -16,496 +31,449 @@ function showNotification(message, type = "success") {
   notif.className = `notification ${type}`;
   notif.textContent = message;
   notif.style.display = "block";
+  notif.style.opacity = "0";
+  notif.style.transform = "translateX(20px)";
 
-  // Auto-hide after 4 seconds
   setTimeout(() => {
-    notif.style.display = "none";
-  }, 4000);
+    notif.style.transition = "opacity .25s, transform .25s";
+    notif.style.opacity = "1";
+    notif.style.transform = "translateX(0)";
+  }, 30);
+
+  clearTimeout(notif._hideTimer);
+  notif._hideTimer = setTimeout(() => {
+    notif.style.opacity = "0";
+    notif.style.transform = "translateX(20px)";
+    setTimeout(() => {
+      notif.style.display = "none";
+    }, 300);
+  }, 2800);
 }
 
-/**
- * Clear all form errors
- */
+/* ============================= */
+/* 🧼 FORM VALIDATION            */
+/* ============================= */
 function clearErrors() {
-  const errorElements = document.querySelectorAll(".form-error");
-  errorElements.forEach((el) => {
+  document.querySelectorAll(".form-error").forEach((el) => {
     el.classList.remove("show");
     el.textContent = "";
   });
 }
 
-/**
- * Validate all form inputs
- * @returns {boolean} - True if all validations pass
- */
+function showFieldError(fieldId, message) {
+  const el = document.getElementById(fieldId);
+  if (el) {
+    el.textContent = message;
+    el.classList.add("show");
+  }
+}
+
 function validateForm() {
   clearErrors();
-  let isValid = true;
+  let ok = true;
 
-  const name = document.getElementById("productName").value.trim();
-  const category = document.getElementById("productCategory").value.trim();
-  const price = parseFloat(document.getElementById("productPrice").value);
-  const stock = parseInt(document.getElementById("productStock").value);
+  const name = productName.value.trim();
+  const category = productCategory.value.trim();
+  const price = parseFloat(productPrice.value);
+  const stock = parseInt(productStock.value, 10);
 
-  // Validate name
   if (name.length < 3) {
     showFieldError("nameError", "Name must be at least 3 characters");
-    isValid = false;
+    ok = false;
   }
-
-  // Validate category
   if (category.length < 2) {
     showFieldError("categoryError", "Category must be at least 2 characters");
-    isValid = false;
+    ok = false;
   }
-
-  // Validate price
   if (isNaN(price) || price < 0) {
-    showFieldError(
-      "priceError",
-      "Price must be a valid number greater than or equal to 0",
-    );
-    isValid = false;
+    showFieldError("priceError", "Invalid price");
+    ok = false;
   }
-
-  // Validate stock
   if (isNaN(stock) || stock < 0) {
-    showFieldError(
-      "stockError",
-      "Stock must be a valid number greater than or equal to 0",
-    );
-    isValid = false;
+    showFieldError("stockError", "Invalid stock");
+    ok = false;
   }
 
-  return isValid;
+  return ok;
 }
 
-/**
- * Show error for a specific field
- * @param {string} fieldId - The error element ID
- * @param {string} message - The error message
- */
-function showFieldError(fieldId, message) {
-  const errorEl = document.getElementById(fieldId);
-  if (errorEl) {
-    errorEl.textContent = message;
-    errorEl.classList.add("show");
+/* ============================= */
+/* 📊 PRODUCT COUNT              */
+/* ============================= */
+function updateProductCount(delta) {
+  if (!productCountEl) return;
+  const current = parseInt(productCountEl.textContent, 10) || 0;
+  const next = current + delta;
+  productCountEl.textContent = `${next} product${next !== 1 ? "s" : ""}`;
+}
+
+/* ============================= */
+/* 🏗  DOM ROW BUILDER           */
+/* ============================= */
+function buildRow(product) {
+  const tr = document.createElement("tr");
+  tr.dataset.productId = product.id;
+
+  const imageSrc = product.image
+    ? product.image.startsWith("http")
+      ? product.image
+      : `../../${product.image}`
+    : "https://via.placeholder.com/60?text=No+Image";
+
+  tr.innerHTML = `
+    <td><img src="${imageSrc}" class="table-img" alt="${escHtml(product.name)}"></td>
+    <td>${escHtml(product.name)}</td>
+    <td><span class="category">${escHtml(product.category)}</span></td>
+    <td><span class="price">₱${parseFloat(product.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
+    <td><span class="stock">${parseInt(product.stock, 10)}</span></td>
+    <td>
+      <div class="action-buttons">
+        <button class="action-btn edit" type="button" title="Edit product">
+          <i class="fa-solid fa-pen"></i> Edit
+        </button>
+        <button class="action-btn delete" type="button" title="Delete product" data-product-id="${product.id}">
+          <i class="fa-solid fa-trash"></i> Delete
+        </button>
+      </div>
+    </td>`;
+
+  /* Attach edit handler with the full product object */
+  tr.querySelector(".edit").addEventListener("click", () =>
+    openProductEditModal(product),
+  );
+  tr.querySelector(".delete").addEventListener("click", function () {
+    showDeleteConfirm(this.dataset.productId);
+  });
+
+  return tr;
+}
+
+function escHtml(str) {
+  const d = document.createElement("div");
+  d.appendChild(document.createTextNode(str ?? ""));
+  return d.innerHTML;
+}
+
+/* ============================= */
+/* 🚫 EMPTY STATE                */
+/* ============================= */
+function checkEmptyState() {
+  const rows = productTableBody.querySelectorAll("tr[data-product-id]");
+  if (rows.length === 0) {
+    const emptyRow = productTableBody.querySelector(".empty-row");
+    if (!emptyRow) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td colspan="6" class="empty-row">
+          <div class="empty-state">
+            <i class="fa-regular fa-box-open fa-2x"></i>
+            <p>No products found</p>
+            <p>Click "Add Product" to create your first product.</p>
+          </div>
+        </td>`;
+      productTableBody.appendChild(tr);
+    }
+  } else {
+    const emptyRow = productTableBody.querySelector(".empty-row");
+    if (emptyRow) emptyRow.parentElement.remove();
   }
 }
 
-/**
- * Open the add product modal (Products page specific)
- */
+/* ============================= */
+/* 📦 MODAL OPEN / CLOSE         */
+/* ============================= */
 function openProductModal() {
   currentEditingId = null;
-
-  const modal = document.getElementById("productModal");
-  const title = document.getElementById("modalTitle");
-  const form = document.getElementById("productForm");
-  const previewImg = document.getElementById("previewImg");
-  const productId = document.getElementById("productId");
-
-  title.innerHTML = '<i class="fa-solid fa-box"></i> Add Product';
-  form.reset();
+  productForm.reset();
   previewImg.src = "https://via.placeholder.com/300?text=No+Image";
   productId.value = "";
-
+  modalTitle.innerHTML = '<i class="fa-solid fa-box"></i> Add Product';
   clearErrors();
-  modal.classList.add("show");
-
-  // Focus on first input
-  document.getElementById("productName").focus();
+  productModal.classList.add("show");
 }
 
-/**
- * Deprecated: Use openProductModal() instead
- */
-function openModal() {
-  openProductModal();
-}
-
-/**
- * Open the edit product modal (Products page specific)
- * @param {object} product - Product data object
- */
 function openProductEditModal(product) {
   currentEditingId = product.id;
-
-  const modal = document.getElementById("productModal");
-  const title = document.getElementById("modalTitle");
-  const productId = document.getElementById("productId");
-  const productName = document.getElementById("productName");
-  const productCategory = document.getElementById("productCategory");
-  const productPrice = document.getElementById("productPrice");
-  const productStock = document.getElementById("productStock");
-  const previewImg = document.getElementById("previewImg");
-
-  title.innerHTML = '<i class="fa-solid fa-pen-to-square"></i> Edit Product';
   productId.value = product.id;
   productName.value = product.name;
   productCategory.value = product.category;
   productPrice.value = product.price;
   productStock.value = product.stock;
-  previewImg.src = "../../" + product.image;
 
+  const imageSrc = product.image
+    ? product.image.startsWith("http")
+      ? product.image
+      : `../../${product.image}`
+    : "https://via.placeholder.com/300?text=No+Image";
+  previewImg.src = imageSrc;
+
+  modalTitle.innerHTML =
+    '<i class="fa-solid fa-pen-to-square"></i> Edit Product';
   clearErrors();
-  modal.classList.add("show");
-
-  // Focus on first input
-  productName.focus();
+  productModal.classList.add("show");
 }
 
-/**
- * Deprecated: Use openProductEditModal() instead
- */
-function openEditModal(product) {
-  openProductEditModal(product);
-}
-
-/**
- * Close the product modal (Products page specific)
- */
 function closeProductModal() {
-  const modal = document.getElementById("productModal");
-  const form = document.getElementById("productForm");
-
-  modal.classList.remove("show");
-  form.reset();
+  productModal.classList.remove("show");
+  productForm.reset();
   clearErrors();
-  currentEditingId = null;
 }
 
-/**
- * Deprecated: Use closeProductModal() instead
- */
-function closeModal() {
-  closeProductModal();
-}
-
-/**
- * Handle image file selection and preview
- */
+/* ============================= */
+/* 🖼  IMAGE PREVIEW             */
+/* ============================= */
 function setupImagePreview() {
-  const productImage = document.getElementById("productImage");
-
-  if (!productImage) return;
-
-  productImage.addEventListener("change", function (e) {
+  const imgInput = document.getElementById("productImage");
+  if (!imgInput) return;
+  imgInput.addEventListener("change", function () {
     const file = this.files[0];
     if (!file) return;
-
-    // Validate file size (5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      showNotification("Image size must be less than 5MB", "error");
-      this.value = "";
-      return;
-    }
-
-    // Validate file type
-    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"];
-    if (!validTypes.includes(file.type)) {
-      showNotification(
-        "Only JPEG, PNG, WEBP, and AVIF images are allowed",
-        "error",
-      );
-      this.value = "";
-      return;
-    }
-
-    // Show preview
     const reader = new FileReader();
-    reader.onload = function (e) {
-      const previewImg = document.getElementById("previewImg");
+    reader.onload = (e) => {
       previewImg.src = e.target.result;
     };
     reader.readAsDataURL(file);
   });
 }
 
-/**
- * Handle form submission (add/edit product)
- */
+/* ============================= */
+/* 🚀 AJAX FORM SUBMIT           */
+/* ============================= */
 function setupFormSubmission() {
-  const productForm = document.getElementById("productForm");
-
   if (!productForm) return;
 
   productForm.addEventListener("submit", function (e) {
     e.preventDefault();
-
-    // Validate form
     if (!validateForm()) {
       showNotification("Please fix the errors above", "error");
       return;
     }
 
     const formData = new FormData(this);
-    const id = document.getElementById("productId").value;
+    const id = productId.value;
     const endpoint = id
       ? "../../api/admin_site/products/update_products.php"
       : "../../api/admin_site/products/add_products.php";
 
     const submitBtn = document.getElementById("submitBtn");
-    const originalText = submitBtn.textContent;
-
-    // Show loading state
+    const originalHTML = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<span class="loading-spinner"></span>Processing...';
+    submitBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
 
-    // Send request
-    fetch(endpoint, {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
+    /* ⚠️ Snapshot form values NOW — before closeProductModal() resets the form */
+    const snapshot = {
+      name: productName.value.trim(),
+      category: productCategory.value.trim(),
+      price: parseFloat(productPrice.value),
+      stock: parseInt(productStock.value, 10),
+    };
+
+    fetch(endpoint, { method: "POST", body: formData })
+      .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const productName = document.getElementById("productName").value;
-          const actionType = id ? "updated" : "added";
-          const message = `✓ Product "${productName}" ${actionType} successfully!`;
-          showNotification(message, "success");
-          // Reload page after 1.5 seconds
-          setTimeout(() => {
-            location.reload();
-          }, 1500);
+          const action = id ? "updated" : "added";
+          showNotification(
+            `✓ Product "${snapshot.name}" ${action} successfully!`,
+            "success",
+          );
+          closeProductModal(); /* safe to reset form now — we already have snapshot */
+
+          if (id) {
+            /* ── UPDATE existing row in-place ────────────────────────────── */
+            const row = productTableBody.querySelector(
+              `tr[data-product-id="${id}"]`,
+            );
+            if (row) {
+              const existingImgSrc = row.querySelector(".table-img")?.src ?? "";
+
+              const updatedProduct = {
+                id,
+                name: snapshot.name,
+                category: snapshot.category,
+                price: snapshot.price,
+                stock: snapshot.stock,
+                /* Server returns new image path only when a new file was uploaded */
+                image: data.image ?? null,
+              };
+
+              const newRow = buildRow(updatedProduct);
+
+              /* If no new image was uploaded, restore the existing img src directly */
+              if (!data.image && existingImgSrc) {
+                newRow.querySelector(".table-img").src = existingImgSrc;
+              }
+
+              row.replaceWith(newRow);
+            }
+          } else {
+            /* ── INSERT new row at top ────────────────────────────────────── */
+            if (data.id) {
+              const newProduct = {
+                id: data.id,
+                name: snapshot.name,
+                category: snapshot.category,
+                price: snapshot.price,
+                stock: snapshot.stock,
+                image: data.image ?? "",
+              };
+              const newRow = buildRow(newProduct);
+
+              /* Animate in */
+              newRow.style.opacity = "0";
+              newRow.style.transition = "opacity .3s";
+
+              /* Remove empty-state row if present */
+              const emptyRow = productTableBody.querySelector(".empty-row");
+              if (emptyRow) emptyRow.parentElement.remove();
+
+              productTableBody.insertBefore(
+                newRow,
+                productTableBody.firstChild,
+              );
+              requestAnimationFrame(() => {
+                newRow.style.opacity = "1";
+              });
+
+              updateProductCount(1);
+            }
+          }
         } else {
-          showNotification(data.message || "An error occurred", "error");
+          showNotification(data.message || "Error occurred", "error");
         }
       })
-      .catch((error) => {
-        console.error("Error:", error);
-        showNotification(
-          "An error occurred while processing the request",
-          "error",
-        );
-      })
+      .catch(() => showNotification("Server error. Please try again.", "error"))
       .finally(() => {
-        // Reset button state
         submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
+        submitBtn.innerHTML = originalHTML;
       });
   });
 }
 
-/**
- * Open delete confirmation modal
- * @param {number} id - Product ID
- */
+/* ============================= */
+/* ❌ DELETE FLOW                */
+/* ============================= */
 function showDeleteConfirm(id) {
-  const row = document.querySelector(`tr[data-product-id="${id}"]`);
+  const row = productTableBody.querySelector(`tr[data-product-id="${id}"]`);
   if (!row) return;
 
-  const productName = row.querySelector("td:nth-child(2)").textContent.trim();
-  const deleteModal = document.getElementById("deleteConfirmModal");
-  const deleteMessage = document.getElementById("deleteMessage");
-  const deleteConfirmBtn = document.getElementById("deleteConfirmBtn");
+  const name =
+    row.querySelector("td:nth-child(2)")?.textContent.trim() ?? "this product";
+  deleteMessage.innerHTML = `
+    <strong>Are you sure you want to delete 
+    <span style="color:#dc3545;">"${escHtml(name)}"</span>?</strong>`;
 
-  deleteMessage.innerHTML = `<strong>Are you sure you want to delete <span style="color: #dc3545;">"${productName}"</span>?</strong>`;
-  deleteModal.classList.add("show");
+  deleteConfirmModal.classList.add("show");
 
-  // Clear previous event listeners by cloning
-  const newBtn = deleteConfirmBtn.cloneNode(true);
-  deleteConfirmBtn.parentNode.replaceChild(newBtn, deleteConfirmBtn);
+  /* Replace button to clear any previous listener */
+  const freshBtn = deleteConfirmBtn.cloneNode(true);
+  deleteConfirmBtn.parentNode.replaceChild(freshBtn, deleteConfirmBtn);
+  deleteConfirmBtn = freshBtn; /* keep reference in sync */
 
-  // Add new event listener
-  newBtn.addEventListener("click", function () {
-    performDelete(id, productName);
-  });
+  freshBtn.addEventListener("click", () => performDelete(id, name));
 }
 
-/**
- * Close delete confirmation modal (Products page specific)
- */
-function closeProductDeleteModal() {
-  const deleteModal = document.getElementById("deleteConfirmModal");
-  deleteModal.classList.remove("show");
-}
-
-/**
- * Deprecated: Use closeProductDeleteModal() instead
- */
-function closeDeleteConfirm() {
-  closeProductDeleteModal();
-}
-
-/**
- * Perform the actual deletion
- * @param {number} id - Product ID
- * @param {string} productName - Product name
- */
-function performDelete(id, productName) {
+function performDelete(id, name) {
   const formData = new FormData();
   formData.append("id", id);
+
+  const btn = document.getElementById("deleteConfirmBtn");
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "Deleting...";
+  }
 
   fetch("../../api/admin_site/products/delete_products.php", {
     method: "POST",
     body: formData,
   })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.json();
-    })
+    .then((res) => res.json())
     .then((data) => {
-      closeDeleteConfirm();
-      if (data.success) {
-        const message = `✓ Product "${productName}" deleted successfully!`;
-        showNotification(message, "success");
+      closeProductDeleteModal();
 
-        // Remove row from table with animation
-        const row = document.querySelector(`tr[data-product-id="${id}"]`);
+      if (data.success) {
+        showNotification(`✓ Product "${name}" deleted!`, "success");
+
+        const row = productTableBody.querySelector(
+          `tr[data-product-id="${id}"]`,
+        );
         if (row) {
-          row.style.animation = "fadeOut 0.3s ease forwards";
+          row.style.transition = "opacity .3s, transform .3s";
+          row.style.opacity = "0";
+          row.style.transform = "translateX(-10px)";
           setTimeout(() => {
             row.remove();
-            // Update product count
-            const tableBody = document.getElementById("productTableBody");
-            const count = tableBody.querySelectorAll("tr").length;
-            const countEl = document.querySelector(".product-count");
-            if (countEl) {
-              countEl.textContent =
-                count + (count === 1 ? " product" : " products");
-            }
+            updateProductCount(-1);
+            checkEmptyState();
           }, 300);
         }
       } else {
-        showNotification(data.message || "Failed to delete product", "error");
+        showNotification(data.message || "Delete failed", "error");
       }
     })
-    .catch((error) => {
-      console.error("Error:", error);
-      showNotification("Failed to delete product", "error");
+    .catch(() => showNotification("Delete failed. Please try again.", "error"))
+    .finally(() => {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Delete Product";
+      }
     });
 }
 
-/**
- * Close modal when clicking outside of it
- */
-function setupModalClickOutside() {
-  const modal = document.getElementById("productModal");
-
-  if (!modal) return;
-
-  window.addEventListener("click", function (e) {
-    if (e.target === modal) {
-      closeProductModal();
-    }
-  });
+function closeProductDeleteModal() {
+  deleteConfirmModal.classList.remove("show");
 }
 
-/**
- * Close modal on ESC key
- */
-function setupModalKeyListener() {
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") {
-      const modal = document.getElementById("productModal");
-      if (modal && modal.classList.contains("show")) {
-        closeProductModal();
-      }
-    }
-  });
-}
-
-/**
- * Setup animation styles
- */
-function setupAnimations() {
-  const style = document.createElement("style");
-  style.textContent = `
-    @keyframes fadeOut {
-      from {
-        opacity: 1;
-      }
-      to {
-        opacity: 0;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-}
-
-/**
- * Setup close button event listeners for reliability
- */
-function setupCloseButtons() {
-  // Modal close button (X) - using product-modal
-  const closeBtn = document.querySelector(".product-modal .close");
-  if (closeBtn) {
-    closeBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeProductModal();
-      return false;
-    });
-  }
-
-  // Modal cancel button - using product-modal
-  const cancelBtn = document.querySelector(
-    ".product-modal .modal-footer .cancel-btn",
+/* ============================= */
+/* 🔍 LIVE SEARCH (optional)     */
+/* Keep URL-based search working */
+/* ============================= */
+function setupLiveSearch() {
+  const searchInput = document.querySelector(
+    ".search-form input[name='search']",
   );
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeProductModal();
-      return false;
-    });
-  }
+  const searchForm = document.querySelector(".search-form");
+  if (!searchInput || !searchForm) return;
 
-  // Delete confirmation modal close button - using product-delete-modal
-  const deleteCloseBtn = document.querySelector(".product-delete-modal .close");
-  if (deleteCloseBtn) {
-    deleteCloseBtn.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      closeProductDeleteModal();
-      return false;
-    });
-  }
+  /* Allow existing server-side search to still work.
+     Optionally wire up a debounced AJAX search here if needed. */
 }
 
-/**
- * Update delete button onclick handlers to use modal instead of confirm
- */
-function updateDeleteButtons() {
-  const deleteButtons = document.querySelectorAll(".delete-btn");
-  deleteButtons.forEach((btn) => {
-    btn.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      const row = this.closest("tr");
-      const productId = row.dataset.productId;
-      showDeleteConfirm(productId);
+/* ============================= */
+/* 🧠 INIT                       */
+/* ============================= */
+function initProducts() {
+  /* Resolve all DOM refs */
+  productModal = document.getElementById("productModal");
+  deleteConfirmModal = document.getElementById("deleteConfirmModal");
+  productForm = document.getElementById("productForm");
+  productId = document.getElementById("productId");
+  productName = document.getElementById("productName");
+  productCategory = document.getElementById("productCategory");
+  productPrice = document.getElementById("productPrice");
+  productStock = document.getElementById("productStock");
+  previewImg = document.getElementById("previewImg");
+  modalTitle = document.getElementById("modalTitle");
+  deleteMessage = document.getElementById("deleteMessage");
+  deleteConfirmBtn = document.getElementById("deleteConfirmBtn");
+  productTableBody = document.getElementById("productTableBody");
+  productCountEl = document.querySelector(".product-count");
+
+  /* Re-attach delete listeners for server-rendered rows */
+  productTableBody?.querySelectorAll(".delete").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      showDeleteConfirm(this.closest("tr").dataset.productId);
     });
   });
-}
 
-/**
- * Initialize all product management functionality
- */
-function initProducts() {
+  /* Re-attach edit listeners for server-rendered rows.
+     The PHP passes data via onclick="openProductEditModal(...)" — those still work.
+     We additionally set up the pattern for dynamically inserted rows via buildRow(). */
+
   setupImagePreview();
   setupFormSubmission();
-  setupModalClickOutside();
-  setupModalKeyListener();
-  setupAnimations();
-  setupCloseButtons();
-  updateDeleteButtons();
+  setupLiveSearch();
 }
 
-/**
- * Initialize on DOM ready
- */
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initProducts);
-} else {
-  initProducts();
-}
+document.addEventListener("DOMContentLoaded", initProducts);

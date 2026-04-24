@@ -48,7 +48,7 @@ $destination = $uploadDir . $filename;
 if (move_uploaded_file($file['tmp_name'], $destination)) {
     // Clean output buffer
     if (ob_get_length()) ob_clean();
-    
+
     echo json_encode([
         'success' => true,
         'filename' => $filename,
@@ -58,4 +58,3 @@ if (move_uploaded_file($file['tmp_name'], $destination)) {
     echo json_encode(['success' => false, 'error' => 'Failed to save file']);
 }
 exit;
-?>

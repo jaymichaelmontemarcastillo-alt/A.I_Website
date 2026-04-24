@@ -63,4 +63,3 @@ echo json_encode([
     'cart_total' => $cartTotal
 ]);
 exit;
-?>

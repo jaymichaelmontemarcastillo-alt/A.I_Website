@@ -1,7 +1,7 @@
 <?php
 session_start();
 header('Content-Type: application/json');
-
+$pdo = getDBConnection();
 require_once '../connect/config.php'; // Adjust path as needed
 
 $cart = $_SESSION['cart'] ?? [];
@@ -11,18 +11,18 @@ $total = 0;
 if (!empty($cart)) {
     $productIds = array_keys($cart);
     $placeholders = implode(',', array_fill(0, count($productIds), '?'));
-    
+
     // Fetch current product details from database
     $stmt = $pdo->prepare("SELECT * FROM products WHERE id IN ($placeholders)");
     $stmt->execute($productIds);
     $dbProducts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    
+
     // Create associative array with product id as key
     $productDetails = [];
     foreach ($dbProducts as $product) {
         $productDetails[$product['id']] = $product;
     }
-    
+
     // Merge cart data with fresh database info
     foreach ($cart as $id => $item) {
         if (isset($productDetails[$id])) {
@@ -47,4 +47,3 @@ echo json_encode([
     'total' => $total,
     'count' => count($cartItems)
 ]);
-?>

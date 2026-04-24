@@ -19,9 +19,6 @@
         <a href="Orders.php" class="nav-item <?php echo ($current_page == 'Orders') ? 'active' : ''; ?>">
             <i class="fa-solid fa-cart-shopping"></i> <span>Orders</span>
         </a>
-        <a href="Payments.php" class="nav-item <?php echo ($current_page == 'Payments') ? 'active' : ''; ?>">
-            <i class="fa-solid fa-credit-card"></i> <span>Payments</span>
-        </a>
         <a href="Activity_Logs.php" class="nav-item <?php echo ($current_page == 'Activity_Logs') ? 'active' : ''; ?>">
             <i class="fa-solid fa-clock"></i> <span>Activity Logs</span>
         </a>
@@ -29,6 +26,9 @@
         <span class="nav-title">MANAGEMENT</span>
         <a href="Customers.php" class="nav-item <?php echo ($current_page == 'Customers') ? 'active' : ''; ?>">
             <i class="fa-solid fa-users"></i> <span>Customers</span>
+        </a>
+        <a href="Quotation.php" class="nav-item <?php echo ($current_page == 'Quotation') ? 'active' : ''; ?>">
+            <i class="fa-solid fa-file-invoice"></i> <span>Quotations</span>
         </a>
 
         <a href="Inventory.php" class="nav-item <?php echo ($current_page == 'Inventory') ? 'active' : ''; ?>">
