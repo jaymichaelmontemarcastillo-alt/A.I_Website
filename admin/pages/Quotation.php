@@ -1,6 +1,6 @@
 <?php
 include '../includes/header.php';
-
+//admin/pages/Quotation.php
 ?>
 
 <body>
@@ -34,7 +34,7 @@ include '../includes/header.php';
                             <option value="converted">Converted</option>
                         </select>
                     </div>
-
+                    <!--
                     <div class="quotations-info">
                         <button class="btn-primary" onclick="window.location.href='quotation-create.php'">
                             <i class="fa-solid fa-plus"></i> New Quotation
@@ -42,7 +42,7 @@ include '../includes/header.php';
                         <button class="btn-secondary" onclick="quotationManager.refresh()">
                             <i class="fa-solid fa-refresh"></i> Refresh
                         </button>
-                    </div>
+                    </div>-->
                 </div>
 
                 <!-- QUOTATIONS TABLE -->
@@ -109,7 +109,135 @@ include '../includes/header.php';
     <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
     <!-- Load JavaScript -->
 
+    <!-- QUOTATION EDIT MODAL -->
+    <!-- Insert this block in Quotation.php, just before the closing </body> tag -->
 
+    <div id="QuotationEditModal" class="qe-overlay" style="display:none;">
+        <div class="qe-modal">
+
+            <!-- HEADER -->
+            <div class="qe-header">
+                <div class="qe-header-left">
+                    <span class="qe-icon"><i class="fa-solid fa-file-pen"></i></span>
+                    <div>
+                        <h2 class="qe-title">Edit Quotation</h2>
+                        <p class="qe-subtitle" id="qeQuoteNumber">—</p>
+                    </div>
+                </div>
+                <button class="qe-close" onclick="quotationManager.closeEditModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- SCROLLABLE BODY -->
+            <div class="qe-body">
+
+                <!-- SECTION 1: CLIENT INFO -->
+                <div class="qe-section">
+                    <div class="qe-section-label">
+                        <i class="fa-solid fa-building"></i> Client Information
+                    </div>
+                    <div class="qe-grid-2">
+                        <div class="qe-field">
+                            <label class="qe-label">Client Name <span class="req">*</span></label>
+                            <input type="text" id="qeClientName" class="qe-input" placeholder="e.g. Acme Corporation">
+                        </div>
+                        <div class="qe-field">
+                            <label class="qe-label">Contact Person</label>
+                            <input type="text" id="qeContactPerson" class="qe-input" placeholder="e.g. Juan dela Cruz">
+                        </div>
+                        <div class="qe-field">
+                            <label class="qe-label">Email</label>
+                            <input type="email" id="qeEmail" class="qe-input" placeholder="email@example.com">
+                        </div>
+                        <div class="qe-field">
+                            <label class="qe-label">Phone</label>
+                            <input type="text" id="qePhone" class="qe-input" placeholder="+63 900 000 0000">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: QUOTATION ITEMS -->
+                <div class="qe-section">
+                    <div class="qe-section-label">
+                        <i class="fa-solid fa-list-check"></i> Quotation Items
+                    </div>
+                    <div class="qe-items-wrapper">
+                        <table class="qe-items-table">
+                            <thead>
+                                <tr>
+                                    <th style="width:70px;">Qty</th>
+                                    <th>Description</th>
+                                    <th style="width:140px;">Unit Price</th>
+                                    <th style="width:130px;">Total</th>
+                                    <th style="width:50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="qeItemsBody">
+                                <!-- rows injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <button class="qe-add-row" onclick="quotationManager.addItemRow()">
+                        <i class="fa-solid fa-plus"></i> Add Item
+                    </button>
+                </div>
+
+                <!-- SECTION 3: SUMMARY -->
+                <div class="qe-section">
+                    <div class="qe-section-label">
+                        <i class="fa-solid fa-calculator"></i> Summary
+                    </div>
+                    <div class="qe-summary-wrapper">
+                        <div class="qe-summary-row">
+                            <span class="qe-summary-label">Subtotal</span>
+                            <span class="qe-summary-value" id="qeSubtotal">Php 0.00</span>
+                        </div>
+                        <div class="qe-summary-row">
+                            <span class="qe-summary-label">Tax (%)</span>
+                            <input type="number" id="qeTax" class="qe-input qe-summary-input" value="0" min="0" max="100" step="0.01"
+                                oninput="quotationManager.recalcTotals()">
+                        </div>
+                        <div class="qe-summary-row">
+                            <span class="qe-summary-label">Discount (Php)</span>
+                            <input type="number" id="qeDiscount" class="qe-input qe-summary-input" value="0" min="0" step="0.01"
+                                oninput="quotationManager.recalcTotals()">
+                        </div>
+                        <div class="qe-summary-row qe-total-row">
+                            <span class="qe-summary-label">Grand Total</span>
+                            <span class="qe-summary-value qe-grand" id="qeGrandTotal">Php 0.00</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 4: NOTES -->
+                <div class="qe-section">
+                    <div class="qe-section-label">
+                        <i class="fa-solid fa-note-sticky"></i> Notes
+                    </div>
+                    <textarea id="qeNotes" class="qe-textarea" rows="4"
+                        placeholder="Additional notes, terms, or conditions..."></textarea>
+                </div>
+
+            </div><!-- end qe-body -->
+
+            <!-- FOOTER ACTIONS -->
+            <div class="qe-footer">
+                <button class="qe-btn-cancel" onclick="quotationManager.closeEditModal()">
+                    <i class="fa-solid fa-xmark"></i> Cancel
+                </button>
+                <div class="qe-footer-right">
+                    <button class="qe-btn-save-pdf" id="qeSavePdfBtn" onclick="quotationManager.saveAndGeneratePDF()">
+                        <i class="fa-solid fa-file-pdf"></i> Save & Generate PDF
+                    </button>
+                    <button class="qe-btn-save" id="qeSaveBtn" onclick="quotationManager.saveQuotation()">
+                        <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
 </body>
 <script src="../../assets/js/admin-site-functions/admin_data_fetch/fetch_quotations.js"></script>
 
