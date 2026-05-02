@@ -1,4 +1,5 @@
 <?php
+// wishlist.php - Displays user's wishlist items and allows managing them
 session_start();
 require_once 'connect/config.php';
 include 'includes/header.php';
@@ -21,63 +22,67 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <style>
     .wishlist-page {
         max-width: 1200px;
-        margin: 50px auto;
-        padding: 0 20px;
+        margin: clamp(30px, 5vw, 50px) auto;
+        padding: 0 clamp(15px, 3vw, 25px);
         min-height: 60vh;
     }
 
     .wishlist-header {
         text-align: center;
-        margin-bottom: 40px;
+        margin-bottom: clamp(30px, 5vw, 40px);
     }
 
     .wishlist-header h1 {
-        font-size: 36px;
+        font-size: clamp(24px, 6vw, 36px);
         color: #333;
-        margin-bottom: 10px;
+        margin-bottom: clamp(8px, 1.5vw, 10px);
+        font-weight: 700;
     }
 
     .wishlist-header p {
         color: #666;
-        font-size: 16px;
+        font-size: clamp(12px, 2.5vw, 16px);
     }
 
     .wishlist-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 30px;
-        margin-top: 30px;
+        grid-template-columns: repeat(auto-fill, minmax(clamp(160px, 100%, 280px), 1fr));
+        gap: clamp(15px, 3vw, 30px);
+        margin-top: clamp(20px, 3vw, 30px);
     }
 
     .wishlist-card {
         background: white;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s, box-shadow 0.3s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
         position: relative;
+        display: flex;
+        flex-direction: column;
     }
 
-    .wishlist-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    .wishlist-card:active {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
     }
 
     .wishlist-img {
         position: relative;
-        height: 200px;
+        height: clamp(150px, 40vw, 250px);
         overflow: hidden;
         cursor: pointer;
+        aspect-ratio: 1;
     }
 
     .wishlist-img img {
         width: 100%;
         height: 100%;
         object-fit: cover;
-        transition: transform 0.3s;
+        transition: transform 0.3s ease;
     }
 
-    .wishlist-card:hover .wishlist-img img {
+    .wishlist-card:active .wishlist-img img {
         transform: scale(1.05);
     }
 
@@ -87,9 +92,9 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
         left: 10px;
         background: rgba(15, 61, 103, 0.9);
         color: white;
-        padding: 5px 10px;
+        padding: clamp(4px, 1vw, 5px) clamp(8px, 1.5vw, 10px);
         border-radius: 5px;
-        font-size: 12px;
+        font-size: clamp(9px, 1.8vw, 12px);
         font-weight: 600;
         z-index: 2;
     }
@@ -98,62 +103,75 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
         position: absolute;
         top: 10px;
         right: 10px;
-        width: 35px;
-        height: 35px;
+        width: 44px;
+        height: 44px;
         border-radius: 50%;
-        background: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.95);
         border: none;
         color: #ff4444;
-        font-size: 16px;
+        font-size: clamp(14px, 3vw, 16px);
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.3s;
+        transition: all 0.3s ease;
         z-index: 2;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        min-height: 44px;
+        min-width: 44px;
     }
 
-    .wishlist-remove:hover {
+    .wishlist-remove:active {
         background: #ff4444;
         color: white;
-        transform: scale(1.1);
+        transform: scale(1.05);
     }
 
     .wishlist-info {
-        padding: 20px;
+        padding: clamp(12px, 2vw, 20px);
+        flex: 1;
+        display: flex;
+        flex-direction: column;
     }
 
     .wishlist-info h3 {
-        margin: 0 0 10px;
+        margin: 0 0 clamp(6px, 1vw, 10px) 0;
         color: #333;
-        font-size: 18px;
+        font-size: clamp(13px, 2.5vw, 15px);
         cursor: pointer;
+        font-weight: 700;
+        line-height: 1.3;
     }
 
-    .wishlist-info h3:hover {
+    .wishlist-info h3:active {
         color: #0f3d67;
+        opacity: 0.8;
     }
 
     .wishlist-info p {
         color: #666;
-        font-size: 14px;
-        margin-bottom: 15px;
+        font-size: clamp(11px, 2vw, 13px);
+        margin-bottom: clamp(10px, 1.5vw, 15px);
         line-height: 1.5;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         overflow: hidden;
+        flex: 1;
     }
 
     .wishlist-bottom {
         display: flex;
         justify-content: space-between;
-        align-items: center;
+        align-items: flex-end;
+        gap: clamp(8px, 1.5vw, 12px);
+        margin-top: auto;
     }
 
     .wishlist-price {
-        font-size: 20px;
-        font-weight: bold;
+        font-size: clamp(14px, 3vw, 18px);
+        font-weight: 700;
         color: #0f3d67;
     }
 
@@ -161,36 +179,44 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
         background: #0f3d67;
         color: white;
         border: none;
-        padding: 8px 15px;
-        border-radius: 5px;
+        padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 14px);
+        border-radius: 6px;
         cursor: pointer;
         display: flex;
         align-items: center;
-        gap: 5px;
-        transition: background 0.3s;
-        font-size: 14px;
-    }
-
-    .wishlist-add-to-cart:hover {
-        background: #0a2e4a;
+        justify-content: center;
+        gap: clamp(4px, 1vw, 5px);
+        transition: all 0.3s ease;
+        font-size: clamp(11px, 2vw, 13px);
+        font-weight: 600;
+        min-height: 40px;
+        min-width: 40px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        flex-shrink: 0;
     }
 
     .wishlist-add-to-cart i {
-        font-size: 14px;
+        font-size: clamp(12px, 2.5vw, 14px);
+    }
+
+    .wishlist-add-to-cart:active {
+        background: #0a2e4a;
+        transform: scale(0.95);
     }
 
     .empty-wishlist {
         text-align: center;
-        padding: 80px 20px;
-        background: #f9f9f9;
+        padding: clamp(40px, 8vw, 80px) clamp(20px, 3vw, 40px);
+        background: #f9fafb;
         border-radius: 12px;
-        margin: 40px 0;
+        margin: clamp(30px, 5vw, 60px) 0;
     }
 
     .empty-icon {
-        font-size: 80px;
+        font-size: clamp(60px, 15vw, 80px);
         color: #ddd;
-        margin-bottom: 20px;
+        margin-bottom: clamp(15px, 2vw, 20px);
     }
 
     .empty-icon.heart i {
@@ -199,40 +225,45 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     .empty-wishlist h2 {
         color: #333;
-        margin-bottom: 10px;
-        font-size: 24px;
+        margin-bottom: clamp(8px, 1.5vw, 10px);
+        font-size: clamp(20px, 5vw, 28px);
+        font-weight: 700;
     }
 
     .empty-wishlist p {
         color: #666;
-        margin-bottom: 30px;
-        font-size: 16px;
+        margin-bottom: clamp(20px, 3vw, 30px);
+        font-size: clamp(13px, 2.5vw, 16px);
     }
 
     .primary-btn {
         display: inline-block;
-        padding: 12px 30px;
-        background: #0f3d67;
+        padding: clamp(10px, 1.5vw, 12px) clamp(20px, 3vw, 30px);
+        background-color: #0f3d67;
         color: white;
         text-decoration: none;
-        border-radius: 5px;
-        transition: background 0.3s;
+        border-radius: 6px;
+        transition: all 0.3s ease;
         border: none;
         cursor: pointer;
-        font-size: 16px;
+        font-size: clamp(13px, 2.5vw, 16px);
+        font-weight: 600;
+        min-height: 44px;
+        touch-action: manipulation;
     }
 
-    .primary-btn:hover {
-        background: #0a2e4a;
+    .primary-btn:active {
+        background-color: #0a2e4a;
+        transform: scale(0.98);
     }
 
     .toast {
         position: fixed;
-        bottom: 30px;
-        right: 30px;
+        bottom: 20px;
+        right: 20px;
         background-color: #4CAF50;
         color: white;
-        padding: 15px 25px;
+        padding: 12px 20px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         display: none;
@@ -240,10 +271,11 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
         gap: 10px;
         z-index: 1000;
         animation: slideIn 0.3s ease;
+        font-size: clamp(12px, 2vw, 14px);
     }
 
     .toast i {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .toast.show {
@@ -273,6 +305,34 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         100% {
             transform: rotate(360deg);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .wishlist-page {
+            margin: clamp(20px, 3vw, 30px) auto;
+        }
+
+        .wishlist-grid {
+            grid-template-columns: repeat(auto-fill, minmax(clamp(140px, 45vw, 200px), 1fr));
+        }
+
+        .toast {
+            bottom: 15px;
+            right: 15px;
+            left: 15px;
+            max-width: calc(100% - 30px);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .wishlist-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: clamp(10px, 2vw, 12px);
+        }
+
+        .empty-wishlist {
+            padding: clamp(30px, 5vw, 40px) clamp(15px, 2vw, 20px);
         }
     }
 </style>
@@ -321,7 +381,7 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <div class="wishlist-bottom">
                             <span class="wishlist-price">₱<?= number_format($item['price'], 2) ?></span>
                             <button class="wishlist-add-to-cart" onclick="addToCartFromWishlist(<?= $item['product_id'] ?>)">
-                                <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                                <i class="fa-solid fa-cart-plus"></i> <span>Add</span>
                             </button>
                         </div>
                     </div>
@@ -360,27 +420,12 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
         window.location.href = 'product.php?id=' + productId;
     }
 
-    // Remove from wishlist
-    // Remove from wishlist with beautiful confirmation
     // Remove from wishlist with notification
     async function removeFromWishlist(productId) {
-        const confirmed = await notif.confirm({
-            title: 'Remove from Wishlist',
-            message: 'Are you sure you want to remove this item from your wishlist?',
-            type: 'warning',
-            confirmText: 'Remove',
-            confirmClass: 'danger',
-            cancelText: 'Keep'
-        });
-
-        if (!confirmed) return;
-
         const button = event.currentTarget;
         const originalIcon = button.innerHTML;
         button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
         button.disabled = true;
-
-        const loading = notif.loading('Removing from wishlist...');
 
         fetch('api/remove_from_wishlist.php', {
                 method: 'POST',
@@ -393,8 +438,6 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
             })
             .then(response => response.json())
             .then(data => {
-                loading.hide();
-
                 if (data.success) {
                     // Remove card from DOM with animation
                     const card = document.querySelector(`.wishlist-card[data-id="${productId}"]`);
@@ -413,26 +456,26 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         }, 300);
                     }
 
-                    notif.toast('Item removed from wishlist', 'success');
+                    showToast('Item removed from wishlist');
                 } else {
-                    notif.toast(data.error || 'Failed to remove item', 'error');
+                    showToast(data.error || 'Failed to remove item', true);
                     button.innerHTML = originalIcon;
                     button.disabled = false;
                 }
             })
             .catch(error => {
-                loading.hide();
                 console.error('Error:', error);
-                notif.toast('Failed to remove item', 'error');
+                showToast('Failed to remove item', true);
                 button.innerHTML = originalIcon;
                 button.disabled = false;
             });
     }
+
     // Add to cart from wishlist
     function addToCartFromWishlist(productId) {
         const button = event.currentTarget;
         const originalText = button.innerHTML;
-        button.innerHTML = '<i class="fa-solid fa-spinner"></i> Adding...';
+        button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
         button.disabled = true;
 
         // Get product details from the card
@@ -462,10 +505,6 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
             .then(data => {
                 if (data.success) {
                     showToast('✓ Added to cart!');
-
-                    // Optionally remove from wishlist after adding to cart
-                    // Uncomment if you want to remove from wishlist after adding to cart
-                    // removeFromWishlist(productId);
                 } else {
                     showToast('Error: ' + data.error, true);
                 }

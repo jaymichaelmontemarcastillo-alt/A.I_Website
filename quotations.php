@@ -1,5 +1,5 @@
 <?php
-// create_quotation.php
+// quotations.php - Main page for listing and managing quotations with mobile-optimized forms
 session_start();
 
 require_once 'connect/config.php';
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $success = "Quotation created successfully! Quote #: $quote_number";
 
         // Redirect after 2 seconds
-        header("refresh:2;url=../quotations.php");
+        header("refresh:2;url=quotations.php");
     } elseif (empty($error)) {
         $error = "Error: " . $conn->error;
     }
@@ -129,54 +129,76 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 ?>
 
 <style>
-    /* Modern styling similar to cart.php */
+    /* ===== MOBILE-FIRST RESPONSIVE DESIGN ===== */
+    :root {
+        --primary-blue: #0f3d67;
+        --text-dark: #1f2d3d;
+        --text-light: #6b7c93;
+        --border-color: #e5e7eb;
+        --bg-light: #f9fafb;
+        --danger-color: #ef4444;
+    }
+
+    body {
+        background: var(--bg-light);
+    }
+
     .create-quotation-container {
         max-width: 1200px;
         margin: 0 auto;
-        padding: 20px;
+        padding: clamp(15px, 4vw, 25px);
     }
 
     .page-header {
         display: flex;
+        flex-direction: column;
         justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
-        padding-bottom: 20px;
-        border-bottom: 2px solid #f0f0f0;
+        align-items: flex-start;
+        margin-bottom: clamp(20px, 4vw, 30px);
+        padding-bottom: clamp(15px, 2vw, 20px);
+        border-bottom: 2px solid var(--border-color);
+        gap: clamp(12px, 2vw, 15px);
     }
 
     .page-header h2 {
         margin: 0;
-        color: #333;
-        font-size: 28px;
+        color: var(--text-dark);
+        font-size: clamp(20px, 5vw, 28px);
+        font-weight: 700;
     }
 
     .back-btn {
         background: #6c757d;
         color: white;
-        padding: 10px 20px;
+        padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2vw, 20px);
         text-decoration: none;
-        border-radius: 8px;
+        border-radius: 6px;
         transition: all 0.3s;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        font-size: clamp(11px, 2vw, 13px);
+        font-weight: 500;
+        min-height: 40px;
+        touch-action: manipulation;
     }
 
-    .back-btn:hover {
+    .back-btn:active {
         background: #5a6268;
-        transform: translateY(-2px);
+        transform: scale(0.98);
     }
 
     /* Alert Styles */
     .alert {
-        padding: 15px 20px;
+        padding: clamp(12px, 2vw, 15px) clamp(14px, 2vw, 20px);
         border-radius: 8px;
-        margin-bottom: 20px;
+        margin-bottom: clamp(15px, 2vw, 20px);
         display: flex;
-        align-items: center;
-        gap: 12px;
+        align-items: flex-start;
+        gap: clamp(10px, 2vw, 12px);
         animation: slideDown 0.3s ease;
+        font-size: clamp(12px, 2vw, 14px);
+        word-break: break-word;
     }
 
     .alert-success {
@@ -192,7 +214,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     .alert i {
-        font-size: 20px;
+        font-size: clamp(14px, 3vw, 20px);
+        flex-shrink: 0;
+        margin-top: 2px;
     }
 
     @keyframes slideDown {
@@ -210,164 +234,186 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     /* Form Sections */
     .form-section {
         background: white;
-        border-radius: 12px;
-        margin-bottom: 25px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+        margin-bottom: clamp(15px, 3vw, 25px);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
         overflow: hidden;
     }
 
     .section-header {
-        background: #f8f9fa;
-        padding: 15px 20px;
-        border-bottom: 2px solid #e9ecef;
+        background: var(--bg-light);
+        padding: clamp(12px, 2vw, 15px) clamp(14px, 2vw, 20px);
+        border-bottom: 2px solid var(--border-color);
     }
 
     .section-header h3 {
         margin: 0;
-        color: #0f3d67;
-        font-size: 18px;
+        color: var(--primary-blue);
+        font-size: clamp(14px, 2.5vw, 18px);
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        font-weight: 700;
     }
 
     .section-header h3 i {
-        font-size: 20px;
+        font-size: clamp(14px, 3vw, 20px);
     }
 
     .section-body {
-        padding: 25px;
+        padding: clamp(15px, 2vw, 25px);
     }
 
     /* Form Grid */
     .form-grid {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
+        grid-template-columns: 1fr;
+        gap: clamp(12px, 2vw, 15px);
+    }
+
+    @media (min-width: 768px) {
+        .form-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
     }
 
     .form-group {
         margin-bottom: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
     }
 
     .form-group label {
         display: block;
-        margin-bottom: 8px;
-        color: #555;
+        color: var(--text-light);
         font-weight: 500;
-        font-size: 14px;
+        font-size: clamp(11px, 2vw, 13px);
     }
 
     .form-group label.required:after {
-        content: '*';
-        color: #dc3545;
-        margin-left: 4px;
+        content: ' *';
+        color: var(--danger-color);
+        margin-left: 2px;
     }
 
     .form-group input,
     .form-group select,
     .form-group textarea {
         width: 100%;
-        padding: 10px 12px;
-        border: 2px solid #e0e0e0;
-        border-radius: 8px;
-        font-size: 14px;
+        padding: clamp(9px, 1.5vw, 11px) clamp(10px, 1.5vw, 12px);
+        border: 2px solid var(--border-color);
+        border-radius: 6px;
+        font-size: clamp(12px, 2vw, 14px);
         transition: all 0.3s;
+        box-sizing: border-box;
+        font-family: inherit;
+        background: white;
+        color: var(--text-dark);
     }
 
     .form-group input:focus,
     .form-group select:focus,
     .form-group textarea:focus {
         outline: none;
-        border-color: #0f3d67;
+        border-color: var(--primary-blue);
         box-shadow: 0 0 0 3px rgba(15, 61, 103, 0.1);
     }
 
     /* Items Table */
     .items-table-container {
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .items-table {
         width: 100%;
         border-collapse: collapse;
+        font-size: clamp(12px, 2vw, 14px);
     }
 
     .items-table thead tr {
-        background: #f8f9fa;
-        border-bottom: 2px solid #e9ecef;
+        background: var(--bg-light);
+        border-bottom: 2px solid var(--border-color);
     }
 
     .items-table th {
-        padding: 12px;
+        padding: clamp(10px, 1.5vw, 12px);
         text-align: left;
         font-weight: 600;
-        color: #555;
-        font-size: 14px;
+        color: var(--text-light);
+        font-size: clamp(11px, 2vw, 13px);
     }
 
     .items-table td {
-        padding: 10px;
-        border-bottom: 1px solid #e9ecef;
+        padding: clamp(8px, 1.5vw, 10px);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .items-table input {
         width: 100%;
-        padding: 8px 10px;
-        border: 2px solid #e0e0e0;
-        border-radius: 6px;
-        font-size: 14px;
+        padding: clamp(6px, 1vw, 8px) clamp(8px, 1vw, 10px);
+        border: 2px solid var(--border-color);
+        border-radius: 4px;
+        font-size: clamp(11px, 2vw, 12px);
         transition: all 0.3s;
+        font-family: inherit;
     }
 
     .items-table input:focus {
         outline: none;
-        border-color: #0f3d67;
+        border-color: var(--primary-blue);
     }
 
     .item-total {
-        background: #f8f9fa;
+        background: var(--bg-light);
         font-weight: 600;
-        color: #0f3d67;
+        color: var(--primary-blue);
     }
 
     .remove-row-btn {
-        background: #dc3545;
+        background: var(--danger-color);
         color: white;
         border: none;
-        border-radius: 6px;
-        padding: 6px 10px;
+        border-radius: 4px;
+        padding: clamp(6px, 1vw, 8px) clamp(10px, 1.5vw, 12px);
         cursor: pointer;
         transition: all 0.3s;
         display: inline-flex;
         align-items: center;
-        gap: 5px;
-        font-size: 12px;
+        gap: 4px;
+        font-size: clamp(10px, 2vw, 12px);
+        font-weight: 500;
+        min-height: 32px;
+        touch-action: manipulation;
     }
 
-    .remove-row-btn:hover {
+    .remove-row-btn:active {
         background: #c82333;
-        transform: scale(1.05);
+        transform: scale(0.96);
     }
 
     .add-row-btn {
-        margin-top: 15px;
+        margin-top: clamp(10px, 1.5vw, 15px);
         background: #28a745;
         color: white;
         border: none;
-        padding: 10px 20px;
-        border-radius: 8px;
+        padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2vw, 20px);
+        border-radius: 6px;
         cursor: pointer;
         transition: all 0.3s;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
-        font-size: 14px;
+        gap: 6px;
+        font-size: clamp(11px, 2vw, 13px);
+        font-weight: 600;
+        min-height: 36px;
+        touch-action: manipulation;
     }
 
-    .add-row-btn:hover {
+    .add-row-btn:active {
         background: #218838;
-        transform: translateY(-2px);
+        transform: scale(0.98);
     }
 
     /* Product modal */
@@ -379,7 +425,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         z-index: 2000;
         align-items: center;
         justify-content: center;
-        padding: 20px;
+        padding: clamp(10px, 2vw, 20px);
     }
 
     .product-modal.show {
@@ -387,194 +433,211 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     .product-modal-content {
-        width: min(1100px, 100%);
-        max-height: 90vh;
+        width: 100%;
+        max-width: 100%;
+        max-height: calc(100vh - 40px);
         background: white;
-        border-radius: 14px;
+        border-radius: 10px;
         overflow: hidden;
         box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
         display: flex;
         flex-direction: column;
     }
 
+    @media (min-width: 768px) {
+        .product-modal-content {
+            max-width: 800px;
+        }
+    }
+
     .product-modal-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 20px;
-        border-bottom: 1px solid #e9ecef;
-        background: #f8f9fa;
+        padding: clamp(12px, 2vw, 20px);
+        border-bottom: 1px solid var(--border-color);
+        background: var(--bg-light);
+        gap: 10px;
     }
 
     .product-modal-header h3 {
         margin: 0;
-        font-size: 20px;
-        color: #0f3d67;
+        font-size: clamp(14px, 3vw, 20px);
+        color: var(--primary-blue);
+        font-weight: 600;
     }
 
     .product-modal-close {
         background: transparent;
         border: none;
-        font-size: 24px;
+        font-size: clamp(18px, 4vw, 24px);
         cursor: pointer;
-        color: #333;
+        color: var(--text-light);
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: all 0.2s;
+        min-height: 40px;
+        min-width: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        touch-action: manipulation;
+    }
+
+    .product-modal-close:active {
+        background: rgba(0, 0, 0, 0.05);
+        color: var(--text-dark);
     }
 
     .product-modal-body {
-        padding: 20px;
+        padding: clamp(12px, 2vw, 20px);
         overflow: auto;
     }
 
     .product-thumb {
-        width: 60px;
-        height: 60px;
+        width: 50px;
+        height: 50px;
         object-fit: cover;
-        border-radius: 10px;
-        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        border: 1px solid var(--border-color);
     }
 
     .product-name-cell {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
 
     .product-name-cell span {
         font-weight: 600;
-        color: #0f3d67;
+        color: var(--primary-blue);
+        font-size: clamp(12px, 2vw, 14px);
     }
 
     .product-search-wrap {
-        margin-bottom: 16px;
+        margin-bottom: clamp(10px, 1.5vw, 16px);
         display: flex;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
     }
 
     .product-search-wrap input {
         flex: 1;
-        padding: 10px 14px;
-        border-radius: 8px;
-        border: 2px solid #e0e0e0;
-        font-size: 14px;
+        padding: clamp(8px, 1.5vw, 10px) clamp(10px, 1.5vw, 14px);
+        border-radius: 6px;
+        border: 2px solid var(--border-color);
+        font-size: clamp(12px, 2vw, 14px);
+        transition: all 0.3s;
+    }
+
+    .product-search-wrap input:focus {
+        outline: none;
+        border-color: var(--primary-blue);
     }
 
     .product-table {
         width: 100%;
         border-collapse: collapse;
+        font-size: clamp(11px, 2vw, 13px);
     }
 
     .product-table th,
     .product-table td {
         text-align: left;
-        padding: 14px 12px;
-        border-bottom: 1px solid #eceff1;
-        font-size: 14px;
+        padding: clamp(8px, 1.5vw, 12px);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .product-table th {
-        background: #f5f7fa;
+        background: var(--bg-light);
         font-weight: 700;
+        color: var(--text-light);
     }
 
     .product-select-btn {
-        background: #0f3d67;
+        background: var(--primary-blue);
         color: white;
         border: none;
-        padding: 8px 14px;
-        border-radius: 8px;
+        padding: clamp(6px, 1vw, 8px) clamp(10px, 1.5vw, 14px);
+        border-radius: 4px;
         cursor: pointer;
-        transition: background 0.2s ease;
-    }
-
-    .product-select-btn:hover {
-        background: #0b2a4a;
-    }
-
-    /* Summary Section */
-    .summary-container {
-        max-width: 350px;
-        margin-left: auto;
-    }
-
-    .summary-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px solid #e9ecef;
-    }
-
-    .summary-row.total {
-        border-top: 2px solid #0f3d67;
-        border-bottom: none;
-        padding-top: 15px;
-        margin-top: 5px;
-        font-weight: bold;
-        font-size: 18px;
-        color: #0f3d67;
-    }
-
-    .summary-label {
-        color: #666;
-    }
-
-    .summary-value {
+        transition: all 0.3s;
+        font-size: clamp(10px, 2vw, 12px);
         font-weight: 600;
-        color: #333;
+        min-height: 32px;
+        touch-action: manipulation;
     }
 
-    .summary-input {
-        width: 120px;
-        padding: 5px 10px;
-        border: 2px solid #e0e0e0;
-        border-radius: 6px;
-        text-align: right;
+    .product-select-btn:active {
+        background: #0b2a4a;
+        transform: scale(0.96);
     }
 
     /* Submit Button */
     .submit-section {
         text-align: right;
-        margin-top: 30px;
+        margin-top: clamp(15px, 3vw, 30px);
     }
 
     .submit-btn {
-        background: #0f3d67;
+        background: var(--primary-blue);
         color: white;
-        padding: 14px 32px;
+        padding: clamp(10px, 1.5vw, 14px) clamp(20px, 3vw, 32px);
         border: none;
-        border-radius: 8px;
-        font-size: 16px;
+        border-radius: 6px;
+        font-size: clamp(12px, 2vw, 16px);
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s;
         display: inline-flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
+        min-height: 44px;
+        touch-action: manipulation;
     }
 
-    .submit-btn:hover {
+    .submit-btn:active {
         background: #0a2e4a;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(15, 61, 103, 0.3);
+        transform: scale(0.98);
+        box-shadow: 0 2px 8px rgba(15, 61, 103, 0.25);
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
+    .form-actions {
+        display: flex;
+        gap: clamp(8px, 1.5vw, 12px);
+        padding: clamp(10px, 1.5vw, 15px);
+        border-top: 1px solid var(--border-color);
+        flex-wrap: wrap;
+        justify-content: flex-end;
+    }
 
-        .summary-container {
-            max-width: 100%;
-        }
+    .btn {
+        padding: clamp(8px, 1.5vw, 10px) clamp(14px, 2vw, 18px);
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        font-size: clamp(11px, 2vw, 13px);
+        transition: all 0.3s;
+        min-height: 40px;
+        touch-action: manipulation;
+    }
 
-        .items-table {
-            font-size: 12px;
-        }
+    .btn-secondary {
+        background: var(--border-color);
+        color: var(--text-dark);
+    }
 
-        .items-table input {
-            padding: 5px;
-        }
+    .btn-secondary:active {
+        background: #d1d5db;
+        transform: scale(0.98);
+    }
+
+    .text-center {
+        text-align: center;
+        color: var(--text-light);
+        font-size: clamp(12px, 2vw, 14px);
+        padding: clamp(15px, 2vw, 30px);
     }
 </style>
 
@@ -670,7 +733,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 </div>
                 <div class="product-modal-body">
                     <div class="product-search-wrap">
-                        <input type="text" id="productSearchInput" placeholder="Search products by name...">
+                        <input type="text" id="productSearchInput" placeholder="Search products...">
                     </div>
                     <table class="product-table" id="productTable">
                         <thead>
@@ -684,7 +747,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                                 <tr>
                                     <td>
                                         <div class="product-name-cell">
-                                            <img src="<?= $baseUrl . htmlspecialchars($product['image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="product-thumb">
+                                            <img src="<?= htmlspecialchars($product['image']) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="product-thumb">
                                             <span><?= htmlspecialchars($product['name']) ?></span>
                                         </div>
                                     </td>
@@ -753,7 +816,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     row.remove();
                     calculateAllTotals();
                 } else {
-                    // Show temporary notification
                     const alert = document.createElement('div');
                     alert.className = 'alert alert-error';
                     alert.innerHTML = '<i class="fas fa-exclamation-circle"></i><span>You need at least one item</span>';

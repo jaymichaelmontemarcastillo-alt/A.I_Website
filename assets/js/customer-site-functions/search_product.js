@@ -4,10 +4,10 @@ const searchBar = document.querySelector(".search-bar");
 const searchInput = document.getElementById("searchInput");
 
 searchIcon.addEventListener("click", () => {
-  if (searchBar.style.display === "block") {
-    searchBar.style.display = "none";
+  if (searchBar.classList.contains("show")) {
+    searchBar.classList.remove("show");
   } else {
-    searchBar.style.display = "block";
+    searchBar.classList.add("show");
     searchInput.focus();
   }
 });

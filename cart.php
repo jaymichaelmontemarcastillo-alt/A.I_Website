@@ -1,4 +1,5 @@
 <?php
+// cart.php - Displays the shopping cart, allows updating quantities, and processes checkout
 session_start();
 require_once 'connect/config.php';
 include 'includes/header.php';
@@ -197,13 +198,6 @@ if (!empty($cart)) {
                         <div class="option-icon-text">
                             <i class="fas fa-mobile-alt"></i>
                             <span>GCash</span>
-                        </div>
-                    </label>
-                    <label class="payment-option">
-                        <input type="radio" name="modalPaymentMethod" value="card">
-                        <div class="option-icon-text">
-                            <i class="fas fa-credit-card"></i>
-                            <span>Credit/Debit Card</span>
                         </div>
                     </label>
                 </div>

@@ -1,5 +1,5 @@
 <?php
-
+// category_details.php - Admin page for viewing and managing a single category and its products
 include '../includes/header.php';
 ?>
 

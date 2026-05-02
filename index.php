@@ -1,4 +1,5 @@
 <?php
+//index.php - Home page with featured products and categories
 session_start();
 require_once 'connect/config.php'; // Use database instead of products_list.php
 $pdo = getDBConnection();
@@ -23,11 +24,11 @@ include 'includes/header.php';
     /* Toast notification for better UX */
     .toast {
         position: fixed;
-        bottom: 30px;
-        right: 30px;
+        bottom: 20px;
+        right: 20px;
         background-color: #4CAF50;
         color: white;
-        padding: 15px 25px;
+        padding: 12px 20px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         display: none;
@@ -35,10 +36,11 @@ include 'includes/header.php';
         gap: 10px;
         z-index: 1000;
         animation: slideIn 0.3s ease;
+        font-size: clamp(12px, 2vw, 14px);
     }
 
     .toast i {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .toast.show {
@@ -77,8 +79,8 @@ include 'includes/header.php';
 
     /* Icon button styles */
     .icon-btn {
-        width: 35px;
-        height: 35px;
+        width: 44px;
+        height: 44px;
         border: none;
         border-radius: 50%;
         background: white;
@@ -119,6 +121,15 @@ include 'includes/header.php';
     /* Fix for hero section typo */
     .hero-text h1 span {
         color: #0f3d67;
+    }
+
+    @media (max-width: 768px) {
+        .toast {
+            bottom: 15px;
+            right: 15px;
+            left: 15px;
+            max-width: calc(100% - 30px);
+        }
     }
 </style>
 

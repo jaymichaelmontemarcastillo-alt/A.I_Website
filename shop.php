@@ -1,5 +1,5 @@
 <?php require_once 'connect/config.php';
-
+// shop.php - Main shopping page with product listing, category filters, and add to cart/wishlist functionality
 $pdo = getDBConnection();
 $products = getProducts($pdo); ?>
 <?php include 'includes/header.php'; ?>
@@ -8,11 +8,11 @@ $products = getProducts($pdo); ?>
 <style>
     .toast {
         position: fixed;
-        bottom: 30px;
-        right: 30px;
+        bottom: 20px;
+        right: 20px;
         background-color: #4CAF50;
         color: white;
-        padding: 15px 25px;
+        padding: 12px 20px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         display: none;
@@ -20,10 +20,11 @@ $products = getProducts($pdo); ?>
         gap: 10px;
         z-index: 1000;
         animation: slideIn 0.3s ease;
+        font-size: clamp(12px, 2vw, 14px);
     }
 
     .toast i {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .toast.show {
@@ -57,7 +58,6 @@ $products = getProducts($pdo); ?>
         }
     }
 
-
     .cart-container {
         position: relative;
         display: inline-block;
@@ -74,6 +74,15 @@ $products = getProducts($pdo); ?>
         font-size: 12px;
         min-width: 18px;
         text-align: center;
+    }
+
+    @media (max-width: 768px) {
+        .toast {
+            bottom: 15px;
+            right: 15px;
+            left: 15px;
+            max-width: calc(100% - 30px);
+        }
     }
 </style>
 
@@ -249,7 +258,6 @@ $products = getProducts($pdo); ?>
     }
 
     // Add to wishlist
-    // Add to wishlist
     function addToWishlist(productId) {
         // Prevent event bubbling
         event.stopPropagation();
@@ -307,6 +315,7 @@ $products = getProducts($pdo); ?>
                 button.disabled = false;
             });
     }
+
     // Filter by category
     function filterByCategory(category) {
         const cards = document.querySelectorAll('.gift-card');

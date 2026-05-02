@@ -475,9 +475,9 @@
 
 .qe-modal {
   background: #fff;
-  border-radius: 14px;
+  border-radius: 8px;
   width: 100%;
-  max-width: 860px;
+  max-width: 1100px;
   max-height: 92vh;
   display: flex;
   flex-direction: column;
@@ -518,7 +518,7 @@
 .qe-icon {
   width: 42px;
   height: 42px;
-  background: linear-gradient(135deg, #1a56db, #3b82f6);
+  background: linear-gradient(135deg, #1a4d80, #3b82f6);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -585,11 +585,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8px;
-  color: #1a56db;
+  color: #1a4d80;
   display: flex;
   align-items: center;
   gap: 7px;
-  border-left: 3px solid #1a56db;
+  border-left: 3px solid #1a4d80;
   padding-left: 10px;
 }
 
@@ -714,10 +714,10 @@
   border: 1.5px solid #e5e7eb;
   border-radius: 7px;
   padding: 7px 10px;
-  font-size: 13px;
+  font-size: clamp(0.5, 1vw, 0.85rem);
   color: #111827;
   outline: none;
-  width: 100%;
+  width: 110%;
   box-sizing: border-box;
   font-family: inherit;
   transition: border-color 0.15s;
@@ -725,13 +725,13 @@
 }
 
 .qe-item-input:focus {
-  border-color: #1a56db;
+  border-color: #1a4d80;
 }
 
 .qe-item-total {
   font-size: 13px;
   font-weight: 600;
-  color: #1a56db;
+  color: #1a4d80;
   white-space: nowrap;
 }
 
@@ -761,7 +761,7 @@
   align-self: flex-start;
   background: none;
   border: 1.5px dashed #1a56db;
-  color: #1a56db;
+  color: #1a4d80;
   border-radius: 8px;
   padding: 8px 16px;
   font-size: 13px;
@@ -815,7 +815,7 @@
 }
 
 .qe-total-row {
-  border-top: 2px solid #1a56db;
+  border-top: 2px solid #1a4d80;
   padding-top: 10px;
   margin-top: 4px;
 }
@@ -823,7 +823,7 @@
 .qe-grand {
   font-size: 16px;
   font-weight: 800;
-  color: #1a56db;
+  color: #1a4d80;
 }
 
 /* FOOTER */
@@ -869,7 +869,7 @@
 }
 
 .qe-btn-save {
-  background: linear-gradient(135deg, #1a56db, #3b82f6);
+  background: linear-gradient(135deg, #1a4d80, #3b82f6);
   border: none;
   color: #fff;
   border-radius: 8px;
@@ -938,7 +938,7 @@
   border-radius: 14px;
   z-index: 10;
   font-size: 15px;
-  color: #1a56db;
+  color: #1a4d80;
   gap: 10px;
   font-weight: 600;
 }

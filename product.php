@@ -1,4 +1,5 @@
 <?php
+// product.php - Displays individual product details and allows adding to cart/wishlist
 session_start();
 require_once 'connect/config.php'; // Use database instead of products_list.php
 
@@ -15,11 +16,11 @@ if (!$product) {
     include 'includes/header.php';
 ?>
     <main class="product-page">
-        <div class="error-container" style="text-align: center; padding: 100px 20px;">
-            <i class="fa-solid fa-exclamation-circle" style="font-size: 80px; color: #ff6b6b; margin-bottom: 20px;"></i>
-            <h2>Product Not Found</h2>
-            <p style="color: #666; margin-bottom: 30px;">The product you're looking for doesn't exist or has been removed.</p>
-            <a href="shop.php" class="back-link" style="display: inline-block; padding: 12px 30px; background: #0f3d67; color: white; text-decoration: none; border-radius: 5px;">
+        <div class="error-container" style="text-align: center; padding: clamp(40px, 10vw, 100px) 20px;">
+            <i class="fa-solid fa-exclamation-circle" style="font-size: clamp(60px, 15vw, 80px); color: #ff6b6b; margin-bottom: 20px;"></i>
+            <h2 style="font-size: clamp(20px, 5vw, 28px);">Product Not Found</h2>
+            <p style="color: #666; margin-bottom: 30px; font-size: clamp(14px, 3vw, 16px);">The product you're looking for doesn't exist or has been removed.</p>
+            <a href="shop.php" class="back-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 6px; font-size: clamp(13px, 2.5vw, 15px); min-height: 44px; justify-content: center;">
                 <i class="fa-solid fa-arrow-left"></i>
                 Back to Shop
             </a>
@@ -35,14 +36,20 @@ include 'includes/header.php';
 
 <link rel="stylesheet" href="assets/css/customer-site/product.css">
 <style>
+    :root {
+        --primary-blue: #0f3d67;
+        --text-dark: #333;
+        --text-light: #666;
+    }
+
     /* Additional styles for product page */
     .toast {
         position: fixed;
-        bottom: 30px;
-        right: 30px;
+        bottom: 20px;
+        right: 20px;
         background-color: #4CAF50;
         color: white;
-        padding: 15px 25px;
+        padding: 12px 20px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         display: none;
@@ -50,10 +57,11 @@ include 'includes/header.php';
         gap: 10px;
         z-index: 1000;
         animation: slideIn 0.3s ease;
+        font-size: clamp(12px, 2vw, 14px);
     }
 
     .toast i {
-        font-size: 20px;
+        font-size: 18px;
     }
 
     .toast.show {
@@ -78,7 +86,7 @@ include 'includes/header.php';
 
     .error-container {
         text-align: center;
-        padding: 100px 20px;
+        padding: clamp(40px, 10vw, 100px) 20px;
     }
 
     .fa-spinner {
@@ -96,64 +104,41 @@ include 'includes/header.php';
     }
 
     .quantity-wrapper {
-        margin: 20px 0;
+        margin: clamp(15px, 3vw, 20px) 0;
     }
 
     .quantity-wrapper label {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 8px;
         margin-bottom: 8px;
-        color: #555;
+        color: var(--text-light);
         font-weight: 500;
+        font-size: clamp(13px, 2.5vw, 14px);
     }
 
     .quantity-wrapper input {
         width: 100px;
         padding: 10px;
         border: 2px solid #e0e0e0;
-        border-radius: 5px;
+        border-radius: 6px;
         font-size: 16px;
+        transition: all 0.3s;
     }
 
     .quantity-wrapper input:focus {
         outline: none;
-        border-color: #0f3d67;
+        border-color: var(--primary-blue);
     }
 
     .btn-cart {
         width: 100%;
-        padding: 15px;
-        background: #0f3d67;
+        padding: clamp(12px, 2.5vw, 15px);
+        background: var(--primary-blue);
         color: white;
         border: none;
-        border-radius: 5px;
-        font-size: 18px;
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: background 0.3s;
-        margin-bottom: 15px;
-    }
-
-    .btn-cart:hover {
-        background: #0a2e4a;
-    }
-
-    .btn-cart:disabled {
-        background: #cccccc;
-        cursor: not-allowed;
-    }
-
-    .btn-wishlist {
-        width: 100%;
-        padding: 15px;
-        background: white;
-        color: #ff4444;
-        border: 2px solid #ff4444;
-        border-radius: 5px;
-        font-size: 16px;
+        border-radius: 6px;
+        font-size: clamp(13px, 2.5vw, 16px);
         font-weight: 600;
         cursor: pointer;
         display: flex;
@@ -161,10 +146,44 @@ include 'includes/header.php';
         justify-content: center;
         gap: 10px;
         transition: all 0.3s;
+        margin-bottom: 12px;
+        min-height: 44px;
+        touch-action: manipulation;
     }
 
-    .btn-wishlist:hover {
+    .btn-cart:active {
+        opacity: 0.9;
+        transform: scale(0.98);
+    }
+
+    .btn-cart:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .btn-wishlist {
+        width: 100%;
+        padding: clamp(12px, 2.5vw, 15px);
+        background: white;
+        color: #ff4444;
+        border: 2px solid #ff4444;
+        border-radius: 6px;
+        font-size: clamp(13px, 2.5vw, 16px);
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s;
+        min-height: 44px;
+        touch-action: manipulation;
+    }
+
+    .btn-wishlist:active {
         background: #fff0f0;
+        transform: scale(0.98);
     }
 
     .btn-wishlist.in-wishlist {
@@ -173,11 +192,12 @@ include 'includes/header.php';
     }
 
     .stock {
-        margin: 15px 0;
-        padding: 10px;
+        margin: clamp(12px, 2vw, 15px) 0;
+        padding: clamp(10px, 2vw, 12px);
         background: #f0f8ff;
-        border-radius: 5px;
-        color: #0f3d67;
+        border-radius: 6px;
+        color: var(--primary-blue);
+        font-size: clamp(12px, 2.5vw, 14px);
     }
 
     .stock.low-stock {
@@ -191,18 +211,29 @@ include 'includes/header.php';
     }
 
     .product-category {
-        margin-top: 30px;
-        padding-top: 20px;
+        margin-top: clamp(20px, 3vw, 30px);
+        padding-top: clamp(15px, 2vw, 20px);
         border-top: 1px solid #eee;
+        font-size: clamp(12px, 2.5vw, 14px);
     }
 
     .product-category a {
-        color: #0f3d67;
+        color: var(--primary-blue);
         text-decoration: none;
+        font-weight: 500;
     }
 
-    .product-category a:hover {
-        text-decoration: underline;
+    .product-category a:active {
+        opacity: 0.8;
+    }
+
+    @media (max-width: 768px) {
+        .toast {
+            bottom: 15px;
+            right: 15px;
+            left: 15px;
+            max-width: calc(100% - 30px);
+        }
     }
 </style>
 

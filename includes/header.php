@@ -6,6 +6,7 @@ $baseDir = isset($baseUrl) ? $baseUrl : '';
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anything Inside</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,10 +25,14 @@ $baseDir = isset($baseUrl) ? $baseUrl : '';
     <header>
         <div class="top-header">
             <div class="brand">
-                    <img src="<?= $baseDir ?>assets/images/AI_Logo.jpg" alt="Anything Inside Logo" class="logo">
+                <img src="<?= $baseDir ?>assets/images/AI_Logo.jpg" alt="Anything Inside Logo" class="logo">
             </div>
 
-            <nav>
+            <button id="menu_toggle" class="menu-toggle" aria-label="Toggle menu">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <nav id="nav_menu">
                 <a href="<?= $baseDir ?>index.php" class="<?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>">Home</a>
                 <a href="<?= $baseDir ?>shop.php" class="<?= basename($_SERVER['PHP_SELF']) == 'shop.php' ? 'active' : '' ?>">Products</a>
                 <a href="<?= $baseDir ?>wishlist.php" class="<?= basename($_SERVER['PHP_SELF']) == 'wishlist.php' ? 'active' : '' ?>">Wishlist</a>
@@ -60,17 +65,13 @@ $baseDir = isset($baseUrl) ? $baseUrl : '';
     <script src="<?= $baseDir ?>assets/js/customer-site-functions/search_product.js"></script>
 
     <script>
-        // Toggle search bar
         document.addEventListener('DOMContentLoaded', function() {
-            const searchIcon = document.getElementById('search_icon');
-            const searchBar = document.getElementById('searchBar');
+            const menuToggle = document.getElementById('menu_toggle');
+            const navMenu = document.getElementById('nav_menu');
 
-            if (searchIcon && searchBar) {
-                searchIcon.addEventListener('click', function() {
-                    searchBar.classList.toggle('show');
-                    if (searchBar.classList.contains('show')) {
-                        document.getElementById('searchInput').focus();
-                    }
+            if (menuToggle && navMenu) {
+                menuToggle.addEventListener('click', function() {
+                    navMenu.classList.toggle('show');
                 });
             }
         });
@@ -80,9 +81,7 @@ $baseDir = isset($baseUrl) ? $baseUrl : '';
         let cartCount = 0;
         let wishlistCount = 0;
 
-        // You can still track counts for other features if needed
         document.addEventListener('DOMContentLoaded', function() {
-            // Get cart count (silently track for other features)
             fetch('<?= $baseDir ?>api/get_cart_count.php')
                 .then(response => response.json())
                 .then(data => {
@@ -92,7 +91,6 @@ $baseDir = isset($baseUrl) ? $baseUrl : '';
                 })
                 .catch(error => console.error('Error getting cart count:', error));
 
-            // Get wishlist count (silently track for other features)
             fetch('<?= $baseDir ?>api/get_wishlist_count.php')
                 .then(response => response.json())
                 .then(data => {
