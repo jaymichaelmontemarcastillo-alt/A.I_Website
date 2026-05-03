@@ -1,0 +1,508 @@
+/* ============================================================
+   DASHBOARD DARK MODE — Complete Patch
+   Add this file AFTER your existing dashboard.css.
+   Also extend your :root / body.dark-mode blocks below.
+   ============================================================ */
+
+/* ══════════════════════════════════════
+   1. EXTEND ROOT & DARK VARIABLES
+   Merge these into your existing :root / body.dark-mode blocks.
+   They fill every gap the dashboard JS & CSS rely on.
+══════════════════════════════════════ */
+:root {
+  /* Semantic tokens used by dashboard.css */
+  --bg-main: #f4f7f9;
+  --bg-card: #ffffff;
+  --bg-card-soft: #f9fafb;
+  --text-primary: #1f2d3d;
+  --text-secondary: #6b7c93;
+  --text-heading: #1f2d3d;
+  --border-color: #e5e7eb;
+
+  /* Status colors */
+  --success: #16a34a;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  --danger: #ef4444;
+
+  /* Misc */
+  --transition: all 0.2s ease;
+
+  /* Badge light-mode tokens */
+  --badge-pending-bg: #fef3c7;
+  --badge-pending-text: #92400e;
+  --badge-paid-bg: #d1fae5;
+  --badge-paid-text: #065f46;
+  --badge-processing-bg: #dbeafe;
+  --badge-processing-text: #1e40af;
+  --badge-packed-bg: #e0e7ff;
+  --badge-packed-text: #3730a3;
+  --badge-shipped-bg: #f1f5f9;
+  --badge-shipped-text: #334155;
+  --badge-delivered-bg: #d1fae5;
+  --badge-delivered-text: #065f46;
+  --badge-cancelled-bg: #fee2e2;
+  --badge-cancelled-text: #991b1b;
+  --badge-failed-bg: #fee2e2;
+  --badge-failed-text: #991b1b;
+  --badge-verified-bg: #d1fae5;
+  --badge-verified-text: #065f46;
+  --badge-unpaid-bg: #fef3c7;
+  --badge-unpaid-text: #92400e;
+  --badge-draft-bg: #f1f5f9;
+  --badge-draft-text: #475569;
+  --badge-sent-bg: #dbeafe;
+  --badge-sent-text: #1e40af;
+  --badge-accepted-bg: #d1fae5;
+  --badge-accepted-text: #065f46;
+  --badge-expired-bg: #fee2e2;
+  --badge-expired-text: #991b1b;
+  --badge-converted-bg: #ede9fe;
+  --badge-converted-text: #5b21b6;
+  --badge-processed-bg: #d1fae5;
+  --badge-processed-text: #065f46;
+
+  /* Alert light-mode tokens */
+  --alert-warning-bg: #fffbeb;
+  --alert-warning-text: #78350f;
+  --alert-warning-border: #fde68a;
+  --alert-danger-bg: #fef2f2;
+  --alert-danger-text: #7f1d1d;
+  --alert-danger-border: #fca5a5;
+  --alert-info-bg: #eff6ff;
+  --alert-info-text: #1e3a5f;
+  --alert-info-border: #bfdbfe;
+  --alert-success-bg: #f0fdf4;
+  --alert-success-text: #14532d;
+  --alert-success-border: #bbf7d0;
+
+  /* Customer rank light-mode tokens */
+  --rank-top1-bg: #fef3c7;
+  --rank-top1-text: #92400e;
+  --rank-top1-border: #fcd34d;
+  --rank-top2-bg: #f1f5f9;
+  --rank-top2-text: #475569;
+  --rank-top2-border: #cbd5e1;
+  --rank-top3-bg: #fff7ed;
+  --rank-top3-text: #9a3412;
+  --rank-top3-border: #fed7aa;
+  --rank-def-bg: #f1f5f9;
+  --rank-def-text: #6b7280;
+  --rank-def-border: #e5e7eb;
+
+  /* Stock badge */
+  --stock-badge-bg: #fee2e2;
+  --stock-badge-text: #b91c1c;
+
+  /* Scrollbar thumb */
+  --scrollbar-thumb: #d1d5db;
+}
+
+body.dark-mode {
+  --bg-main: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-soft: #263045;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-heading: #e2e8f0;
+  --border-color: #334155;
+
+  --success: #22c55e;
+  --warning: #fbbf24;
+  --info: #60a5fa;
+  --danger: #f87171;
+
+  /* Badge dark-mode tokens — muted, readable on dark surfaces */
+  --badge-pending-bg: #422006;
+  --badge-pending-text: #fde68a;
+  --badge-paid-bg: #052e16;
+  --badge-paid-text: #86efac;
+  --badge-processing-bg: #1e3a5f;
+  --badge-processing-text: #bfdbfe;
+  --badge-packed-bg: #2e1065;
+  --badge-packed-text: #ddd6fe;
+  --badge-shipped-bg: #1e293b;
+  --badge-shipped-text: #94a3b8;
+  --badge-delivered-bg: #052e16;
+  --badge-delivered-text: #86efac;
+  --badge-cancelled-bg: #450a0a;
+  --badge-cancelled-text: #fca5a5;
+  --badge-failed-bg: #450a0a;
+  --badge-failed-text: #fca5a5;
+  --badge-verified-bg: #052e16;
+  --badge-verified-text: #86efac;
+  --badge-unpaid-bg: #422006;
+  --badge-unpaid-text: #fde68a;
+  --badge-draft-bg: #1e293b;
+  --badge-draft-text: #94a3b8;
+  --badge-sent-bg: #1e3a5f;
+  --badge-sent-text: #bfdbfe;
+  --badge-accepted-bg: #052e16;
+  --badge-accepted-text: #86efac;
+  --badge-expired-bg: #450a0a;
+  --badge-expired-text: #fca5a5;
+  --badge-converted-bg: #2e1065;
+  --badge-converted-text: #ddd6fe;
+  --badge-processed-bg: #052e16;
+  --badge-processed-text: #86efac;
+
+  /* Alert dark-mode tokens */
+  --alert-warning-bg: #422006;
+  --alert-warning-text: #fde68a;
+  --alert-warning-border: #92400e;
+  --alert-danger-bg: #450a0a;
+  --alert-danger-text: #fca5a5;
+  --alert-danger-border: #991b1b;
+  --alert-info-bg: #1e3a5f;
+  --alert-info-text: #bfdbfe;
+  --alert-info-border: #1e40af;
+  --alert-success-bg: #052e16;
+  --alert-success-text: #86efac;
+  --alert-success-border: #166534;
+
+  /* Customer rank dark-mode tokens */
+  --rank-top1-bg: #422006;
+  --rank-top1-text: #fde68a;
+  --rank-top1-border: #92400e;
+  --rank-top2-bg: #1e293b;
+  --rank-top2-text: #94a3b8;
+  --rank-top2-border: #334155;
+  --rank-top3-bg: #431407;
+  --rank-top3-text: #fed7aa;
+  --rank-top3-border: #7c2d12;
+  --rank-def-bg: #1e293b;
+  --rank-def-text: #64748b;
+  --rank-def-border: #334155;
+
+  /* Stock badge */
+  --stock-badge-bg: #450a0a;
+  --stock-badge-text: #fca5a5;
+
+  /* Scrollbar thumb */
+  --scrollbar-thumb: #334155;
+}
+
+/* ══════════════════════════════════════
+   2. STAT CARDS
+   Replace hardcoded rgba shadow & top-bar colors
+══════════════════════════════════════ */
+.stat-card:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+}
+
+body.dark-mode .stat-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .stat-card:hover {
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+/* ══════════════════════════════════════
+   3. TABLE ROWS
+══════════════════════════════════════ */
+body.dark-mode tbody td {
+  border-bottom-color: var(--border-color);
+  color: var(--text-heading);
+}
+
+body.dark-mode tbody tr:hover td {
+  background: var(--bg-card-soft);
+}
+
+body.dark-mode thead th {
+  color: var(--text-secondary);
+  border-bottom-color: var(--border-color);
+}
+
+/* ══════════════════════════════════════
+   4. BADGES — fully token-driven
+══════════════════════════════════════ */
+.badge.pending {
+  background: var(--badge-pending-bg);
+  color: var(--badge-pending-text);
+}
+.badge.paid {
+  background: var(--badge-paid-bg);
+  color: var(--badge-paid-text);
+}
+.badge.processing {
+  background: var(--badge-processing-bg);
+  color: var(--badge-processing-text);
+}
+.badge.packed {
+  background: var(--badge-packed-bg);
+  color: var(--badge-packed-text);
+}
+.badge.shipped {
+  background: var(--badge-shipped-bg);
+  color: var(--badge-shipped-text);
+}
+.badge.delivered {
+  background: var(--badge-delivered-bg);
+  color: var(--badge-delivered-text);
+}
+.badge.cancelled {
+  background: var(--badge-cancelled-bg);
+  color: var(--badge-cancelled-text);
+}
+.badge.failed {
+  background: var(--badge-failed-bg);
+  color: var(--badge-failed-text);
+}
+.badge.verified {
+  background: var(--badge-verified-bg);
+  color: var(--badge-verified-text);
+}
+.badge.unpaid {
+  background: var(--badge-unpaid-bg);
+  color: var(--badge-unpaid-text);
+}
+.badge.draft {
+  background: var(--badge-draft-bg);
+  color: var(--badge-draft-text);
+}
+.badge.sent {
+  background: var(--badge-sent-bg);
+  color: var(--badge-sent-text);
+}
+.badge.accepted {
+  background: var(--badge-accepted-bg);
+  color: var(--badge-accepted-text);
+}
+.badge.expired {
+  background: var(--badge-expired-bg);
+  color: var(--badge-expired-text);
+}
+.badge.converted {
+  background: var(--badge-converted-bg);
+  color: var(--badge-converted-text);
+}
+.badge.processed {
+  background: var(--badge-processed-bg);
+  color: var(--badge-processed-text);
+}
+
+/* ══════════════════════════════════════
+   5. ALERTS — fully token-driven
+══════════════════════════════════════ */
+.alert-item.alert-warning {
+  background: var(--alert-warning-bg);
+  color: var(--alert-warning-text);
+  border-color: var(--alert-warning-border);
+}
+.alert-item.alert-danger {
+  background: var(--alert-danger-bg);
+  color: var(--alert-danger-text);
+  border-color: var(--alert-danger-border);
+}
+.alert-item.alert-info {
+  background: var(--alert-info-bg);
+  color: var(--alert-info-text);
+  border-color: var(--alert-info-border);
+}
+.alert-item.alert-success {
+  background: var(--alert-success-bg);
+  color: var(--alert-success-text);
+  border-color: var(--alert-success-border);
+}
+
+/* ══════════════════════════════════════
+   6. CUSTOMER RANK BADGES — token-driven
+══════════════════════════════════════ */
+.customer-rank {
+  background: var(--rank-def-bg);
+  color: var(--rank-def-text);
+  border-color: var(--rank-def-border);
+}
+.customer-rank.top1 {
+  background: var(--rank-top1-bg);
+  color: var(--rank-top1-text);
+  border-color: var(--rank-top1-border);
+}
+.customer-rank.top2 {
+  background: var(--rank-top2-bg);
+  color: var(--rank-top2-text);
+  border-color: var(--rank-top2-border);
+}
+.customer-rank.top3 {
+  background: var(--rank-top3-bg);
+  color: var(--rank-top3-text);
+  border-color: var(--rank-top3-border);
+}
+
+/* ══════════════════════════════════════
+   7. STOCK BADGE
+══════════════════════════════════════ */
+.stock-badge {
+  background: var(--stock-badge-bg);
+  color: var(--stock-badge-text);
+}
+
+/* ══════════════════════════════════════
+   8. INSIGHT CARD & TABS
+══════════════════════════════════════ */
+body.dark-mode .insight-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .insight-header {
+  border-bottom-color: var(--border-color);
+}
+
+body.dark-mode .tab-btn {
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+body.dark-mode .tab-btn:hover {
+  background: var(--bg-card-soft);
+  color: var(--text-primary);
+}
+body.dark-mode .tab-btn.active {
+  background: var(--info);
+  color: #fff;
+  border-color: var(--info);
+}
+
+body.dark-mode .insight-list li {
+  border-bottom-color: var(--border-color);
+  color: var(--text-heading);
+}
+
+body.dark-mode .item-name strong {
+  color: var(--text-primary);
+}
+body.dark-mode .item-name small {
+  color: var(--text-secondary);
+}
+body.dark-mode .item-val {
+  color: var(--text-primary);
+}
+
+/* ══════════════════════════════════════
+   9. PAYMENT CARD
+══════════════════════════════════════ */
+body.dark-mode .pay-stat {
+  border-bottom-color: var(--border-color);
+}
+body.dark-mode .pay-label {
+  color: var(--text-secondary);
+}
+body.dark-mode .pay-value {
+  color: var(--text-primary);
+}
+body.dark-mode .pay-method-label {
+  color: var(--text-heading);
+}
+body.dark-mode .pay-method-bar-wrap {
+  background: var(--border-color);
+}
+body.dark-mode .pay-methods-title {
+  color: var(--text-secondary);
+}
+
+/* ══════════════════════════════════════
+   10. TABLE CARD & QUOTE PILLS
+══════════════════════════════════════ */
+body.dark-mode .table-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+
+body.dark-mode .q-pill {
+  background: var(--bg-card-soft);
+  border-color: var(--border-color);
+  color: var(--text-heading);
+}
+body.dark-mode .q-pill span {
+  color: var(--text-primary);
+}
+
+body.dark-mode .view-all-link {
+  color: var(--info);
+}
+
+/* ══════════════════════════════════════
+   11. ACTIVITY LOG
+══════════════════════════════════════ */
+body.dark-mode .activity-log-list li {
+  border-bottom-color: var(--border-color);
+}
+body.dark-mode .log-action {
+  color: var(--text-heading);
+}
+body.dark-mode .log-meta {
+  color: var(--text-secondary);
+}
+
+/* ══════════════════════════════════════
+   12. CHART CARDS
+══════════════════════════════════════ */
+body.dark-mode .chart-card {
+  background: var(--bg-card);
+  border-color: var(--border-color);
+}
+body.dark-mode .chart-card h3 {
+  color: var(--text-heading);
+}
+body.dark-mode .chart-sub {
+  color: var(--text-secondary);
+}
+
+/* Donut legend */
+body.dark-mode .legend-item {
+  color: var(--text-heading);
+}
+body.dark-mode .legend-pct {
+  color: var(--text-secondary);
+}
+
+/* ══════════════════════════════════════
+   13. SCROLLBAR — dark-mode thumb
+══════════════════════════════════════ */
+.main-content::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb,
+.pay-methods::-webkit-scrollbar-thumb,
+.alerts-list::-webkit-scrollbar-thumb,
+.activity-log-list::-webkit-scrollbar-thumb,
+.insight-list::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+
+/* ══════════════════════════════════════
+   14. LOADING / EMPTY STATES
+══════════════════════════════════════ */
+body.dark-mode .loading-row,
+body.dark-mode .loading-item {
+  color: var(--text-secondary);
+}
+
+/* ══════════════════════════════════════
+   15. SMOOTH TRANSITION ON MODE SWITCH
+   Prevents jarring flash when toggling dark mode.
+   Apply to the elements that change most visibly.
+══════════════════════════════════════ */
+.stat-card,
+.chart-card,
+.table-card,
+.insight-card,
+.badge,
+.alert-item,
+.tab-btn,
+.customer-rank,
+.stock-badge,
+.q-pill,
+.pay-method-bar-wrap,
+tbody td,
+.log-action,
+.log-meta,
+.legend-item,
+.donut-legend {
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}

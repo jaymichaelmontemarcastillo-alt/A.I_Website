@@ -1,6 +1,8 @@
 <?php
+include 'auth_check.php';
 include '../includes/header.php';
 ?>
+
 
 <body>
     <div class="admin-wrapper">

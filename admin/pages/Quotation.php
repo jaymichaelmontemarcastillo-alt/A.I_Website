@@ -1,7 +1,8 @@
 <?php
+include 'auth_check.php';
 include '../includes/header.php';
-//admin/pages/Quotation.php
 ?>
+
 
 <body>
     <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">

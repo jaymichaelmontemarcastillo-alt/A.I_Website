@@ -1,6 +1,8 @@
 <?php
+include 'auth_check.php';
 include '../includes/header.php';
 ?>
+
 
 <body>
 
@@ -311,19 +313,61 @@ include '../includes/header.php';
         .search-bar {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 10px 15px;
-            background: #f5f5f5;
-            border-radius: 4px;
+
+            width: 40%;
+            height: 38px;
+            /* slim height */
+            padding: 0 12px;
+
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+
+            gap: 8px;
+
+            transition: all 0.2s ease;
         }
 
+        /* hover */
+        .search-bar:hover {
+            border-color: rgba(31, 78, 121, 0.35);
+        }
+
+        /* focus state (clean, no glow) */
+        .search-bar:focus-within {
+            border-color: var(--primary-blue);
+            box-shadow: none;
+        }
+
+        /* icon */
+        .search-bar i {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            opacity: 0.85;
+            flex-shrink: 0;
+        }
+
+        /* input */
         .search-bar input {
-            flex: 1;
+            width: 100%;
             border: none;
-            background: transparent;
             outline: none;
-            font-size: 14px;
+            box-shadow: none;
+
+            font-size: 0.88rem;
+            color: var(--text-primary);
+            background: transparent;
+        }
+
+        /* remove ALL browser outlines (important fix) */
+        .search-bar input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        /* placeholder */
+        .search-bar input::placeholder {
+            color: rgba(107, 114, 128, 0.75);
         }
 
         .orders-table-wrapper {

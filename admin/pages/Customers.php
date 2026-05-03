@@ -1,7 +1,9 @@
 <link rel="stylesheet" href="../../assets/css/admin-site/admin_customers.css">
 <?php
+include 'auth_check.php';
 include '../includes/header.php';
 ?>
+
 <div class="admin-wrapper">
     <?php
     $current_page = 'Customers';

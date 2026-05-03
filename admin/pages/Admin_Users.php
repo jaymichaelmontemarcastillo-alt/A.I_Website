@@ -1,4 +1,27 @@
 <?php
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+/*
+|--------------------------------------------------
+| LOGIN CHECK
+|--------------------------------------------------
+*/
+if (empty($_SESSION['admin_id'])) {
+    header("Location: ../admin_login.php");
+    exit;
+}
+
+/*
+|--------------------------------------------------
+| PAGE IDENTIFIER
+|--------------------------------------------------
+*/
+$current_page = 'Admin_Users';
+
+
 include '../includes/header.php';
 ?>
 

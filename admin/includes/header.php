@@ -78,13 +78,14 @@
     <link rel="stylesheet" href="../../assets/css/admin-site/activity_logs.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/products.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/admin-site/dashboard_darkmode.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_sidebar.css">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../../assets/js/admin-site-functions/admin_data_fetch.js"></script>
     <script src="../../assets/js/admin-site-functions/admin_products.js"></script>
-    <script src="../../assets/js/admin-site-functions/admin_users.js"></script>
+
     <!-- <script src="../../assets/js/admin-site-functions/admin_category.js"></script>-->
     <script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
-    <script src="../../assets/js/admin-site-functions/admin_dashboard.js"></script>
+
 </head>

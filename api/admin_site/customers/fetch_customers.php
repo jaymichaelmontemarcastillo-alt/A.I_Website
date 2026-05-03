@@ -19,11 +19,14 @@ try {
 
     if ($search) {
         $where .= " AND (
-            o.customer_name  LIKE :s OR
-            o.customer_email LIKE :s OR
-            o.customer_phone LIKE :s
-        )";
-        $params[':s'] = "%$search%";
+        o.customer_name  LIKE :s1 OR
+        o.customer_email LIKE :s2 OR
+        o.customer_phone LIKE :s3
+    )";
+
+        $params[':s1'] = "%$search%";
+        $params[':s2'] = "%$search%";
+        $params[':s3'] = "%$search%";
     }
 
     // ── Filter-specific HAVING ────────────────────────────────────────────────
