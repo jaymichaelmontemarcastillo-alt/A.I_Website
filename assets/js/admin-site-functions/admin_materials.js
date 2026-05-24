@@ -1,15 +1,15 @@
 // ============================================================
-//  admin_materials.js (FIXED)
+//  admin_materials.js (UPDATED FOR NEW DESIGN)
 //
 //  Manages material inventory UI and API interactions.
 //  All function names, element IDs, and globals prefixed "mat"
 //  to prevent collision with admin_products.js.
 //
-//  FIXES:
-//  - Robust JSON parsing with error handling
-//  - Response status checking
-//  - Content-Type verification
-//  - Debug logging
+//  ENHANCEMENTS:
+//  - Better modal accessibility (aria-hidden)
+//  - Improved event handling
+//  - Smoother animations
+//  - Better error messages
 // ============================================================
 
 /* ── API Endpoints ─────────────────────────────────────────── */
@@ -130,8 +130,10 @@ const matRenderAlerts = (materials = []) => {
       const label = isOut ? "Out of Stock" : `Low Stock (${m.total_stock})`;
       return `
       <div class="${cls}">
-        <i class="fa-solid ${icon}"></i>
-        <span><strong>${matEsc(m.material_name)}</strong> — ${label}</span>
+        <div>
+          <i class="fa-solid ${icon}"></i>
+          <span><strong>${matEsc(m.material_name)}</strong> — ${label}</span>
+        </div>
         <button class="alert-update-btn"
                 data-id="${m.id}"
                 data-name="${matEsc(m.material_name)}"
@@ -164,18 +166,23 @@ const matRenderMaterialRows = (materials = []) => {
         : "—";
       return `
       <tr>
-        <td><div class="mat-cell"><span>${matEsc(m.material_name)}</span></div></td>
+        <td>
+          <div class="mat-cell">
+            <span><strong>${matEsc(m.material_name)}</strong></span>
+          </div>
+        </td>
         <td>${matEsc(m.type || "—")}</td>
         <td><strong>${m.shop_stock}</strong></td>
         <td><strong>${m.ph_stock}</strong></td>
         <td><strong>${m.total_stock}</strong></td>
         <td>${costPerUnit}</td>
         <td><span class="badge ${badge.cls}">${badge.label}</span></td>
-        <td>
+        <td style="text-align: center;">
           <button class="btn-action mat-update-btn"
                   data-id="${m.id}"
                   data-name="${matEsc(m.material_name)}"
-                  data-stock="${m.total_stock}">
+                  data-stock="${m.total_stock}"
+                  title="Update stock for ${matEsc(m.material_name)}">
             <i class="fa-solid fa-pen-to-square"></i> Update
           </button>
         </td>
@@ -209,7 +216,7 @@ const matLoadLogs = async () => {
     return;
   }
 
-  tbody.innerHTML = matLoadingRow(9, "Loading logs…");
+  tbody.innerHTML = matLoadingRow(8, "Loading activity…");
 
   try {
     console.log("📋 Loading logs with params:", Object.fromEntries(params));
@@ -231,7 +238,7 @@ const matLoadLogs = async () => {
     );
   } catch (err) {
     console.error("❌ matLoadLogs failed:", err);
-    tbody.innerHTML = matErrorRow(9, `Error: ${err.message}`);
+    tbody.innerHTML = matErrorRow(8, `Error: ${err.message}`);
   }
 };
 
@@ -245,7 +252,7 @@ const matRenderLogRows = (logs = []) => {
   if (!tbody) return;
 
   if (!logs.length) {
-    tbody.innerHTML = matLoadingRow(9, "No log entries found.");
+    tbody.innerHTML = matLoadingRow(8, "No activity found.");
     return;
   }
 
@@ -261,11 +268,15 @@ const matRenderLogRows = (logs = []) => {
 
       return `
       <tr>
-        <td><div class="mat-cell"><span>${matEsc(l.material_name)}</span></div></td>
+        <td>
+          <div class="mat-cell">
+            <span><strong>${matEsc(l.material_name)}</strong></span>
+          </div>
+        </td>
         <td><span class="badge ${tb.cls}">${tb.label}</span></td>
         <td><span class="badge ${locBadge.cls}">${locBadge.label}</span></td>
         <td class="qty-cell"><span class="${deltaCls}">${deltaStr}</span></td>
-        <td class="stock-range">${l.previous_stock} → ${l.new_stock}</td>
+        <td class="mat-col-range">${l.previous_stock} → ${l.new_stock}</td>
         <td>${matEsc(l.admin_name || "—")}</td>
         <td class="note-cell" title="${matEsc(l.note || "")}">${matEsc(l.note || "—")}</td>
         <td class="date-cell">${dateStr}</td>
@@ -279,24 +290,37 @@ const matRenderLogRows = (logs = []) => {
 ══════════════════════════════════════════════════════════════ */
 const matInitModal = () => {
   const overlay = document.getElementById("matStockModal");
-  if (overlay && overlay.parentElement !== document.body) {
+  if (!overlay) {
+    console.error("❌ matStockModal element not found");
+    return;
+  }
+
+  // Ensure modal is in the DOM and accessible
+  if (overlay.parentElement !== document.body) {
     document.body.appendChild(overlay);
   }
 
-  overlay?.addEventListener("click", (e) => {
+  // Close on overlay click
+  overlay.addEventListener("click", (e) => {
     if (e.target === overlay) matCloseModal();
   });
 
+  // Close on Escape key
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") matCloseModal();
+    if (e.key === "Escape" && overlay.getAttribute("aria-hidden") === "false") {
+      matCloseModal();
+    }
   });
 
+  // Event listeners
   document
     .getElementById("matModalCloseBtn")
     ?.addEventListener("click", matCloseModal);
+
   document
     .getElementById("matCancelBtn")
     ?.addEventListener("click", matCloseModal);
+
   document
     .getElementById("matConfirmBtn")
     ?.addEventListener("click", matSubmitUpdate);
@@ -328,31 +352,34 @@ const matOpenModal = (materialId, materialName, currentStock) => {
   m.location = "total_stock";
 
   matSetText("matModalTitle", "Update Material Stock");
-  matSetText("matModalMaterialName", materialName);
+  matSetText("matModalMaterialName", `Item #${materialId}: ${materialName}`);
   matSetText("matModalCurrentStock", currentStock);
-  matSetText("matPreviewText", "");
+  document.getElementById("matPreviewText").innerHTML = "";
   matSetText("matErrorText", "");
 
   const qtyEl = document.getElementById("matQtyInput");
   const actionEl = document.getElementById("matActionSelect");
   const locEl = document.getElementById("matLocationSelect");
+
   if (qtyEl) qtyEl.value = "";
   if (actionEl) actionEl.value = "add";
   if (locEl) locEl.value = "total_stock";
 
   const overlay = document.getElementById("matStockModal");
   if (overlay) {
-    overlay.style.display = "flex";
-    document.body.style.overflow = "hidden";
+    overlay.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
   }
 
-  setTimeout(() => qtyEl?.focus(), 80);
+  setTimeout(() => qtyEl?.focus(), 100);
 };
 
 const matCloseModal = () => {
   const overlay = document.getElementById("matStockModal");
-  if (overlay) overlay.style.display = "none";
-  document.body.style.overflow = "";
+  if (overlay) {
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+  }
   matState.modal.materialId = null;
 };
 
@@ -366,7 +393,8 @@ const matUpdatePreview = () => {
   const qty = parseInt(raw, 10);
 
   if (errorEl) errorEl.textContent = "";
-  if (previewEl) previewEl.textContent = "";
+  if (previewEl) previewEl.innerHTML = "";
+
   if (raw === "" || isNaN(qty)) return;
 
   const { action, prevStock } = matState.modal;
@@ -390,7 +418,10 @@ const matUpdatePreview = () => {
     if (errorEl) errorEl.textContent = errorMsg;
     return;
   }
-  if (previewEl) previewEl.textContent = `${prevStock} → ${newStock}`;
+
+  if (previewEl) {
+    previewEl.innerHTML = `<strong>${prevStock}</strong> <span style="color: var(--muted);">→</span> <strong style="color: var(--accent);">${newStock}</strong>`;
+  }
 };
 
 const matSubmitUpdate = async () => {
@@ -445,7 +476,7 @@ const matSubmitUpdate = async () => {
 
     matCloseModal();
     matShowToast(
-      `Stock updated: ${data.material_name} is now ${data.new_stock} units.`,
+      `✓ Stock updated: ${data.material_name} → ${data.new_stock} units`,
       "success",
     );
     window.matReloadMaterials(true);
@@ -457,7 +488,7 @@ const matSubmitUpdate = async () => {
     matState.isUpdating = false;
     if (confirmEl) {
       confirmEl.disabled = false;
-      confirmEl.innerHTML = '<i class="fa-solid fa-check"></i> Update';
+      confirmEl.innerHTML = '<i class="fa-solid fa-check"></i> Update Stock';
     }
   }
 };
@@ -543,7 +574,7 @@ const matInitToast = () => {
 const matShowToast = (message, type = "success") => {
   const container = document.getElementById("matToastContainer");
   if (!container) return;
-  const icon = type === "success" ? "fa-circle-check" : "fa-circle-exclamation";
+  const icon = type === "success" ? "fa-check-circle" : "fa-exclamation-circle";
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;
   toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${matEsc(message)}</span>`;
@@ -653,10 +684,10 @@ const matSetText = (id, value) => {
 const matGetVal = (id) => document.getElementById(id)?.value ?? "";
 
 const matLoadingRow = (cols, msg) =>
-  `<tr><td colspan="${cols}" class="loading-cell">${msg}</td></tr>`;
+  `<tr><td colspan="${cols}" class="mat-loading-cell">${msg}</td></tr>`;
 
 const matErrorRow = (cols, msg) =>
-  `<tr><td colspan="${cols}" class="loading-cell error-cell">Error: ${matEsc(msg)}</td></tr>`;
+  `<tr><td colspan="${cols}" class="mat-loading-cell error-cell">Error: ${matEsc(msg)}</td></tr>`;
 
 const matEsc = (str) =>
   String(str ?? "")
