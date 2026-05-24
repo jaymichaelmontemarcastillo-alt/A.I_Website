@@ -1,19 +1,23 @@
 <?php
-session_start();
+
 /**
  * api/admin_site/generate_quotation_pdf.php
  *
- * Changes vs previous version:
- *  - Item descriptions are stored as HTML (from the rich contenteditable editor).
- *    They are now output directly (no nl2br/eq escaping) so bold, bullets, and
- *    indented text render correctly in the PDF.
- *  - Added _sanitiseHtml() to strip dangerous tags/attributes before rendering.
+ * FIXED VERSION: Properly handles admin name from AJAX request
+ * 
+ * Changes:
+ *  - Admin name passed from frontend via AJAX
+ *  - Item descriptions stored as HTML (from rich contenteditable editor)
+ *  - HTML sanitised before rendering in PDF
+ *  - render() called BEFORE output()
  */
 
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 error_reporting(E_ALL);
-
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 header('Content-Type: application/json; charset=utf-8');
 
 require_once __DIR__ . '/../../connect/config.php';
@@ -176,26 +180,36 @@ try {
     }
 
     /* ── 9. Admin user ────────────────────────────────────────────────────── */
-    $adminName = '';
-    if (isset($_SESSION['AdminID'])) {
+    $adminName = 'Authorized Representative';
+
+    // ✅ First priority: Admin name passed from frontend
+    if (isset($input['admin_name']) && !empty($input['admin_name'])) {
+        $adminName = trim((string)$input['admin_name']);
+    }
+    // ✅ Fallback: Get from session
+    elseif (isset($_SESSION['admin_id'])) {
         $stmtAdmin = $pdo->prepare('SELECT FullName FROM admins WHERE AdminID = ? LIMIT 1');
-        $stmtAdmin->execute([$_SESSION['AdminID']]);
+        $stmtAdmin->execute([$_SESSION['admin_id']]);
         $admin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
         if ($admin && !empty($admin['FullName'])) {
             $adminName = $admin['FullName'];
         }
     }
 
-    /* ── 10. Logo ─────────────────────────────────────────────────────────── */
-    $logoPath = __DIR__ . '/../../assets/images/admin-site/header_image.png';
-    if (!file_exists($logoPath)) {
-        throw new Exception('Logo image not found: ' . $logoPath);
-    }
-    $logoData = base64_encode(file_get_contents($logoPath));
-    $logoSrc  = 'data:image/png;base64,' . $logoData;
+    error_log('PDF Generation - Admin Name: ' . $adminName);
 
-    $fontRegular = 'file://' . __DIR__ . '/../../assets/fonts/inter/static/Inter_28pt-Regular.ttf';
-    $fontBold    = 'file://' . __DIR__ . '/../../assets/fonts/inter/static/Inter_28pt-Bold.ttf';
+    /* ── 10. Logo ─────────────────────────────────────────────────────────── */
+    $logoSrc = '';
+    $logoPath = __DIR__ . '/../../assets/images/admin-site/header_image.png';
+
+    if (file_exists($logoPath)) {
+        $logoData = base64_encode(file_get_contents($logoPath));
+        $logoSrc = 'data:image/png;base64,' . $logoData;
+    } else {
+        // Fallback: SVG placeholder if logo not found
+        error_log('Warning: Logo not found at ' . $logoPath);
+        $logoSrc = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="110" height="180"%3E%3Crect fill="%23e5e7eb" width="110" height="180"/%3E%3Ctext x="50" y="90" font-family="Arial" font-size="10" fill="%23999" text-anchor="middle" dominant-baseline="middle"%3ELogo%3C/text%3E%3C/svg%3E';
+    }
 
     /* ── 11. Full HTML document ───────────────────────────────────────────── */
     $html = '<!DOCTYPE html>
@@ -203,22 +217,11 @@ try {
 <head>
 <meta charset="UTF-8">
 <style>
-@font-face {
-    font-family: Inter;
-    src: url("' . $fontRegular . '") format("truetype");
-    font-weight: normal;
-}
-@font-face {
-    font-family: Inter;
-    src: url("' . $fontBold . '") format("truetype");
-    font-weight: bold;
-}
-
 @page { margin: 0px 40px 40px 40px; }
 
 body, table, td, div, p { margin: 0; padding: 0; }
 body {
-    font-family: Inter, DejaVu Sans, Arial, sans-serif;
+    font-family: DejaVu Sans, Arial, sans-serif;
     font-size: 14px;
     color: #000000;
     background: #fff;
@@ -244,7 +247,7 @@ body {
 
 /* ─── Table heading ─── */
 .tbl-heading {
-    text-align:center; font-size:20px; font-weight:bolder;
+    text-align:center; font-size:20px; font-weight:bold;
     color:#0f3d67; margin-bottom:7px;
 }
 
@@ -355,43 +358,73 @@ body {
 <!-- SIGNATURE -->
 <div class="sig-wrap">
     <div class="sig-prepared">Prepared by:</div>
-    <div class="sig-name-line">' . eq($adminName ?: 'Authorized Representative') . '</div>
+    <div class="sig-name-line">' . eq($adminName) . '</div>
     <div class="sig-company">Anything Inside</div>
 </div>
 
 </body>
 </html>';
 
-    /* ── 12. Dompdf ───────────────────────────────────────────────────────── */
+    /* ── 12. Dompdf - Initialize ──────────────────────────────────────────── */
     $opts = new Options();
     $opts->set('defaultFont',          'DejaVu Sans');
     $opts->set('isRemoteEnabled',      false);
     $opts->set('isHtml5ParserEnabled', true);
 
     $dompdf = new Dompdf($opts);
+
+    /* ── 13. Load and Render ──────────────────────────────────────────────── */
     $dompdf->loadHtml($html);
     $dompdf->setPaper('A4', 'portrait');
-    $dompdf->render();
+    $dompdf->render();  // ✅ RENDER FIRST
 
-    /* ── 13. Save ─────────────────────────────────────────────────────────── */
+    /* ── 14. Validate output ──────────────────────────────────────────────── */
+    $pdfOutput = $dompdf->output();
+
+    if (strlen($pdfOutput) < 1000) {
+        throw new Exception('PDF output too small (' . strlen($pdfOutput) . ' bytes). Rendering may have failed.');
+    }
+
+    /* ── 15. Save to disk ─────────────────────────────────────────────────── */
     $uploadDir = __DIR__ . '/../../uploads/quotations/';
+
     if (!is_dir($uploadDir)) {
         mkdir($uploadDir, 0755, true);
     }
 
+    if (!is_writable($uploadDir)) {
+        throw new Exception('Upload directory not writable: ' . $uploadDir);
+    }
+
     $safeNum  = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $quote['quote_number']);
     $filename = 'quotation_' . $safeNum . '_' . date('Ymd_His') . '.pdf';
-    file_put_contents($uploadDir . $filename, $dompdf->output());
+    $filePath = $uploadDir . $filename;
 
-    /* ── 14. Response ─────────────────────────────────────────────────────── */
+    if (file_put_contents($filePath, $pdfOutput) === false) {
+        throw new Exception('Failed to write PDF file: ' . $filePath);
+    }
+
+    $pdfUrl = '/Anything_Inside_Website/uploads/quotations/' . $filename;
+
+    /* ── 16. Update database ──────────────────────────────────────────────── */
+    $updateStmt = $pdo->prepare("
+        UPDATE quotations
+        SET pdf_url = ?, status = 'converted'
+        WHERE id = ?
+    ");
+    $updateStmt->execute([$pdfUrl, $id]);
+
+    /* ── 17. Success response ─────────────────────────────────────────────── */
     echo json_encode([
         'success' => true,
-        'pdf_url' => '/Anything_Inside_Website/uploads/quotations/' . $filename,
+        'pdf_url' => $pdfUrl,
+        'filename' => $filename,
         'message' => 'PDF generated successfully.',
     ]);
 } catch (Throwable $e) {
-    error_log('generate_quotation_pdf.php: ' . $e->getMessage()
+    error_log('generate_quotation_pdf.php ERROR: ' . $e->getMessage()
         . ' in ' . $e->getFile() . ':' . $e->getLine());
+
     echo json_encode([
         'success' => false,
         'message' => $e->getMessage(),

@@ -1,35 +1,53 @@
-// TOGGLE SEARCH BAR
-const searchIcon = document.getElementById("search_icon");
-const searchBar = document.querySelector(".search-bar");
-const searchInput = document.getElementById("searchInput");
+// LIVE SEARCH FILTER - Works on pages that have .gift-card elements
+// Supports both mobile (#searchInput) and desktop (#searchInputDesktop) search inputs
+document.addEventListener("DOMContentLoaded", function () {
+  const mobileSearchInput = document.getElementById("searchInput");
+  const desktopSearchInput = document.getElementById("searchInputDesktop");
+  const searchInputs = [mobileSearchInput, desktopSearchInput].filter(
+    (input) => input !== null,
+  );
 
-searchIcon.addEventListener("click", () => {
-  if (searchBar.classList.contains("show")) {
-    searchBar.classList.remove("show");
-  } else {
-    searchBar.classList.add("show");
-    searchInput.focus();
+  if (searchInputs.length === 0) return;
+
+  // Function to perform search filtering
+  function performSearch(searchValue) {
+    const products = document.querySelectorAll(".gift-card");
+
+    if (products.length === 0) return;
+
+    products.forEach((product) => {
+      const name = product.dataset.name
+        ? product.dataset.name.toLowerCase()
+        : "";
+      const category = product.dataset.category
+        ? product.dataset.category.toLowerCase()
+        : "";
+      const description = product.dataset.description
+        ? product.dataset.description.toLowerCase()
+        : "";
+
+      const matches =
+        name.includes(searchValue) ||
+        category.includes(searchValue) ||
+        description.includes(searchValue);
+
+      product.style.display = matches ? "block" : "none";
+    });
   }
-});
 
-// LIVE SEARCH FILTER
-searchInput.addEventListener("keyup", function () {
-  const searchValue = this.value.toLowerCase();
-  const products = document.querySelectorAll(".gift-card");
+  // Add event listeners to all available search inputs
+  searchInputs.forEach((searchInput) => {
+    searchInput.addEventListener("keyup", function () {
+      const searchValue = this.value.toLowerCase();
 
-  products.forEach((product) => {
-    const name = product.dataset.name;
-    const category = product.dataset.category;
-    const description = product.dataset.description;
+      // Sync both search inputs
+      searchInputs.forEach((input) => {
+        if (input.value !== this.value) {
+          input.value = this.value;
+        }
+      });
 
-    if (
-      name.includes(searchValue) ||
-      category.includes(searchValue) ||
-      description.includes(searchValue)
-    ) {
-      product.style.display = "block";
-    } else {
-      product.style.display = "none";
-    }
+      performSearch(searchValue);
+    });
   });
 });

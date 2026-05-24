@@ -46,9 +46,21 @@ try {
 
     $totalPages = ceil($total / $limit);
 
+    // ✅ Get admin name from session
+    $adminName = 'Authorized Representative';
+    if (isset($_SESSION['AdminID'])) {
+        $stmtAdmin = $pdo->prepare('SELECT FullName FROM admins WHERE AdminID = ? LIMIT 1');
+        $stmtAdmin->execute([$_SESSION['AdminID']]);
+        $admin = $stmtAdmin->fetch(PDO::FETCH_ASSOC);
+        if ($admin && !empty($admin['FullName'])) {
+            $adminName = $admin['FullName'];
+        }
+    }
+
     echo json_encode([
         'success' => true,
         'data' => $quotations,
+        'admin_name' => $adminName,  // ✅ Include admin name
         'pagination' => [
             'page' => $page,
             'limit' => $limit,

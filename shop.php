@@ -1,7 +1,9 @@
-<?php require_once 'connect/config.php';
+<?php
+require_once 'connect/config.php';
 // shop.php - Main shopping page with product listing, category filters, and add to cart/wishlist functionality
 $pdo = getDBConnection();
-$products = getProducts($pdo); ?>
+$products = getProducts($pdo);
+?>
 <?php include 'includes/header.php'; ?>
 
 <link rel="stylesheet" href="assets/css/customer-site/home.css">
@@ -29,6 +31,10 @@ $products = getProducts($pdo); ?>
 
     .toast.show {
         display: flex;
+    }
+
+    .toast.error {
+        background-color: #ff4444;
     }
 
     @keyframes slideIn {
@@ -138,7 +144,8 @@ $products = getProducts($pdo); ?>
 
                                 <!-- Wishlist -->
                                 <button class="icon-btn wishlist"
-                                    onclick="event.stopPropagation(); addToWishlist(<?= $product['id']; ?>)">
+                                    id="wishlistBtn_<?= $product['id']; ?>"
+                                    onclick="event.stopPropagation(); addToWishlist(event, <?= $product['id']; ?>)">
                                     <i class="fa-regular fa-heart"></i>
                                 </button>
 
@@ -166,216 +173,180 @@ $products = getProducts($pdo); ?>
     <span id="toastMessage">Item added to cart!</span>
 </div>
 
-<script>
-    // Products data from PHP
-    const products = <?= json_encode(array_values($products)); ?>;
+<?php
+// shop.php — replace ONLY the bottom <script> block with this.
+?>
 
-    // Toast function
+<!-- ============================================================
+     REPLACE the entire <script> block at bottom of shop.php
+============================================================ -->
+<script>
+    const products = <?= json_encode(array_values($products)) ?>;
+
+    window.productsMap = {};
+    products.forEach(p => window.productsMap[p.id] = p);
+
+    // ==================== TOAST ====================
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toastMessage');
-        const toastIcon = toast.querySelector('i');
-
-        toastMessage.textContent = message;
-
-        if (isError) {
-            toast.style.backgroundColor = '#ff4444';
-            toastIcon.className = 'fa-solid fa-exclamation-circle';
-        } else {
-            toast.style.backgroundColor = '#4CAF50';
-            toastIcon.className = 'fa-solid fa-check-circle';
-        }
-
+        if (!toast) return;
+        const msg = toast.querySelector('#toastMessage');
+        const icon = toast.querySelector('i');
+        if (msg) msg.textContent = message;
+        toast.style.backgroundColor = isError ? '#ff4444' : '#4CAF50';
+        if (icon) icon.className = isError ? 'fa-solid fa-exclamation-circle' : 'fa-solid fa-check-circle';
         toast.classList.add('show');
-
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
+        clearTimeout(toast._t);
+        toast._t = setTimeout(() => toast.classList.remove('show'), 3000);
     }
 
-    // View product details
+    // ==================== VIEW PRODUCT ====================
     function viewProduct(productId) {
-        window.location.href = 'product.php?id=' + productId;
+        window.location.href = (window.__baseDir || '') + 'product.php?id=' + productId;
     }
 
-    // Add to cart function
+    // ==================== ADD TO CART ====================
     function addToCart(productId) {
+        event.stopPropagation();
         const button = document.getElementById('addToCartBtn_' + productId);
-        const originalIcon = button.innerHTML;
-
-        // Show loading state
-        button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
+        if (!button) return;
+        const orig = button.innerHTML;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
         button.disabled = true;
 
-        // Find product details
-        const product = products.find(p => p.id === productId);
-
+        const product = window.productsMap[productId];
         if (!product) {
             showToast('Product not found!', true);
-            button.innerHTML = originalIcon;
+            button.innerHTML = orig;
             button.disabled = false;
             return;
         }
 
-        // Prepare cart data
-        const cartData = {
-            id: productId,
-            name: product.name,
-            price: product.price,
-            category: product.category,
-            image: product.image,
-            quantity: 1
-        };
-
-        // Send to server
-        fetch('api/add_to_cart.php', {
+        fetch((window.__baseDir || '') + 'api/add_to_cart.php', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(cartData)
+                body: JSON.stringify({
+                    id: productId,
+                    name: product.name,
+                    price: product.price,
+                    category: product.category,
+                    image: product.image,
+                    quantity: 1
+                })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 if (data.success) {
                     showToast('✓ Added to cart!');
-
-                    // Update cart count if you have a cart counter in header
-                    updateCartCount(data.cart_count);
+                    document.dispatchEvent(new CustomEvent('cartUpdated'));
                 } else {
-                    showToast('Error: ' + data.error, true);
+                    showToast('Error: ' + (data.error || 'Failed to add to cart'), true);
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to add to cart', true);
-            })
+            .catch(() => showToast('Failed to add to cart', true))
             .finally(() => {
-                // Restore button
-                button.innerHTML = originalIcon;
+                button.innerHTML = orig;
                 button.disabled = false;
             });
     }
 
-    // Add to wishlist
-    function addToWishlist(productId) {
-        // Prevent event bubbling
+    // ==================== ADD TO WISHLIST ====================
+    function addToWishlist(event, productId) {
         event.stopPropagation();
+        const button = document.getElementById('wishlistBtn_' + productId);
+        if (!button) return;
+        const orig = button.innerHTML;
+        button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+        button.disabled = true;
 
-        // Find product details
-        const product = products.find(p => p.id === productId);
-
+        const product = window.productsMap[productId];
         if (!product) {
             showToast('Product not found!', true);
+            button.innerHTML = orig;
+            button.disabled = false;
             return;
         }
 
-        // Show loading state on the button
-        const button = event.currentTarget;
-        const originalIcon = button.innerHTML;
-        button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
-        button.disabled = true;
-
-        // Prepare wishlist data
-        const wishlistData = {
-            id: productId,
-            name: product.name,
-            price: product.price,
-            category: product.category,
-            image: product.image,
-            description: product.description
-        };
-
-        // Send to server
-        fetch('api/add_to_wishlist.php', {
+        fetch((window.__baseDir || '') + 'api/add_to_wishlist.php', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(wishlistData)
+                body: JSON.stringify({
+                    id: productId,
+                    name: product.name,
+                    price: product.price,
+                    category: product.category,
+                    image: product.image,
+                    description: product.description
+                })
             })
-            .then(response => response.json())
+            .then(r => r.json())
             .then(data => {
                 if (data.success) {
                     showToast('❤️ Added to wishlist!');
-
-                    // Optional: Change button style to indicate it's in wishlist
                     button.classList.add('in-wishlist');
-                    button.innerHTML = '<i class="fa-solid fa-heart" style="color: #ff4444;"></i>';
+                    button.innerHTML = '<i class="fa-solid fa-heart"></i>';
+                    document.dispatchEvent(new CustomEvent('wishlistUpdated'));
+                } else if (data.already_exists) {
+                    showToast('Already in wishlist');
+                    button.classList.add('in-wishlist');
+                    button.innerHTML = '<i class="fa-solid fa-heart"></i>';
                 } else {
-                    showToast('Error: ' + (data.error || 'Failed to add to wishlist'), true);
-                    button.innerHTML = originalIcon;
-                    button.disabled = false;
+                    showToast(data.error || 'Failed', true);
+                    button.innerHTML = orig;
                 }
             })
-            .catch(error => {
-                console.error('Error:', error);
+            .catch(() => {
                 showToast('Failed to add to wishlist', true);
-                button.innerHTML = originalIcon;
+                button.innerHTML = orig;
+            })
+            .finally(() => {
                 button.disabled = false;
             });
     }
 
-    // Filter by category
+    // ==================== FILTER BY CATEGORY ====================
     function filterByCategory(category) {
-        const cards = document.querySelectorAll('.gift-card');
-        let visibleCount = 0;
-
-        cards.forEach(card => {
-            const cardCategory = card.getAttribute('data-category');
-            if (cardCategory.includes(category.toLowerCase())) {
-                card.style.display = 'block';
-                visibleCount++;
-            } else {
-                card.style.display = 'none';
-            }
+        let visible = 0;
+        document.querySelectorAll('.gift-card').forEach(card => {
+            const match = card.getAttribute('data-category').includes(category.toLowerCase());
+            card.style.display = match ? 'block' : 'none';
+            if (match) visible++;
         });
-
-        if (visibleCount === 0) {
-            showToast('No products found in this category', true);
-        }
+        if (visible === 0) showToast('No products found in this category', true);
     }
 
-    // Reset all filters
     function resetFilters() {
-        const cards = document.querySelectorAll('.gift-card');
-        cards.forEach(card => {
-            card.style.display = 'block';
-        });
+        document.querySelectorAll('.gift-card').forEach(c => c.style.display = 'block');
     }
 
-    // Update cart count in header (if you have a cart icon in header)
-    function updateCartCount(count) {
-        const cartIcon = document.querySelector('.cart-icon'); // Adjust selector based on your header
-        if (cartIcon) {
-            // Check if badge exists
-            let badge = cartIcon.querySelector('.cart-badge');
-            if (!badge) {
-                badge = document.createElement('span');
-                badge.className = 'cart-badge';
-                cartIcon.style.position = 'relative';
-                cartIcon.appendChild(badge);
-            }
-            badge.textContent = count;
-        }
-    }
-
-    // Go to cart page
-    function goToCart() {
-        window.location.href = 'cart.php';
-    }
-
-    // Initialize on page load
+    // ==================== PAGE LOAD ====================
     document.addEventListener('DOMContentLoaded', function() {
-        // Check if there's a cart count in session and update badge
-        fetch('api/get_cart_count.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateCartCount(data.count);
-                }
-            })
-            .catch(error => console.error('Error getting cart count:', error));
+        // Check wishlist status for each product
+        products.forEach(p => {
+            fetch((window.__baseDir || '') + 'api/check_wishlist.php?id=' + p.id, {
+                    cache: 'no-store'
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success && data.in_wishlist) {
+                        const btn = document.getElementById('wishlistBtn_' + p.id);
+                        if (btn) {
+                            btn.classList.add('in-wishlist');
+                            btn.innerHTML = '<i class="fa-solid fa-heart"></i>';
+                        }
+                    }
+                })
+                .catch(() => {});
+        });
+
+        // Handle ?category= URL param (from home page category buttons)
+        const params = new URLSearchParams(window.location.search);
+        const cat = params.get('category');
+        if (cat) filterByCategory(cat);
     });
 </script>
 

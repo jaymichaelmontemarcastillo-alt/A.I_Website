@@ -146,7 +146,7 @@ if (isset($_SESSION['signup_success'])) {
                     <div class="brand-logo-img">
                         <img src="../assets/images/AI_Logo.jpg" alt="Logo">
                     </div>
-                    <h2>Join our admin team<br>effortlessly.</h2>
+                    <h2>Join our admin team effortlessly.</h2>
                 </div>
                 <p>Create your account and manage gifts with ease.</p>
             </div>

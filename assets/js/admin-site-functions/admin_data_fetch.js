@@ -5,6 +5,23 @@
   const toggle = document.getElementById("theme-toggle");
   const openAccountModal = document.getElementById("openAccountModal");
   const currentPasswordInput = document.getElementById("currentPasswordInput");
+
+  const THEME_KEY = "theme";
+  const LEGACY_THEME_KEY = "theme_preference";
+
+  const getSavedTheme = () =>
+    localStorage.getItem(THEME_KEY) || localStorage.getItem(LEGACY_THEME_KEY);
+
+  const setSavedTheme = (value) => {
+    localStorage.setItem(THEME_KEY, value);
+    localStorage.setItem(LEGACY_THEME_KEY, value);
+  };
+
+  const applyThemeMode = (isDark) => {
+    document.body.classList.toggle("dark-mode", isDark);
+    document.documentElement.classList.toggle("dark-mode", isDark);
+    if (toggle) toggle.checked = isDark;
+  };
   const passwordInput = document.getElementById("passwordInput");
   const toggleCurrentPassword = document.getElementById(
     "toggleCurrentPassword",
@@ -93,14 +110,14 @@
   }
 
   if (toggle) {
-    if (localStorage.getItem("theme") === "dark") {
-      document.body.classList.add("dark-mode");
-      toggle.checked = true;
-    }
+    const savedTheme = getSavedTheme();
+    const isDark = savedTheme === "dark";
+    applyThemeMode(isDark);
 
     toggle.addEventListener("change", () => {
-      document.body.classList.toggle("dark-mode");
-      localStorage.setItem("theme", toggle.checked ? "dark" : "light");
+      const activeDark = toggle.checked;
+      applyThemeMode(activeDark);
+      setSavedTheme(activeDark ? "dark" : "light");
     });
   }
 

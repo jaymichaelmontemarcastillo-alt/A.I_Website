@@ -32,6 +32,7 @@ if (!$product) {
 }
 
 include 'includes/header.php';
+
 ?>
 
 <link rel="stylesheet" href="assets/css/customer-site/product.css">
@@ -345,7 +346,7 @@ include 'includes/header.php';
 </main>
 
 <script>
-    // Toast function
+    // ==================== TOAST NOTIFICATION ====================
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
@@ -368,7 +369,7 @@ include 'includes/header.php';
         }, 3000);
     }
 
-    // Add to cart function
+    // ==================== ADD TO CART ====================
     function addToCart(productId) {
         const button = document.getElementById('addToCartBtn');
         const btnText = document.getElementById('btnText');
@@ -415,10 +416,12 @@ include 'includes/header.php';
                 if (data.success) {
                     showToast('✓ Added to cart!');
 
-                    // Update cart count in header
-                    if (typeof updateCartCount === 'function') {
-                        updateCartCount(data.cart_count);
-                    }
+                    // ✅ Dispatch event with cart count to update badges on ALL pages
+                    document.dispatchEvent(new CustomEvent('cartUpdated', {
+                        detail: {
+                            count: data.count || 0
+                        }
+                    }));
                 } else {
                     showToast('Error: ' + (data.error || 'Failed to add to cart'), true);
                 }
@@ -435,7 +438,7 @@ include 'includes/header.php';
             });
     }
 
-    // Add to wishlist function
+    // ==================== ADD TO WISHLIST ====================
     function addToWishlist(productId) {
         const button = document.getElementById('addToWishlistBtn');
         const btnText = document.getElementById('wishlistBtnText');
@@ -474,10 +477,12 @@ include 'includes/header.php';
                     button.classList.add('in-wishlist');
                     button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
 
-                    // Update wishlist count in header
-                    if (data.wishlist_count !== undefined && typeof updateWishlistCount === 'function') {
-                        updateWishlistCount(data.wishlist_count);
-                    }
+                    // ✅ Dispatch event with wishlist count to update badges on ALL pages
+                    document.dispatchEvent(new CustomEvent('wishlistUpdated', {
+                        detail: {
+                            count: data.wishlist_count || 0
+                        }
+                    }));
                 } else {
                     if (data.already_exists) {
                         showToast('Product already in wishlist', true);
@@ -499,7 +504,7 @@ include 'includes/header.php';
             });
     }
 
-    // Check if product is in wishlist on page load
+    // ==================== PAGE LOAD ====================
     document.addEventListener('DOMContentLoaded', function() {
         const productId = <?= $product['id'] ?>;
 
@@ -515,26 +520,7 @@ include 'includes/header.php';
             })
             .catch(error => console.error('Error checking wishlist:', error));
     });
-
-    // Update cart count function (if not defined globally)
-    if (typeof updateCartCount !== 'function') {
-        window.updateCartCount = function(count) {
-            const cartBadge = document.getElementById('cartCount');
-            if (cartBadge) {
-                cartBadge.textContent = count;
-            }
-        };
-    }
-
-    // Update wishlist count function (if not defined globally)
-    if (typeof updateWishlistCount !== 'function') {
-        window.updateWishlistCount = function(count) {
-            const wishlistBadge = document.getElementById('wishlistCount');
-            if (wishlistBadge) {
-                wishlistBadge.textContent = count;
-            }
-        };
-    }
 </script>
 
 <?php include 'includes/footer.php'; ?>
+<?php include 'includes/mobile_nav_bottom.php'; ?>

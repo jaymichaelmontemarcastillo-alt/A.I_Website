@@ -30,7 +30,7 @@
                         <img src="../assets/images/AI_Logo.jpg" alt="Logo">
                     </div>
 
-                    <h2>Finding the perfect gift<br>shouldn't be stressful.</h2>
+                    <h2>Finding the perfect gift shouldn't be stressful.</h2>
                 </div>
 
                 <p>Let us help you make it effortless and personal.</p>

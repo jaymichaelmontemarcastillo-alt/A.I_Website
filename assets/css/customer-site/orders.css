@@ -1,0 +1,99 @@
+/* orders.css - Styles for the Orders page */
+
+/* Mobile-first responsive design for orders */
+@media (max-width: 768px) {
+  .orders-container {
+    padding: clamp(12px, 2vw, 20px);
+  }
+
+  .order-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-status-badge {
+    align-self: flex-start;
+  }
+
+  .order-total {
+    width: 100%;
+    text-align: left;
+    margin-top: 8px;
+  }
+
+  .order-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .btn-view,
+  .btn-track,
+  .btn-cancel {
+    width: 100%;
+    flex: none;
+  }
+}
+
+@media (min-width: 769px) {
+  .orders-container {
+    padding: clamp(20px, 4vw, 40px);
+  }
+
+  .order-header {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .order-status-badge {
+    margin-left: auto;
+  }
+
+  .order-total {
+    margin-left: auto;
+  }
+
+  .order-actions {
+    flex-direction: row;
+  }
+
+  .btn-view,
+  .btn-track,
+  .btn-cancel {
+    flex: 1;
+  }
+}
+
+/* Status badge colors */
+.status-pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-processing {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.status-completed {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-cancelled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+/* Print styles */
+@media print {
+  .order-actions,
+  .demo-notice {
+    display: none;
+  }
+
+  .order-card {
+    page-break-inside: avoid;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+  }
+}

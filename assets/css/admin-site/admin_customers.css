@@ -231,7 +231,7 @@ body.dark-mode .table-container {
   padding: 5px 12px;
   border-radius: 20px;
   border: 1px solid var(--clr-border);
-  background: #f9fafb;
+  background: var(--clr-surface);
   color: var(--clr-muted);
   font-size: 12px;
   font-weight: 500;
@@ -308,7 +308,7 @@ body.dark-mode .table-container {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--clr-muted);
-  background: #f9fafb;
+  background: var(--clr-surface);
   border-bottom: 1px solid var(--clr-border);
   white-space: nowrap;
   overflow: hidden;
@@ -323,10 +323,10 @@ body.dark-mode .table-container {
 }
 
 .customer-table tbody tr:hover {
-  background: #f5f8ff;
+  background: var(--clr-surface);
 }
 .customer-table tbody tr:active {
-  background: #eef3ff;
+  background: var(--clr-surface);
 }
 
 /* Cells */
@@ -400,7 +400,7 @@ body.dark-mode .table-container {
 .btn-view:hover {
   border-color: var(--clr-accent);
   color: var(--clr-accent);
-  background: #eff3ff;
+  background: var(--clr-surface);
 }
 
 /* ── Loading row ── */
@@ -510,95 +510,96 @@ body.dark-mode .table-container {
 
 /* Customer type */
 .badge.buyer {
-  background: #eff6ff;
+  background: var(--clr-surface);
   color: #2563eb;
 }
 .badge.returning {
-  background: #f0fdf4;
+  background: var(--clr-surface);
   color: #15803d;
 }
 .badge.quote-only {
-  background: #fffbeb;
+  background: var(--clr-surface);
   color: #b45309;
 }
 
 /* Generic status */
 .badge.active {
-  background: #f0fdf4;
+  background: var(--clr-surface);
+
   color: var(--clr-green);
 }
 .badge.inactive {
-  background: #f9fafb;
+  background: var(--clr-surface);
   color: var(--clr-muted);
 }
 .badge.pending {
-  background: #fffbeb;
+  background: var(--clr-surface);
   color: var(--clr-amber);
 }
 
 /* Payment */
 .badge.paid {
-  background: #f0fdf4;
+  background: var(--clr-surface);
   color: var(--clr-green);
 }
 .badge.cash {
-  background: #f0fdf4;
+  background: var(--clr-surface);
   color: var(--clr-green);
 }
 .badge.gcash {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--clr-surface);
+  color: var(--clr-blue);
 }
 .badge.card {
-  background: #f5f3ff;
+  background: var(--clr-surface);
   color: var(--clr-purple);
 }
 .badge.failed {
-  background: #fef2f2;
+  background: var(--clr-surface);
   color: var(--clr-red);
 }
 
 /* Order status */
 .badge.processing {
-  background: #eff6ff;
+  background: var(--clr-surface);
   color: #2563eb;
 }
 .badge.packed {
-  background: #eff6ff;
+  background: var(--clr-surface);
   color: #2563eb;
 }
 .badge.shipped {
-  background: #f5f3ff;
+  background: var(--clr-surface);
   color: var(--clr-purple);
 }
 .badge.delivered {
-  background: #f0fdf4;
+  background: var(--clr-surface);
   color: var(--clr-green);
 }
 .badge.cancelled {
-  background: #fef2f2;
+  background: var(--clr-surface);
   color: var(--clr-red);
 }
 
 /* Quotation status */
 .badge.draft {
-  background: #f9fafb;
+  background: var(--clr-surface);
   color: var(--clr-muted);
 }
 .badge.sent {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--clr-surface);
+  color: var(--clr-blue);
 }
 .badge.accepted {
-  background: #f0fdf4;
+  background: var(--clr-surface);
   color: var(--clr-green);
 }
 .badge.expired {
-  background: #fef2f2;
+  background: var(--clr-surface);
   color: var(--clr-red);
 }
 .badge.converted {
-  background: #f5f3ff;
+  background: var(--clr-surface);
   color: var(--clr-purple);
 }
 
@@ -678,7 +679,7 @@ body.modal-open {
 }
 
 .modal-close:hover {
-  background: #fef2f2;
+  background: var(--clr-surface);
   color: var(--clr-red);
 }
 
@@ -760,7 +761,7 @@ body.modal-open {
 }
 
 .m-tile {
-  background: #f9fafb;
+  background: var(--clr-surface);
   border: 1px solid var(--clr-border);
   border-radius: 10px;
   padding: 12px 10px;
@@ -833,7 +834,7 @@ body.modal-open {
   border: 1px solid var(--clr-border);
   border-radius: 10px;
   padding: 13px 14px;
-  background: #fafbff;
+  background: var(--clr-surface);
   box-sizing: border-box;
   width: 100%;
 }

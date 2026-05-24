@@ -1,13 +1,33 @@
 /**
- * dashboard.js — Anything Inside Admin Dashboard
- * Fetches data from api/dashboard_api.php and renders all sections.
- * Preserves the existing Chart.js style (hoverLine plugin, color scheme).
+ * admin_dashboard.js — Refactored for Performance
+ *
+ * Loading Strategy:
+ *   IMMEDIATE  → KPI cards (above the fold, critical)
+ *   OBSERVED   → Charts, Orders table (IntersectionObserver triggers fetch)
+ *   ON-DEMAND  → Product Insight tabs (click triggers fetch)
+ *   DEFERRED   → Alerts, Activity Logs, Quotations (low-priority, observed)
+ *
+ * Key optimisations:
+ *   • Split single ?action=all into focused endpoints
+ *   • IntersectionObserver — sections only fetch when scrolled into view
+ *   • Per-section result cache — no duplicate fetches on re-entry
+ *   • Chart instances tracked — destroyed before re-render to avoid leaks
+ *   • document.createDocumentFragment() used for list/table rendering
+ *   • Skeleton loaders visible instantly; replaced when data arrives
+ *   • Chart animations disabled on first paint (animation: false)
+ *   • Dark-mode adapter preserved — patched onto new instance registry
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-  const API = "../../api/admin_site/dashboard_api.php?action=all";
+  // ─────────────────────────────────────────────
+  //  CONFIG
+  // ─────────────────────────────────────────────
+  const API_BASE = "../../api/admin_site/dashboard_api.php";
+  const endpoint = (action) => `${API_BASE}?action=${action}`;
 
-  // ── Palette ──
+  // ─────────────────────────────────────────────
+  //  PALETTE & CHART SHARED DEFAULTS
+  // ─────────────────────────────────────────────
   const COLORS = {
     gold: "#f4a100",
     navy: "#1f4e79",
@@ -22,29 +42,6 @@ document.addEventListener("DOMContentLoaded", () => {
   };
   const PALETTE = Object.values(COLORS);
 
-  // ── Hover-line plugin (preserved from original) ──
-  const hoverLine = {
-    id: "hoverLine",
-    afterDraw(chart) {
-      if (chart.tooltip?._active?.length) {
-        const ctx = chart.ctx;
-        const x = chart.tooltip._active[0].element.x;
-        const topY = chart.scales.y.top;
-        const bottomY = chart.scales.y.bottom;
-        ctx.save();
-        ctx.beginPath();
-        ctx.moveTo(x, topY);
-        ctx.lineTo(x, bottomY);
-        ctx.lineWidth = 1;
-        ctx.strokeStyle = "#d1d5db";
-        ctx.setLineDash([4, 4]);
-        ctx.stroke();
-        ctx.restore();
-      }
-    },
-  };
-
-  // ── Shared axis/tooltip defaults ──
   const baseScales = {
     x: {
       grid: { color: "#e5e7eb", borderDash: [4, 4] },
@@ -60,6 +57,7 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     },
   };
+
   const tooltipDefaults = {
     backgroundColor: "#fff",
     titleColor: "#111",
@@ -73,7 +71,28 @@ document.addEventListener("DOMContentLoaded", () => {
     animation: { duration: 200 },
   };
 
-  // ── Helpers ──
+  const hoverLine = {
+    id: "hoverLine",
+    afterDraw(chart) {
+      if (chart.tooltip?._active?.length) {
+        const ctx = chart.ctx;
+        const x = chart.tooltip._active[0].element.x;
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(x, chart.scales.y.top);
+        ctx.lineTo(x, chart.scales.y.bottom);
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#d1d5db";
+        ctx.setLineDash([4, 4]);
+        ctx.stroke();
+        ctx.restore();
+      }
+    },
+  };
+
+  // ─────────────────────────────────────────────
+  //  HELPERS
+  // ─────────────────────────────────────────────
   const peso = (v) =>
     "₱" +
     parseFloat(v).toLocaleString("en-PH", {
@@ -81,34 +100,209 @@ document.addEventListener("DOMContentLoaded", () => {
       maximumFractionDigits: 2,
     });
   const el = (id) => document.getElementById(id);
+  const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "—");
   const badge = (status) =>
     `<span class="badge ${status?.toLowerCase()}">${cap(status)}</span>`;
-  const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : "—");
+  const escHtml = (str) => {
+    if (str == null) return "—";
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
+  // ─────────────────────────────────────────────
+  //  RESULT CACHE  (prevents refetch on re-entry)
+  // ─────────────────────────────────────────────
+  const _cache = {};
+
+  async function fetchSection(action) {
+    if (_cache[action]) return _cache[action];
+    try {
+      const res = await fetch(endpoint(action));
+      const data = await res.json();
+      _cache[action] = data;
+      return data;
+    } catch (err) {
+      console.error(`Dashboard fetch error [${action}]:`, err);
+      return null;
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  //  CHART INSTANCE REGISTRY
+  //  Destroy before re-creating to avoid memory leaks
+  // ─────────────────────────────────────────────
+  const _charts = {};
+
+  function safeChart(canvasId, config) {
+    if (_charts[canvasId]) {
+      _charts[canvasId].destroy();
+    }
+    const canvas = el(canvasId);
+    if (!canvas) return null;
+    const chart = new Chart(canvas, config);
+    _charts[canvasId] = chart;
+    return chart;
+  }
+
+  // ─────────────────────────────────────────────
+  //  INTERSECTION OBSERVER FACTORY
+  //  Calls loader() once when element becomes visible.
+  //  After loading, unobserves so it never fires twice.
+  // ─────────────────────────────────────────────
+  function observeOnce(elementId, loader) {
+    const target = el(elementId);
+    if (!target) return;
+
+    const io = new IntersectionObserver(
+      (entries, observer) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            observer.unobserve(entry.target);
+            loader();
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "0px 0px 100px 0px" },
+    );
+
+    io.observe(target);
+  }
+
+  // ─────────────────────────────────────────────
+  //  SKELETON HELPERS
+  // ─────────────────────────────────────────────
+  function skeletonRows(cols, count = 5) {
+    return Array.from(
+      { length: count },
+      () =>
+        `<tr>${Array.from(
+          { length: cols },
+          () => `<td><span class="skeleton skeleton-text"></span></td>`,
+        ).join("")}</tr>`,
+    ).join("");
+  }
+
+  function skeletonListItems(count = 5) {
+    return Array.from(
+      { length: count },
+      () =>
+        `<li class="loading-item"><span class="skeleton skeleton-text"></span></li>`,
+    ).join("");
+  }
 
   // ══════════════════════════════════════════════
-  //  FETCH ALL
+  //  1 · KPI — LOAD IMMEDIATELY (above the fold)
   // ══════════════════════════════════════════════
-  fetch(API)
-    .then((r) => r.json())
-    .then((data) => {
-      renderKPI(data.kpi);
-      renderDailyChart(data.daily_sales);
-      renderMonthlyChart(data.monthly_sales);
-      renderTopProductsChart(data.top_products);
-      renderCategoryChart(data.sales_by_category);
-      renderRecentOrders(data.recent_orders);
-      renderProductInsights(data.product_insights);
-      renderPaymentOverview(data.payment_overview);
-      renderCustomerInsights(data.customer_insights);
-      renderQuotationsRequests(data.quotations_requests);
-      renderAlerts(data.alerts);
-      renderActivityLogs(data.activity_logs);
-    })
-    .catch((err) => console.error("Dashboard API error:", err));
+  (async () => {
+    const data = await fetchSection("kpi");
+    if (!data) return;
+    renderKPI(data);
+  })();
 
   // ══════════════════════════════════════════════
-  //  KPI CARDS
+  //  2 · CHARTS — load when scrolled into view
   // ══════════════════════════════════════════════
+  let chartsLoaded = false;
+  observeOnce("chartsRow1", async () => {
+    if (chartsLoaded) return;
+    chartsLoaded = true;
+    const data = await fetchSection("charts");
+    if (!data) return;
+    renderDailyChart(data.daily_sales);
+    renderMonthlyChart(data.monthly_sales);
+  });
+
+  observeOnce("chartsRow2", async () => {
+    const data = await fetchSection("charts"); // already cached
+    if (!data) return;
+    renderTopProductsChart(data.top_products);
+    renderCategoryChart(data.sales_by_category);
+  });
+
+  // ══════════════════════════════════════════════
+  //  3 · ORDERS TABLE — load when scrolled into view
+  // ══════════════════════════════════════════════
+  observeOnce("recentOrdersSection", async () => {
+    const tbody = el("recentOrdersBody");
+    if (tbody) tbody.innerHTML = skeletonRows(6);
+    const data = await fetchSection("orders");
+    if (!data) return;
+    renderRecentOrders(data.recent_orders);
+  });
+
+  // ══════════════════════════════════════════════
+  //  4 · PAYMENT OVERVIEW & CUSTOMER INSIGHTS
+  //      (in the insights grid — observed together)
+  // ══════════════════════════════════════════════
+  let insightsBaseLoaded = false;
+  observeOnce("insightsGrid", async () => {
+    if (insightsBaseLoaded) return;
+    insightsBaseLoaded = true;
+    const data = await fetchSection("insights");
+    if (!data) return;
+    renderPaymentOverview(data.payment_overview);
+    renderCustomerInsights(data.customer_insights);
+    // Seed the default active tab; other tabs load on click
+    renderProductInsightsTab("best", data.product_insights?.best_selling);
+    renderProductInsightsTab("low", data.product_insights?.low_stock);
+    renderProductInsightsTab("recent", data.product_insights?.recent);
+  });
+
+  // ══════════════════════════════════════════════
+  //  5 · PRODUCT INSIGHTS TABS — ON DEMAND
+  //      Tabs already seeded from insights fetch above.
+  //      Wire up click switching without extra fetches.
+  // ══════════════════════════════════════════════
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document
+        .querySelectorAll(".tab-btn")
+        .forEach((b) => b.classList.remove("active"));
+      document
+        .querySelectorAll(".tab-content")
+        .forEach((c) => c.classList.remove("active"));
+      btn.classList.add("active");
+      el("tab-" + btn.dataset.tab)?.classList.add("active");
+    });
+  });
+
+  // ══════════════════════════════════════════════
+  //  6 · QUOTATIONS & REQUESTS — observed (low priority)
+  // ══════════════════════════════════════════════
+  observeOnce("quotationsSection", async () => {
+    const data = await fetchSection("orders"); // quotations come from same endpoint
+    if (!data) return;
+    renderQuotationsRequests(data.quotations_requests);
+  });
+
+  // ══════════════════════════════════════════════
+  //  7 · ALERTS & ACTIVITY LOGS — lowest priority
+  // ══════════════════════════════════════════════
+  observeOnce("alertsSection", async () => {
+    const alertsList = el("alertsList");
+    if (alertsList)
+      alertsList.innerHTML = `<p class="loading-row"><span class="skeleton skeleton-text"></span></p>`;
+    const data = await fetchSection("alerts");
+    if (!data) return;
+    renderAlerts(data.alerts);
+  });
+
+  observeOnce("activitySection", async () => {
+    const list = el("activityLogList");
+    if (list) list.innerHTML = skeletonListItems(6);
+    const data = await fetchSection("activity");
+    if (!data) return;
+    renderActivityLogs(data.activity_logs);
+  });
+
+  // ══════════════════════════════════════════════
+  //  RENDER FUNCTIONS  (unchanged logic, optimised DOM)
+  // ══════════════════════════════════════════════
+
   function renderKPI(d) {
     if (!d) return;
     const r = d.revenue;
@@ -135,12 +329,9 @@ document.addEventListener("DOMContentLoaded", () => {
     el("kpi-stock-out").textContent = s.out_of_stock + " out of stock";
   }
 
-  // ══════════════════════════════════════════════
-  //  DAILY SALES CHART
-  // ══════════════════════════════════════════════
   function renderDailyChart(rows) {
     if (!rows?.length) return;
-    new Chart(el("dailyChart"), {
+    safeChart("dailyChart", {
       type: "bar",
       data: {
         labels: rows.map((r) => r.label),
@@ -156,6 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
       },
       options: {
+        animation: false, // ← no animation on first paint
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
@@ -170,12 +362,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ══════════════════════════════════════════════
-  //  MONTHLY SALES CHART
-  // ══════════════════════════════════════════════
   function renderMonthlyChart(rows) {
     if (!rows?.length) return;
-    new Chart(el("monthlyChart"), {
+    safeChart("monthlyChart", {
       type: "line",
       data: {
         labels: rows.map((r) => r.label),
@@ -192,17 +381,10 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
       },
       options: {
+        animation: false,
         responsive: true,
         maintainAspectRatio: false,
         interaction: { mode: "index", intersect: false },
-        animations: {
-          tension: {
-            duration: 800,
-            easing: "easeOutCubic",
-            from: 0.2,
-            to: 0.4,
-          },
-        },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -225,9 +407,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ══════════════════════════════════════════════
-  //  TOP PRODUCTS CHART
-  // ══════════════════════════════════════════════
   function renderTopProductsChart(rows) {
     if (!rows?.length) return;
     const labels = rows.map((r) =>
@@ -235,7 +414,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ? r.product_name.substring(0, 16) + "…"
         : r.product_name,
     );
-    new Chart(el("topProductsChart"), {
+    safeChart("topProductsChart", {
       type: "bar",
       data: {
         labels,
@@ -249,6 +428,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
       },
       options: {
+        animation: false,
         indexAxis: "y",
         responsive: true,
         maintainAspectRatio: false,
@@ -273,15 +453,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ══════════════════════════════════════════════
-  //  SALES BY CATEGORY (Donut)
-  // ══════════════════════════════════════════════
   function renderCategoryChart(rows) {
     if (!rows?.length) return;
     const total = rows.reduce((s, r) => s + parseFloat(r.total), 0);
     const colors = rows.map((_, i) => PALETTE[i % PALETTE.length]);
 
-    new Chart(el("categoryChart"), {
+    safeChart("categoryChart", {
       type: "doughnut",
       data: {
         labels: rows.map((r) => r.category),
@@ -296,6 +473,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ],
       },
       options: {
+        animation: false,
         responsive: true,
         maintainAspectRatio: false,
         cutout: "65%",
@@ -312,117 +490,88 @@ document.addEventListener("DOMContentLoaded", () => {
       },
     });
 
-    // Custom legend
+    // Custom legend — built with fragment for one reflow
     const legend = el("categoryLegend");
-    legend.innerHTML = rows
-      .map((r, i) => {
-        const pct = total > 0 ? ((r.total / total) * 100).toFixed(1) : 0;
-        return `<div class="legend-item">
-                <span class="legend-dot" style="background:${colors[i]}"></span>
-                <span class="legend-label">${r.category}</span>
-                <span class="legend-pct">${pct}%</span>
-            </div>`;
-      })
-      .join("");
+    const frag = document.createDocumentFragment();
+    rows.forEach((r, i) => {
+      const pct = total > 0 ? ((r.total / total) * 100).toFixed(1) : 0;
+      const item = document.createElement("div");
+      item.className = "legend-item";
+      item.innerHTML = `<span class="legend-dot" style="background:${colors[i]}"></span>
+        <span class="legend-label">${escHtml(r.category)}</span>
+        <span class="legend-pct">${pct}%</span>`;
+      frag.appendChild(item);
+    });
+    legend.textContent = "";
+    legend.appendChild(frag);
   }
 
-  // ══════════════════════════════════════════════
-  //  RECENT ORDERS TABLE
-  // ══════════════════════════════════════════════
   function renderRecentOrders(rows) {
     const tbody = el("recentOrdersBody");
     if (!rows?.length) {
       tbody.innerHTML = `<tr><td colspan="6" class="loading-row">No orders found.</td></tr>`;
       return;
     }
-    tbody.innerHTML = rows
-      .map(
-        (o) => `
-            <tr>
-                <td><strong>${escHtml(o.order_number)}</strong></td>
-                <td>
-                    ${escHtml(o.customer_name)}<br>
-                    <small style="color:var(--text-secondary)">${escHtml(o.customer_email)}</small>
-                </td>
-                <td>${escHtml(o.order_date)}</td>
-                <td><strong>${peso(o.total_amount)}</strong></td>
-                <td>${badge(o.payment_status)}</td>
-                <td>${badge(o.order_status)}</td>
-            </tr>
-        `,
-      )
-      .join("");
-  }
-
-  // ══════════════════════════════════════════════
-  //  PRODUCT INSIGHTS (tabs)
-  // ══════════════════════════════════════════════
-  function renderProductInsights(d) {
-    if (!d) return;
-
-    // Best Sellers
-    el("bestSellingList").innerHTML = d.best_selling.length
-      ? d.best_selling
-          .map(
-            (p, i) => `
-                <li>
-                    <span class="item-name">
-                        <strong>${i + 1}. ${escHtml(p.product_name)}</strong>
-                        <small>${escHtml(p.category ?? "—")}</small>
-                    </span>
-                    <span class="item-val">${Number(p.total_sold).toLocaleString()} sold</span>
-                </li>`,
-          )
-          .join("")
-      : "<li class='loading-item'>No data.</li>";
-
-    // Low Stock
-    el("lowStockList").innerHTML = d.low_stock.length
-      ? d.low_stock
-          .map(
-            (p) => `
-                <li>
-                    <span class="item-name"><strong>${escHtml(p.name)}</strong><small>${escHtml(p.category)}</small></span>
-                    <span class="stock-badge">${p.stock} left</span>
-                </li>`,
-          )
-          .join("")
-      : "<li class='loading-item'>All products are well-stocked.</li>";
-
-    // Recent Products
-    el("recentProductsList").innerHTML = d.recent.length
-      ? d.recent
-          .map(
-            (p) => `
-                <li>
-                    <span class="item-name">
-                        <strong>${escHtml(p.name)}</strong>
-                        <small>${escHtml(p.category)} · ${escHtml(p.added_date)}</small>
-                    </span>
-                    <span class="item-val">${peso(p.price)}</span>
-                </li>`,
-          )
-          .join("")
-      : "<li class='loading-item'>No products found.</li>";
-
-    // Tab switching
-    document.querySelectorAll(".tab-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        document
-          .querySelectorAll(".tab-btn")
-          .forEach((b) => b.classList.remove("active"));
-        document
-          .querySelectorAll(".tab-content")
-          .forEach((c) => c.classList.remove("active"));
-        btn.classList.add("active");
-        el("tab-" + btn.dataset.tab).classList.add("active");
-      });
+    const frag = document.createDocumentFragment();
+    rows.forEach((o) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td><strong>${escHtml(o.order_number)}</strong></td>
+        <td>${escHtml(o.customer_name)}<br>
+            <small style="color:var(--text-secondary)">${escHtml(o.customer_email)}</small></td>
+        <td>${escHtml(o.order_date)}</td>
+        <td><strong>${peso(o.total_amount)}</strong></td>
+        <td>${badge(o.payment_status)}</td>
+        <td>${badge(o.order_status)}</td>`;
+      frag.appendChild(tr);
     });
+    tbody.textContent = "";
+    tbody.appendChild(frag);
   }
 
-  // ══════════════════════════════════════════════
-  //  PAYMENT OVERVIEW
-  // ══════════════════════════════════════════════
+  // Product Insights — render one tab at a time
+  function renderProductInsightsTab(tab, items) {
+    if (tab === "best") {
+      el("bestSellingList").innerHTML = items?.length
+        ? items
+            .map(
+              (p, i) => `<li>
+              <span class="item-name"><strong>${i + 1}. ${escHtml(p.product_name)}</strong>
+                <small>${escHtml(p.category ?? "—")}</small></span>
+              <span class="item-val">${Number(p.total_sold).toLocaleString()} sold</span>
+            </li>`,
+            )
+            .join("")
+        : "<li class='loading-item'>No data.</li>";
+    }
+    if (tab === "low") {
+      el("lowStockList").innerHTML = items?.length
+        ? items
+            .map(
+              (p) => `<li>
+              <span class="item-name"><strong>${escHtml(p.name)}</strong>
+                <small>${escHtml(p.category)}</small></span>
+              <span class="stock-badge">${p.stock} left</span>
+            </li>`,
+            )
+            .join("")
+        : "<li class='loading-item'>All products are well-stocked.</li>";
+    }
+    if (tab === "recent") {
+      el("recentProductsList").innerHTML = items?.length
+        ? items
+            .map(
+              (p) => `<li>
+              <span class="item-name"><strong>${escHtml(p.name)}</strong>
+                <small>${escHtml(p.category)} · ${escHtml(p.added_date)}</small></span>
+              <span class="item-val">${peso(p.price)}</span>
+            </li>`,
+            )
+            .join("")
+        : "<li class='loading-item'>No products found.</li>";
+    }
+  }
+
   function renderPaymentOverview(d) {
     if (!d) return;
     const s = d.summary;
@@ -437,56 +586,43 @@ document.addEventListener("DOMContentLoaded", () => {
     const methodColors = { gcash: "gcash", cash: "cash", card: "card" };
 
     el("payMethods").innerHTML = d.methods?.length
-      ? `
-            <p class="pay-methods-title">Method Distribution</p>
-            ${d.methods
-              .map((m) => {
-                const pct = Math.round((parseInt(m.count) / maxCount) * 100);
-                const colorClass = methodColors[m.payment_method] ?? "";
-                return `<div class="pay-method-row">
-                    <span class="pay-method-label">${cap(m.payment_method)}</span>
-                    <div class="pay-method-bar-wrap">
-                        <div class="pay-method-bar ${colorClass}" style="width:${pct}%"></div>
-                    </div>
-                    <span class="pay-method-count">${m.count}</span>
-                </div>`;
-              })
-              .join("")}
-        `
+      ? `<p class="pay-methods-title">Method Distribution</p>` +
+        d.methods
+          .map((m) => {
+            const pct = Math.round((parseInt(m.count) / maxCount) * 100);
+            return `<div class="pay-method-row">
+            <span class="pay-method-label">${cap(m.payment_method)}</span>
+            <div class="pay-method-bar-wrap">
+              <div class="pay-method-bar ${methodColors[m.payment_method] ?? ""}" style="width:${pct}%"></div>
+            </div>
+            <span class="pay-method-count">${m.count}</span>
+          </div>`;
+          })
+          .join("")
       : "";
   }
 
-  // ══════════════════════════════════════════════
-  //  CUSTOMER INSIGHTS
-  // ══════════════════════════════════════════════
   function renderCustomerInsights(d) {
     if (!d) return;
     const rankClass = (i) =>
       i === 0 ? "top1" : i === 1 ? "top2" : i === 2 ? "top3" : "";
-    el("topCustomersList").innerHTML = d.top_customers?.length
-      ? d.top_customers
-          .map(
-            (c, i) => `
-                <li>
-                    <span class="customer-rank ${rankClass(i)}">${i + 1}</span>
-                    <span class="item-name">
-                        <strong>${escHtml(c.customer_name)}</strong>
-                        <small>${c.order_count} order${c.order_count !== 1 ? "s" : ""}</small>
-                    </span>
-                    <span class="item-val">${peso(c.total_spent)}</span>
-                </li>`,
-          )
-          .join("")
-      : "<li class='loading-item'>No customer data.</li>";
+    const frag = document.createDocumentFragment();
+    (d.top_customers ?? []).forEach((c, i) => {
+      const li = document.createElement("li");
+      li.innerHTML = `<span class="customer-rank ${rankClass(i)}">${i + 1}</span>
+        <span class="item-name"><strong>${escHtml(c.customer_name)}</strong>
+          <small>${c.order_count} order${c.order_count !== 1 ? "s" : ""}</small></span>
+        <span class="item-val">${peso(c.total_spent)}</span>`;
+      frag.appendChild(li);
+    });
+    const list = el("topCustomersList");
+    list.textContent = "";
+    if (frag.childNodes.length) list.appendChild(frag);
+    else list.innerHTML = "<li class='loading-item'>No customer data.</li>";
   }
 
-  // ══════════════════════════════════════════════
-  //  QUOTATIONS & REQUESTS
-  // ══════════════════════════════════════════════
   function renderQuotationsRequests(d) {
     if (!d) return;
-
-    // Quote pills
     const qs = d.quote_summary;
     el("quoteStats").innerHTML = [
       ["Draft", qs.draft],
@@ -498,7 +634,6 @@ document.addEventListener("DOMContentLoaded", () => {
       .map(([l, v]) => `<span class="q-pill"><span>${v}</span>${l}</span>`)
       .join("");
 
-    // Request pills
     const rs = d.request_summary;
     el("requestStats").innerHTML = [
       ["Pending", rs.pending],
@@ -508,121 +643,98 @@ document.addEventListener("DOMContentLoaded", () => {
       .map(([l, v]) => `<span class="q-pill"><span>${v}</span>${l}</span>`)
       .join("");
 
-    // Recent Quotations
-    el("recentQuotationsBody").innerHTML = d.recent_quotations.length
+    el("recentQuotationsBody").innerHTML = d.recent_quotations?.length
       ? d.recent_quotations
           .map(
-            (q) => `
-                <tr>
-                    <td><strong>${escHtml(q.quote_number)}</strong></td>
-                    <td>${escHtml(q.client_name)}</td>
-                    <td>${peso(q.total)}</td>
-                    <td>${badge(q.status)}</td>
-                </tr>`,
+            (q) => `<tr>
+          <td><strong>${escHtml(q.quote_number)}</strong></td>
+          <td>${escHtml(q.client_name)}</td>
+          <td>${peso(q.total)}</td>
+          <td>${badge(q.status)}</td>
+        </tr>`,
           )
           .join("")
       : `<tr><td colspan="4" class="loading-row">No quotations found.</td></tr>`;
 
-    // Recent Requests
-    el("recentRequestsBody").innerHTML = d.recent_requests.length
+    el("recentRequestsBody").innerHTML = d.recent_requests?.length
       ? d.recent_requests
           .map(
-            (r) => `
-                <tr>
-                    <td><strong>${escHtml(r.request_number)}</strong></td>
-                    <td>${escHtml(r.client_name)}</td>
-                    <td>${escHtml(r.request_date)}</td>
-                    <td>${badge(r.status)}</td>
-                </tr>`,
+            (r) => `<tr>
+          <td><strong>${escHtml(r.request_number)}</strong></td>
+          <td>${escHtml(r.client_name)}</td>
+          <td>${escHtml(r.request_date)}</td>
+          <td>${badge(r.status)}</td>
+        </tr>`,
           )
           .join("")
       : `<tr><td colspan="4" class="loading-row">No requests found.</td></tr>`;
   }
 
-  // ══════════════════════════════════════════════
-  //  ALERTS PANEL
-  // ══════════════════════════════════════════════
   function renderAlerts(d) {
     if (!d) return;
     const items = [];
-
-    if (d.out_of_stock?.length) {
+    if (d.out_of_stock?.length)
       items.push(`<div class="alert-item alert-danger">
-                <i class="fa-solid fa-circle-xmark"></i>
-                <div><strong>${d.out_of_stock.length} product(s) out of stock</strong>
-                ${d.out_of_stock.map((p) => escHtml(p.name)).join(", ")}</div>
-            </div>`);
-    }
-
-    if (d.low_stock?.length) {
+        <i class="fa-solid fa-circle-xmark"></i>
+        <div><strong>${d.out_of_stock.length} product(s) out of stock</strong>
+          ${d.out_of_stock.map((p) => escHtml(p.name)).join(", ")}</div>
+      </div>`);
+    if (d.low_stock?.length)
       items.push(`<div class="alert-item alert-warning">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <div><strong>${d.low_stock.length} low-stock product(s)</strong>
-                ${d.low_stock.map((p) => `${escHtml(p.name)} (${p.stock} left)`).join(", ")}</div>
-            </div>`);
-    }
-
-    if (d.pending_payments > 0) {
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <div><strong>${d.low_stock.length} low-stock product(s)</strong>
+          ${d.low_stock.map((p) => `${escHtml(p.name)} (${p.stock} left)`).join(", ")}</div>
+      </div>`);
+    if (d.pending_payments > 0)
       items.push(`<div class="alert-item alert-warning">
-                <i class="fa-solid fa-clock"></i>
-                <div><strong>${d.pending_payments} payment(s) awaiting verification</strong></div>
-            </div>`);
-    }
-
-    if (d.failed_payments > 0) {
+        <i class="fa-solid fa-clock"></i>
+        <div><strong>${d.pending_payments} payment(s) awaiting verification</strong></div>
+      </div>`);
+    if (d.failed_payments > 0)
       items.push(`<div class="alert-item alert-danger">
-                <i class="fa-solid fa-xmark-circle"></i>
-                <div><strong>${d.failed_payments} failed payment(s) in the last 7 days</strong></div>
-            </div>`);
-    }
-
-    if (d.failed_logins > 0) {
+        <i class="fa-solid fa-xmark-circle"></i>
+        <div><strong>${d.failed_payments} failed payment(s) in the last 7 days</strong></div>
+      </div>`);
+    if (d.failed_logins > 0)
       items.push(`<div class="alert-item alert-danger">
-                <i class="fa-solid fa-shield-halved"></i>
-                <div><strong>${d.failed_logins} failed login attempt(s) in the last 24 hours</strong></div>
-            </div>`);
-    }
-
-    if (d.stale_pending > 0) {
+        <i class="fa-solid fa-shield-halved"></i>
+        <div><strong>${d.failed_logins} failed login attempt(s) in the last 24 hours</strong></div>
+      </div>`);
+    if (d.stale_pending > 0)
       items.push(`<div class="alert-item alert-info">
-                <i class="fa-solid fa-info-circle"></i>
-                <div><strong>${d.stale_pending} pending order(s) not updated in 24+ hours</strong></div>
-            </div>`);
-    }
+        <i class="fa-solid fa-info-circle"></i>
+        <div><strong>${d.stale_pending} pending order(s) not updated in 24+ hours</strong></div>
+      </div>`);
 
     el("alertsList").innerHTML = items.length
       ? items.join("")
-      : `<div class="alert-item alert-info"><i class="fa-solid fa-circle-check"></i><div>All systems normal — no active alerts.</div></div>`;
+      : `<div class="alert-item alert-info"><i class="fa-solid fa-circle-check"></i>
+           <div>All systems normal — no active alerts.</div></div>`;
   }
 
-  // ══════════════════════════════════════════════
-  //  ACTIVITY LOGS
-  // ══════════════════════════════════════════════
   function renderActivityLogs(rows) {
     const list = el("activityLogList");
     if (!rows?.length) {
       list.innerHTML = "<li class='loading-item'>No recent activity.</li>";
       return;
     }
-
-    list.innerHTML = rows
-      .map((log) => {
-        const isSuccess = log.Status === "Success";
-        const icon = actionIcon(log.ActionType);
-        return `<li>
-                <div class="log-icon ${isSuccess ? "success" : "failed"}">
-                    <i class="fa-solid ${icon}"></i>
-                </div>
-                <div class="log-body">
-                    <div class="log-action">${escHtml(log.ActionDetails)}</div>
-                    <div class="log-meta">${escHtml(log.UserName)} · ${escHtml(log.log_time)}</div>
-                </div>
-            </li>`;
-      })
-      .join("");
+    const frag = document.createDocumentFragment();
+    rows.forEach((log) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div class="log-icon ${log.Status === "Success" ? "success" : "failed"}">
+          <i class="fa-solid ${actionIcon(log.ActionType)}"></i>
+        </div>
+        <div class="log-body">
+          <div class="log-action">${escHtml(log.ActionDetails)}</div>
+          <div class="log-meta">${escHtml(log.UserName)} · ${escHtml(log.log_time)}</div>
+        </div>`;
+      frag.appendChild(li);
+    });
+    list.textContent = "";
+    list.appendChild(frag);
   }
 
-  // ── Map action types to FA icons ──
   function actionIcon(type) {
     const map = {
       login: "fa-right-to-bracket",
@@ -635,101 +747,61 @@ document.addEventListener("DOMContentLoaded", () => {
       payment: "fa-credit-card",
       order: "fa-cart-shopping",
     };
-    const t = (type ?? "").toLowerCase();
-    return map[t] ?? "fa-circle-dot";
+    return map[(type ?? "").toLowerCase()] ?? "fa-circle-dot";
   }
 
-  // ── XSS-safe HTML escape ──
-  function escHtml(str) {
-    if (str == null) return "—";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-}); // end DOMContentLoaded
+  // ─────────────────────────────────────────────
+  //  DARK MODE TOGGLE  (preserved from original)
+  // ─────────────────────────────────────────────
+  initDarkModeToggle();
 
-/* ─────────────────────────────────────────────────────────────
-   CHART DARK MODE ADAPTER
-   Drop this at the bottom of admin_dashboard.js (inside the
-   DOMContentLoaded callback, after all renderXxx calls).
-
-   It patches Chart.js global defaults and re-applies them
-   whenever the user toggles .dark-mode on <body>.
-   ───────────────────────────────────────────────────────────── */
-
-(function initChartDarkMode() {
-  // ── Resolve CSS-variable colours so Chart.js can use them ──
-  function getCSSVar(name) {
-    return getComputedStyle(document.documentElement)
-      .getPropertyValue(name)
-      .trim();
-  }
-
-  // ── Build a theme snapshot from current CSS variables ──
-  function buildTheme() {
-    const dark = document.body.classList.contains("dark-mode");
-    return {
-      dark,
-      gridColor: dark ? "#1e293b" : "#e5e7eb",
-      tickColor: dark ? "#94a3b8" : "#6b7280",
-      tooltipBg: dark ? "#1e293b" : "#ffffff",
-      tooltipText: dark ? "#e2e8f0" : "#111827",
-      tooltipBorder: dark ? "#334155" : "#e5e7eb",
-    };
-  }
-
-  // ── Apply theme to Chart.js global defaults ──
-  function applyChartTheme(theme) {
-    if (typeof Chart === "undefined") return;
-
-    // Global scale defaults
-    Chart.defaults.color = theme.tickColor;
-    Chart.defaults.borderColor = theme.gridColor;
-
-    // Update all live chart instances
-    Chart.instances &&
-      Object.values(Chart.instances).forEach((chart) => {
-        // Scales
-        if (chart.options.scales) {
-          Object.values(chart.options.scales).forEach((scale) => {
-            if (scale.grid) {
-              scale.grid.color = theme.gridColor;
-            }
-            if (scale.ticks) {
-              scale.ticks.color = theme.tickColor;
-            }
-          });
-        }
-
-        // Tooltip
-        if (chart.options.plugins?.tooltip) {
-          Object.assign(chart.options.plugins.tooltip, {
-            backgroundColor: theme.tooltipBg,
-            titleColor: theme.tooltipText,
-            bodyColor: theme.tooltipText,
-            borderColor: theme.tooltipBorder,
-          });
-        }
-
-        chart.update("none"); // silent redraw — no animation
-      });
-  }
-
-  // ── Watch for dark-mode class changes on <body> ──
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((m) => {
-      if (m.attributeName === "class") {
-        applyChartTheme(buildTheme());
-      }
+  function initDarkModeToggle() {
+    const toggleBtn = el("darkModeToggle");
+    if (!toggleBtn) return;
+    toggleBtn.addEventListener("click", () => {
+      const isDark = document.body.classList.toggle("dark-mode");
+      document.documentElement.classList.toggle("dark-mode");
+      localStorage.setItem("theme", isDark ? "dark" : "light");
+      localStorage.setItem("theme_preference", isDark ? "dark" : "light");
+      updateToggleIcon(isDark);
+      applyChartTheme(isDark);
     });
-  });
+    updateToggleIcon(document.body.classList.contains("dark-mode"));
+  }
 
-  observer.observe(document.body, { attributes: true });
+  function updateToggleIcon(isDark) {
+    const icon = el("darkModeToggle")?.querySelector("i");
+    if (!icon) return;
+    icon.classList.toggle("fa-moon", !isDark);
+    icon.classList.toggle("fa-sun", isDark);
+  }
 
-  // Apply once on load (handles page refresh in dark mode)
-  // Wait a tick so charts have time to initialise first
-  requestAnimationFrame(() => applyChartTheme(buildTheme()));
-})();
+  function applyChartTheme(isDark) {
+    if (typeof Chart === "undefined") return;
+    Chart.defaults.color = isDark ? "#94a3b8" : "#6b7280";
+    Chart.defaults.borderColor = isDark ? "#334155" : "#e5e7eb";
+    Object.values(_charts).forEach((chart) => {
+      if (!chart) return;
+      if (chart.options.scales) {
+        Object.values(chart.options.scales).forEach((scale) => {
+          if (scale?.grid) scale.grid.color = isDark ? "#334155" : "#e5e7eb";
+          if (scale?.ticks) scale.ticks.color = isDark ? "#94a3b8" : "#6b7280";
+        });
+      }
+      if (chart.options.plugins?.tooltip) {
+        Object.assign(chart.options.plugins.tooltip, {
+          backgroundColor: isDark ? "#1e293b" : "#ffffff",
+          titleColor: isDark ? "#e2e8f0" : "#111827",
+          bodyColor: isDark ? "#e2e8f0" : "#111827",
+          borderColor: isDark ? "#334155" : "#e5e7eb",
+        });
+      }
+      chart.update("none");
+    });
+  }
+
+  // Apply theme on load (handles page refresh in dark mode)
+  requestAnimationFrame(() =>
+    applyChartTheme(document.body.classList.contains("dark-mode")),
+  );
+}); // end DOMContentLoaded

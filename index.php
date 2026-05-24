@@ -1,22 +1,10 @@
 <?php
-//index.php - Home page with featured products and categories
+//index.php - Home page redesigned with new content sections
 session_start();
-require_once 'connect/config.php'; // Use database instead of products_list.php
-$pdo = getDBConnection();
-// Get featured products (limit to 8 for the homepage)
-$stmt = $pdo->query("SELECT * FROM products ORDER BY id LIMIT 8");
-$products = $stmt->fetchAll();
-
-// Function to get image URL (add this to config.php later)
-function getImageUrl($imagePath)
-{
-    if (strpos($imagePath, 'http') === 0) {
-        return $imagePath;
-    }
-    return '/' . $imagePath;
-}
+require_once 'connect/config.php';
 
 include 'includes/header.php';
+
 ?>
 
 <link rel="stylesheet" href="assets/css/customer-site/home.css">
@@ -146,369 +134,246 @@ include 'includes/header.php';
         <div class="hero-content">
             <div class="hero-text">
                 <h1>
-                    Finding the Perfect Gift<br>
-                    shouldn't be stressful.
+                    Thoughtful Gifts, Made Simple.
                 </h1>
 
                 <p>
-                    <span>Let us help you make it effortless and personal.</span>
-                    <br>
-                    Curated gift collections crafted with love. From birthdays to weddings,
-                    we've got something special inside for everyone.
+                    Create meaningful gift sets, custom merchandise, and curated bundles without the stress of dealing with multiple suppliers.
                 </p>
 
                 <div class="hero-buttons">
-                    <a href="shop.php" style="color:inherit; text-decoration:none;">
+                    <a href="#start-inquiry" style="color:inherit; text-decoration:none;">
                         <button class="btn-primary">
-                            Shop Now <i class="fa-solid fa-arrow-right"></i>
+                            Build Your Gift Set <i class="fa-solid fa-arrow-right"></i>
                         </button>
                     </a>
-                    <a href="#categories" style="color:inherit; text-decoration:none;">
+                    <a href="https://forms.gle/ujiUSwKGQLKgTa5D6" target="_blank" style="color:inherit; text-decoration:none;">
                         <button class="btn-secondary" style="border:0.35px solid rgb(219, 219, 219)">
-                            Browse Categories
+                            Inquire Here
                         </button>
                     </a>
                 </div>
-            </div>
 
-            <div class="hero-image">
-                <img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=600" alt="Gift Box">
-            </div>
-        </div>
-    </section>
-
-    <!-- ================= FEATURES ================= -->
-    <section class="features-bar">
-        <div class="feature-item">
-            <i class="fa-solid fa-gift"></i>
-            <div>
-                <h4>Curated Gifts</h4>
-                <p>Hand-picked selections</p>
-            </div>
-        </div>
-
-        <div class="feature-item">
-            <i class="fa-solid fa-truck-fast"></i>
-            <div>
-                <h4>Fast Delivery</h4>
-                <p>Nationwide shipping</p>
-            </div>
-        </div>
-
-        <div class="feature-item">
-            <i class="fa-solid fa-shield-halved"></i>
-            <div>
-                <h4>Secure Payment</h4>
-                <p>Safe transactions</p>
+                <p style="margin-top: 25px; font-size: 14px; color: #dbe7f3;">
+                    From custom gifting to branded merchandise — everything you need, all in one place.
+                </p>
             </div>
         </div>
     </section>
 
-    <!-- ================= CATEGORY ================= -->
-    <section class="category-section" id="categories">
-        <div class="section-title">
-            <h2>Shop by Category</h2>
-            <p>Browse our collection of thoughtfully curated gifts for every special moment.</p>
-        </div>
+    <!-- ================= PROBLEM SECTION ================= -->
+    <section class="problem-section">
+        <div class="section-container">
+            <div class="problem-content">
+                <h2>Finding the perfect gift shouldn't feel stressful.</h2>
 
-        <div class="category-buttons">
-            <button onclick="window.location.href='shop.php?category=birthday'">Birthday</button>
-            <button onclick="window.location.href='shop.php?category=anniversary'">Anniversary</button>
-            <button onclick="window.location.href='shop.php?category=holiday'">Holiday</button>
-            <button onclick="window.location.href='shop.php?category=thank you'">Thank You</button>
-            <button onclick="window.location.href='shop.php?category=baby shower'">Baby Shower</button>
-            <button onclick="window.location.href='shop.php?category=wedding'">Wedding</button>
-        </div>
-    </section>
-
-    <!-- ================= FEATURED GIFTS ================= -->
-    <section class="featured-section">
-        <div class="featured-header">
-            <h2>Featured Gifts</h2>
-            <a href="shop.php">View all →</a>
-        </div>
-
-        <div class="featured-grid" id="productsGrid">
-
-            <?php foreach ($products as $product): ?>
-                <?php
-                $imageUrl = getImageUrl($product['image']);
-                $productId = $product['id'];
-                ?>
-
-                <div class="gift-card"
-                    data-id="<?= $productId ?>"
-                    onclick="viewProduct(<?= $productId ?>)">
-
-                    <div class="gift-img">
-                        <span class="badge"><?= htmlspecialchars($product['category']) ?></span>
-                        <div class="gift-img" onclick="viewProduct(<?= $product['id']; ?>)">
-                            <span class="badge"><?= $product['category']; ?></span>
-                            <img src="<?= $product['image']; ?>" alt="<?= $product['name']; ?>">
-                        </div>
-
+                <div class="problems-list">
+                    <div class="problem-item">
+                        <i class="fas fa-clock"></i>
+                        <span>Time spent searching for matching items</span>
                     </div>
+                    <div class="problem-item">
+                        <i class="fas fa-brain"></i>
+                        <span>Overthinking how to create a thoughtful gift</span>
+                    </div>
+                    <div class="problem-item">
+                        <i class="fas fa-building"></i>
+                        <span>Too many suppliers to coordinate with</span>
+                    </div>
+                    <div class="problem-item">
+                        <i class="fas fa-box"></i>
+                        <span>Minimum order quantities that don't fit your needs</span>
+                    </div>
+                </div>
 
-                    <div class="gift-info">
-                        <h4><?= htmlspecialchars($product['name']) ?></h4>
-                        <p><?= htmlspecialchars($product['description']) ?></p>
+                <p class="transition-line">
+                    <strong>You should be focusing on the people receiving the gift — not the logistics behind it.</strong>
+                </p>
+            </div>
+        </div>
+    </section>
 
-                        <div class="gift-bottom">
-                            <span class="price">₱<?= number_format($product['price'], 2) ?></span>
+    <!-- ================= SOLUTION SECTION ================= -->
+    <section class="solution-section">
+        <div class="section-container">
+            <h2>We make gifting easier.</h2>
 
-                            <div class="card-icons">
-                                <!-- Wishlist -->
-                                <button class="icon-btn wishlist"
-                                    id="wishlistBtn_<?= $productId ?>"
-                                    onclick="event.stopPropagation(); addToWishlist(event, <?= $productId ?>)">
-                                    <i class="fa-regular fa-heart"></i>
-                                </button>
+            <p class="solution-intro">
+                At Anything Inside, we simplify the process by helping you create curated gift sets and custom merchandise in one place.
+            </p>
 
-                                <!-- Add to Cart -->
-                                <button class="icon-btn cart"
-                                    id="addToCartBtn_<?= $productId ?>"
-                                    onclick="event.stopPropagation(); addToCart(<?= $productId ?>)">
-                                    <i class="fa-solid fa-cart-shopping"></i>
-                                </button>
-                            </div>
+            <div class="solution-grid">
+                <div class="solution-item">
+                    <div class="solution-icon">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3>Source products</h3>
+                    <p>Browse and select from our curated collection of quality products</p>
+                </div>
+                <div class="solution-item">
+                    <div class="solution-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h3>Customize items</h3>
+                    <p>Personalize your selections with custom branding or messaging</p>
+                </div>
+                <div class="solution-item">
+                    <div class="solution-icon">
+                        <i class="fas fa-box-open"></i>
+                    </div>
+                    <h3>Package beautifully</h3>
+                    <p>We handle premium packaging with ribbons, cards, and personal touches</p>
+                </div>
+                <div class="solution-item">
+                    <div class="solution-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3>Deliver a complete experience</h3>
+                    <p>Your gifts arrive ready to impress, with every detail handled</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= PROCESS SECTION (3 STEPS) ================= -->
+    <section class="process-section">
+        <div class="section-container">
+            <h2>How it works</h2>
+            <p class="process-subtitle">3 simple steps to create your perfect gift</p>
+
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Tell us what you need</h3>
+                    <p>Share your budget, quantity, and vision through our inquiry form</p>
+                </div>
+                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>We curate and customize</h3>
+                    <p>We'll recommend products and create your perfect set</p>
+                </div>
+                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Receive your finished package</h3>
+                    <p>Ready to gift, distribute, or share with confidence</p>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 40px;">
+                <a href="https://forms.gle/ujiUSwKGQLKgTa5D6" target="_blank" style="text-decoration:none;">
+                    <button class="btn-primary">
+                        Start Your Inquiry <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= BENEFITS SECTION 1 ================= -->
+    <section class="benefits-section">
+        <div class="section-container">
+            <div class="benefit-block benefit-left">
+                <div class="benefit-image">
+                    <i class="fas fa-gift"></i>
+                </div>
+                <div class="benefit-content">
+                    <h2>Create gifts people actually remember.</h2>
+                    <p>Whether for teams, clients, celebrations, or special occasions, your gifts become more than products — they become experiences that leave an impression.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= BENEFITS SECTION 2 ================= -->
+    <section class="benefits-section benefits-section-alt">
+        <div class="section-container">
+            <div class="benefit-block benefit-right">
+                <div class="benefit-content">
+                    <h2>Skip the hassle of juggling suppliers and last-minute decisions.</h2>
+                    <p>Avoid spending hours sourcing products, managing different vendors, and worrying whether everything fits together. Anything Inside helps keep the process organized and efficient from start to finish.</p>
+                </div>
+                <div class="benefit-image">
+                    <i class="fas fa-handshake"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= FINAL CTA SECTION ================= -->
+    <section class="final-cta-section" id="start-inquiry">
+        <div class="cta-content">
+            <h2>Ready to create something meaningful?</h2>
+            <p>From curated bundles to customized merchandise, we help bring your ideas together.</p>
+
+            <div class="cta-buttons">
+                <a href="https://forms.gle/ujiUSwKGQLKgTa5D6" target="_blank" style="text-decoration:none;">
+                    <button class="btn-primary btn-large">Get a Quote</button>
+                </a>
+                <a href="mailto:ai.anythinginside@gmail.com" style="text-decoration:none;">
+                    <button class="btn-secondary btn-large">Message Us Today</button>
+                </a>
+            </div>
+
+            <p class="reassurance-text">No pressure. Tell us your idea and we'll help you build from there.</p>
+        </div>
+    </section>
+
+    <!-- ================= ABOUT US SECTION ================= -->
+    <section class="about-section" id="about-us">
+        <div class="section-container">
+            <h2>About Anything Inside</h2>
+            <p class="about-intro">
+                Anything Inside provides time-saving printing and gifting solutions, offering ready-to-give personalized items and custom-printed corporate giveaways tailored for busy individuals, companies, and procurement professionals.
+            </p>
+            <p>
+                We specialize in creating unique, ready-to-give products that save our customers the time and hassle of gift planning and packaging. From corporate giveaways to special occasion presents, we provide high-quality prints and creative packaging tailored to every client's needs.
+            </p>
+
+            <div class="contact-info">
+                <h3>Get in Touch</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <strong>Hours</strong>
+                            <p>Monday to Friday<br>9am to 6pm</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <strong>Location</strong>
+                            <p>Plaza Agapita Commercial Complex<br>Batong Malake, Los Baños, Laguna</p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-phone"></i>
+                        <div>
+                            <strong>Phone</strong>
+                            <p><a href="tel:09687305403" style="color: #0f3d67; text-decoration: none;">09687305403</a></p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <strong>Email</strong>
+                            <p><a href="mailto:ai.anythinginside@gmail.com" style="color: #0f3d67; text-decoration: none;">ai.anythinginside@gmail.com</a></p>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fab fa-facebook"></i>
+                        <div>
+                            <strong>Follow Us</strong>
+                            <p><a href="https://www.facebook.com/profile.php?id=61572947390035" target="_blank" style="color: #0f3d67; text-decoration: none;">Anything Inside Printing Services</a></p>
                         </div>
                     </div>
                 </div>
-            <?php endforeach; ?>
-
+            </div>
         </div>
     </section>
 
 </main>
-
-<script>
-    // Products data for JavaScript
-    const products = <?= json_encode(array_map(function ($product) {
-                            return [
-                                'id' => $product['id'],
-                                'name' => $product['name'],
-                                'price' => $product['price'],
-                                'category' => $product['category'],
-                                'image' => getImageUrl($product['image']),
-                                'description' => $product['description']
-                            ];
-                        }, $products)) ?>;
-
-    // Create a map for faster lookup
-    const productsMap = {};
-    products.forEach(p => productsMap[p.id] = p);
-
-    // Toast function
-    function showToast(message, isError = false) {
-        const toast = document.getElementById('toast');
-        const toastMessage = document.getElementById('toastMessage');
-        const toastIcon = toast.querySelector('i');
-
-        toastMessage.textContent = message;
-
-        if (isError) {
-            toast.style.backgroundColor = '#ff4444';
-            toastIcon.className = 'fa-solid fa-exclamation-circle';
-        } else {
-            toast.style.backgroundColor = '#4CAF50';
-            toastIcon.className = 'fa-solid fa-check-circle';
-        }
-
-        toast.classList.add('show');
-
-        setTimeout(() => {
-            toast.classList.remove('show');
-        }, 3000);
-    }
-
-    // View product details
-    function viewProduct(productId) {
-        window.location.href = 'product.php?id=' + productId;
-    }
-
-    // Add to cart function
-    function addToCart(productId) {
-        event.stopPropagation();
-
-        const button = document.getElementById('addToCartBtn_' + productId);
-        const originalIcon = button.innerHTML;
-
-        // Show loading state
-        button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
-        button.disabled = true;
-
-        // Find product details
-        const product = productsMap[productId];
-
-        if (!product) {
-            showToast('Product not found!', true);
-            button.innerHTML = originalIcon;
-            button.disabled = false;
-            return;
-        }
-
-        // Prepare cart data
-        const cartData = {
-            id: productId,
-            name: product.name,
-            price: product.price,
-            category: product.category,
-            image: product.image,
-            quantity: 1
-        };
-
-        // Send to server
-        fetch('api/add_to_cart.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(cartData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('✓ Added to cart!');
-
-                    // Update cart count in header
-                    updateCartCount(data.cart_count);
-                } else {
-                    showToast('Error: ' + (data.error || 'Failed to add to cart'), true);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to add to cart', true);
-            })
-            .finally(() => {
-                // Restore button
-                button.innerHTML = originalIcon;
-                button.disabled = false;
-            });
-    }
-
-    // Add to wishlist function
-    function addToWishlist(event, productId) {
-        event.stopPropagation();
-
-        const button = document.getElementById('wishlistBtn_' + productId);
-        const originalIcon = button.innerHTML;
-
-        button.innerHTML = '<i class="fa-solid fa-spinner"></i>';
-        button.disabled = true;
-
-        const product = productsMap[productId];
-
-        if (!product) {
-            showToast('Product not found!', true);
-            button.innerHTML = originalIcon;
-            button.disabled = false;
-            return;
-        }
-
-        const wishlistData = {
-            id: productId,
-            name: product.name,
-            price: product.price,
-            category: product.category,
-            image: product.image,
-            description: product.description
-        };
-
-        fetch('api/add_to_wishlist.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(wishlistData)
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('❤️ Added to wishlist!');
-                    button.classList.add('in-wishlist');
-                    button.innerHTML = '<i class="fa-solid fa-heart"></i>';
-
-                    if (data.wishlist_count !== undefined) {
-                        updateWishlistCount(data.wishlist_count);
-                    }
-                } else {
-                    if (data.already_exists) {
-                        showToast('Already in wishlist', true);
-                        button.classList.add('in-wishlist');
-                        button.innerHTML = '<i class="fa-solid fa-heart"></i>';
-                    } else {
-                        showToast('Error: ' + (data.error || 'Failed'), true);
-                        button.innerHTML = originalIcon;
-                    }
-                }
-            })
-            .catch(() => {
-                showToast('Failed to add to wishlist', true);
-                button.innerHTML = originalIcon;
-            })
-            .finally(() => {
-                button.disabled = false;
-            });
-    }
-
-    // Update cart count in header
-    function updateCartCount(count) {
-        const cartBadge = document.getElementById('cartCount');
-        if (cartBadge) {
-            cartBadge.textContent = count;
-        }
-    }
-
-    // Update wishlist count in header
-    function updateWishlistCount(count) {
-        const wishlistBadge = document.getElementById('wishlistCount');
-        if (wishlistBadge) {
-            wishlistBadge.textContent = count;
-        }
-    }
-
-    // Check wishlist status for all products on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Get all product IDs
-        const productIds = products.map(p => p.id);
-
-        // Check each product's wishlist status
-        productIds.forEach(id => {
-            fetch('api/check_wishlist.php?id=' + id)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.in_wishlist) {
-                        const button = document.getElementById('wishlistBtn_' + id);
-                        if (button) {
-                            button.classList.add('in-wishlist');
-                            button.innerHTML = '<i class="fa-solid fa-heart"></i>';
-                        }
-                    }
-                })
-                .catch(error => console.error('Error checking wishlist:', error));
-        });
-
-        // Get cart count
-        fetch('api/get_cart_count.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateCartCount(data.count);
-                }
-            })
-            .catch(error => console.error('Error getting cart count:', error));
-
-        // Get wishlist count
-        fetch('api/get_wishlist_count.php')
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateWishlistCount(data.count);
-                }
-            })
-            .catch(error => console.error('Error getting wishlist count:', error));
-    });
-</script>
 
 <?php include 'includes/footer.php'; ?>

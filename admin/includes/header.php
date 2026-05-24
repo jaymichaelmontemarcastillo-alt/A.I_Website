@@ -1,91 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Anything Inside Admin</title>
-    <script>
-        /**
-         * PROBLEM: Sidebar elements (logo, arrow, button) animate when page loads
-         * because CSS has transitions and JS applies .collapsed class after page renders.
-         * 
-         * SOLUTION: Apply collapsed state via CSS attribute BEFORE page renders,
-         * disable transitions during load, then enable them after JS executes.
-         */
+<body>
 
-        // Step 1: Check if sidebar should be collapsed (from localStorage)
-        const savedCollapsedState = localStorage.getItem("sidebar-collapsed") === "true";
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+        <title>Anything Inside Admin</title>
 
-        // Step 2: Apply initial state BEFORE DOM is ready to prevent flicker
-        if (savedCollapsedState) {
-            document.documentElement.setAttribute("data-sidebar-collapsed", "true");
-        }
-    </script>
+        <script>
+            (function () {
+                try {
+                    const THEME_KEY = "theme";
+                    const LEGACY_KEY = "theme_preference";
+                    const savedTheme = localStorage.getItem(THEME_KEY) || localStorage.getItem(LEGACY_KEY);
+                    const isDark = savedTheme === "dark";
 
-    <style>
-        /**
-         * FLICKER PREVENTION CSS
-         * These rules apply collapsed state BEFORE DOMContentLoaded fires.
-         * No transitions occur because these are base styles, not class changes.
-         */
+                    document.documentElement.classList.toggle("dark-mode", isDark);
+                    if (document.body) {
+                        document.body.classList.toggle("dark-mode", isDark);
+                    }
+                } catch (error) {
+                    console.error("Theme init error:", error);
+                } finally {
+                    document.documentElement.setAttribute("data-theme-loaded", "true");
+                }
+            })();
+        </script>
+        <style>
+            html:not([data-theme-loaded]) body {
+                visibility: hidden;
+            }
+            html[data-theme-loaded] body {
+                visibility: visible;
+            }
+            html:not([data-theme-loaded]) *,
+            html:not([data-theme-loaded]) *::before,
+            html:not([data-theme-loaded]) *::after {
+                transition: none !important;
+            }
+        </style>
+        <noscript>
+            <style>
+                html:not([data-theme-loaded]) body {
+                    visibility: visible;
+                }
+            </style>
+        </noscript>
 
-        /* When data attribute is set, instantly apply collapsed layout */
-        html[data-sidebar-collapsed="true"] .admin-wrapper {
-            grid-template-columns: var(--sidebar-collapsed) 1fr !important;
-        }
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-        /* Hide nav text immediately (no transition) */
-        html[data-sidebar-collapsed="true"] .nav-item span,
-        html[data-sidebar-collapsed="true"] .nav-title,
-        html[data-sidebar-collapsed="true"] .sidebar-footer .user-info,
-        html[data-sidebar-collapsed="true"] .sidebar-footer span {
-            opacity: 0 !important;
-            transform: translateX(-10px) !important;
-            pointer-events: none !important;
-        }
+        <link rel="stylesheet" href="../../assets/css/admin-site/admin_users.css">
+        <link rel="stylesheet" href="../../assets/css/admin-site/admin_payment.css">
+        <link rel="stylesheet" href="../../assets/css/admin-site/admin_category.css">
 
-        /* Shrink and reposition logo instantly (no transition) */
-        html[data-sidebar-collapsed="true"] .logo-icon {
-            transform: scale(0.8) !important;
-            margin-left: 10px !important;
-        }
+        <link rel="stylesheet" href="../../assets/css/admin-site/admin_header.css">
+        <link rel="stylesheet" href="../../assets/css/admin-site/products.css">
+        <link rel="stylesheet" href="../../assets/css/admin-site/admin_dashboard.css">
+        <link rel="stylesheet" href="../../assets/css/admin-site/dashboard_darkmode.css">
+        <link rel="stylesheet" href="../../assets/css/admin-site/admin_sidebar.css">
 
-        /* Rotate arrow and reposition button instantly (no transition) */
-        html[data-sidebar-collapsed="true"] #toggle-btn {
-            left: var(--sidebar-collapsed) !important;
-        }
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        html[data-sidebar-collapsed="true"] #toggle-btn .toggle-arrow {
-            transform: rotate(180deg) !important;
-        }
+        <script src="../../assets/js/admin-site-functions/admin_data_fetch.js"></script>
+        <script src="../../assets/js/admin-site-functions/admin_products.js"></script>
 
-        /* Prevent ALL transitions during page load */
-        html:not([data-transitions-enabled="true"]) * {
-            transition: none !important;
-        }
-    </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- <script src="../../assets/js/admin-site-functions/admin_category.js"></script>-->
+        <script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
 
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_users.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_inventory.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_payment.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_category.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/orders_styles.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_header.css">
-
-    <link rel="stylesheet" href="../../assets/css/admin-site/activity_logs.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/products.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_dashboard.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/dashboard_darkmode.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_sidebar.css">
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="../../assets/js/admin-site-functions/admin_data_fetch.js"></script>
-    <script src="../../assets/js/admin-site-functions/admin_products.js"></script>
-
-    <!-- <script src="../../assets/js/admin-site-functions/admin_category.js"></script>-->
-    <script src="../../assets/js/admin-site-functions/admin_sidebar.js"></script>
-
-</head>
+    </head>

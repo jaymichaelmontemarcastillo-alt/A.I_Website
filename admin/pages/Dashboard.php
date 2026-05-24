@@ -19,55 +19,68 @@ $current_page = 'Dashboard';
                 <p class="subtitle">Overview of your business performance</p>
 
                 <!-- ══════════════════════════════════════
-                 KPI CARDS
-            ══════════════════════════════════════ -->
+                     KPI CARDS — loaded immediately
+                ══════════════════════════════════════ -->
                 <div class="stats-grid" id="kpiGrid">
-                    <!-- Revenue -->
                     <div class="stat-card">
                         <div class="stat-text">
                             <p>Total Revenue</p>
-                            <h3 id="kpi-revenue-alltime">—</h3>
-                            <span id="kpi-revenue-change" class="positive">Loading…</span>
+                            <h3 id="kpi-revenue-alltime">
+                                <span class="skeleton skeleton-text" style="width:120px"></span>
+                            </h3>
+                            <span id="kpi-revenue-change" class="positive">
+                                <span class="skeleton skeleton-text" style="width:90px"></span>
+                            </span>
                             <small id="kpi-revenue-today" style="display:block;margin-top:3px;color:var(--text-secondary);font-size:.78rem;"></small>
                         </div>
                         <div class="stat-icon sales"><i class="fa-solid fa-peso-sign"></i></div>
                     </div>
 
-                    <!-- Orders -->
                     <div class="stat-card">
                         <div class="stat-text">
                             <p>Total Orders</p>
-                            <h3 id="kpi-orders-total">—</h3>
-                            <span id="kpi-orders-pending" class="warning-text">Loading…</span>
+                            <h3 id="kpi-orders-total">
+                                <span class="skeleton skeleton-text" style="width:80px"></span>
+                            </h3>
+                            <span id="kpi-orders-pending" class="warning-text">
+                                <span class="skeleton skeleton-text" style="width:110px"></span>
+                            </span>
                         </div>
                         <div class="stat-icon orders"><i class="fa-solid fa-cart-shopping"></i></div>
                     </div>
 
-                    <!-- Customers -->
                     <div class="stat-card">
                         <div class="stat-text">
                             <p>Customers</p>
-                            <h3 id="kpi-customers-total">—</h3>
-                            <span id="kpi-customers-new" class="positive">Loading…</span>
+                            <h3 id="kpi-customers-total">
+                                <span class="skeleton skeleton-text" style="width:80px"></span>
+                            </h3>
+                            <span id="kpi-customers-new" class="positive">
+                                <span class="skeleton skeleton-text" style="width:100px"></span>
+                            </span>
                         </div>
                         <div class="stat-icon customers"><i class="fa-solid fa-users"></i></div>
                     </div>
 
-                    <!-- Low Stock -->
                     <div class="stat-card">
                         <div class="stat-text">
                             <p>Low Stock</p>
-                            <h3 id="kpi-stock-low">—</h3>
-                            <span id="kpi-stock-out" style="font-size:.8rem;color:var(--danger)">Loading…</span>
+                            <h3 id="kpi-stock-low">
+                                <span class="skeleton skeleton-text" style="width:60px"></span>
+                            </h3>
+                            <span id="kpi-stock-out" style="font-size:.8rem;color:var(--danger)">
+                                <span class="skeleton skeleton-text" style="width:90px"></span>
+                            </span>
                         </div>
                         <div class="stat-icon stock"><i class="fa-solid fa-triangle-exclamation"></i></div>
                     </div>
                 </div>
 
                 <!-- ══════════════════════════════════════
-                 CHARTS ROW 1 — Daily & Monthly Sales
-            ══════════════════════════════════════ -->
-                <div class="charts-grid">
+                     CHARTS ROW 1 — observed, fetch on enter
+                     id="chartsRow1" is the IntersectionObserver anchor
+                ══════════════════════════════════════ -->
+                <div class="charts-grid" id="chartsRow1">
                     <div class="chart-card">
                         <h3>Daily Sales <span class="chart-sub">(Last 7 Days)</span></h3>
                         <div class="chart-wrapper">
@@ -82,10 +95,8 @@ $current_page = 'Dashboard';
                     </div>
                 </div>
 
-                <!-- ══════════════════════════════════════
-                 CHARTS ROW 2 — Top Products & Category
-            ══════════════════════════════════════ -->
-                <div class="charts-grid">
+                <!-- CHARTS ROW 2 — separate observer anchor -->
+                <div class="charts-grid" id="chartsRow2">
                     <div class="chart-card">
                         <h3>Top Selling Products</h3>
                         <div class="chart-wrapper">
@@ -102,9 +113,9 @@ $current_page = 'Dashboard';
                 </div>
 
                 <!-- ══════════════════════════════════════
-                 RECENT ORDERS TABLE
-            ══════════════════════════════════════ -->
-                <div class="table-card">
+                     RECENT ORDERS TABLE — observed
+                ══════════════════════════════════════ -->
+                <div class="table-card" id="recentOrdersSection">
                     <div class="table-card-header">
                         <h3>Recent Orders</h3>
                         <a href="orders.php" class="view-all-link">View All <i class="fa-solid fa-arrow-right"></i></a>
@@ -123,7 +134,9 @@ $current_page = 'Dashboard';
                             </thead>
                             <tbody id="recentOrdersBody">
                                 <tr>
-                                    <td colspan="6" class="loading-row">Loading orders…</td>
+                                    <td colspan="6" class="loading-row">
+                                        <span class="skeleton skeleton-text" style="width:200px;display:inline-block"></span>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -131,11 +144,11 @@ $current_page = 'Dashboard';
                 </div>
 
                 <!-- ══════════════════════════════════════
-                 BOTTOM GRID: Insights + Payments + Customers
-            ══════════════════════════════════════ -->
-                <div class="insights-grid">
+                     BOTTOM INSIGHTS GRID — observed
+                ══════════════════════════════════════ -->
+                <div class="insights-grid" id="insightsGrid">
 
-                    <!-- Product Insights -->
+                    <!-- Product Insights — tabs load from cached insights fetch -->
                     <div class="insight-card">
                         <div class="insight-header">
                             <h3><i class="fa-solid fa-box"></i> Product Insights</h3>
@@ -147,17 +160,17 @@ $current_page = 'Dashboard';
                         </div>
                         <div id="tab-best" class="tab-content active">
                             <ul class="insight-list" id="bestSellingList">
-                                <li class="loading-item">Loading…</li>
+                                <li class="loading-item"><span class="skeleton skeleton-text"></span></li>
                             </ul>
                         </div>
                         <div id="tab-low" class="tab-content">
                             <ul class="insight-list" id="lowStockList">
-                                <li class="loading-item">Loading…</li>
+                                <li class="loading-item"><span class="skeleton skeleton-text"></span></li>
                             </ul>
                         </div>
                         <div id="tab-recent" class="tab-content">
                             <ul class="insight-list" id="recentProductsList">
-                                <li class="loading-item">Loading…</li>
+                                <li class="loading-item"><span class="skeleton skeleton-text"></span></li>
                             </ul>
                         </div>
                     </div>
@@ -170,7 +183,9 @@ $current_page = 'Dashboard';
                         <div class="payment-stats" id="paymentStats">
                             <div class="pay-stat">
                                 <span class="pay-label">Total Received</span>
-                                <span class="pay-value" id="pay-received">—</span>
+                                <span class="pay-value" id="pay-received">
+                                    <span class="skeleton skeleton-text" style="width:80px"></span>
+                                </span>
                             </div>
                             <div class="pay-stat">
                                 <span class="pay-label">Pending</span>
@@ -181,36 +196,30 @@ $current_page = 'Dashboard';
                                 <span class="pay-value danger-text" id="pay-failed">—</span>
                             </div>
                         </div>
-                        <div class="pay-methods" id="payMethods">
-                            <!-- populated by JS -->
-                        </div>
+                        <div class="pay-methods" id="payMethods"></div>
                     </div>
 
-                    <!-- Customer Insights -->
+                    <!-- Top Customers -->
                     <div class="insight-card">
                         <div class="insight-header">
                             <h3><i class="fa-solid fa-user-group"></i> Top Customers</h3>
                         </div>
                         <ul class="insight-list" id="topCustomersList">
-                            <li class="loading-item">Loading…</li>
+                            <li class="loading-item"><span class="skeleton skeleton-text"></span></li>
                         </ul>
                     </div>
-
                 </div>
 
                 <!-- ══════════════════════════════════════
-                 QUOTATIONS & REQUESTS
-            ══════════════════════════════════════ -->
-                <div class="two-col-grid">
-                    <!-- Quotations Summary -->
+                     QUOTATIONS & REQUESTS — observed
+                ══════════════════════════════════════ -->
+                <div class="two-col-grid" id="quotationsSection">
                     <div class="table-card">
                         <div class="table-card-header">
                             <h3>Quotations</h3>
                             <a href="Quotation.php" class="view-all-link">View All <i class="fa-solid fa-arrow-right"></i></a>
                         </div>
-                        <div class="quote-stats" id="quoteStats">
-                            <!-- populated by JS -->
-                        </div>
+                        <div class="quote-stats" id="quoteStats"></div>
                         <div class="table-responsive">
                             <table>
                                 <thead>
@@ -230,15 +239,12 @@ $current_page = 'Dashboard';
                         </div>
                     </div>
 
-                    <!-- Recent Requests -->
                     <div class="table-card">
                         <div class="table-card-header">
-                            <h3>Customer Requests</h3>
-                            <a href="requests.php" class="view-all-link">View All <i class="fa-solid fa-arrow-right"></i></a>
+                            <h3>Customer Quotation Requests</h3>
+                            <a href="Quotation.php" class="view-all-link">View All <i class="fa-solid fa-arrow-right"></i></a>
                         </div>
-                        <div class="quote-stats" id="requestStats">
-                            <!-- populated by JS -->
-                        </div>
+                        <div class="quote-stats" id="requestStats"></div>
                         <div class="table-responsive">
                             <table>
                                 <thead>
@@ -260,37 +266,38 @@ $current_page = 'Dashboard';
                 </div>
 
                 <!-- ══════════════════════════════════════
-                 ALERTS & ACTIVITY LOGS
-            ══════════════════════════════════════ -->
+                     ALERTS & ACTIVITY LOGS — lowest priority
+                ══════════════════════════════════════ -->
                 <div class="two-col-grid">
-                    <!-- Alerts Panel -->
-                    <div class="table-card">
+                    <div class="table-card" id="alertsSection">
                         <div class="table-card-header">
                             <h3><i class="fa-solid fa-bell" style="color:var(--warning)"></i> Alerts</h3>
                         </div>
                         <div class="alerts-list" id="alertsList">
-                            <p class="loading-row">Loading alerts…</p>
+                            <p class="loading-row">
+                                <span class="skeleton skeleton-text" style="width:180px;display:inline-block"></span>
+                            </p>
                         </div>
                     </div>
 
-                    <!-- Activity Logs -->
-                    <div class="table-card">
+                    <div class="table-card" id="activitySection">
                         <div class="table-card-header">
                             <h3><i class="fa-solid fa-clock-rotate-left" style="color:var(--info)"></i> Recent Activity</h3>
                         </div>
                         <ul class="activity-log-list" id="activityLogList">
-                            <li class="loading-item">Loading activity…</li>
+                            <li class="loading-item">
+                                <span class="skeleton skeleton-text"></span>
+                            </li>
                         </ul>
                     </div>
                 </div>
-
             </section><!-- end content-body -->
         </main>
     </div>
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Dashboard JS -->
+    <!-- Refactored Dashboard JS -->
     <script src="../../assets/js/admin-site-functions/admin_dashboard.js"></script>
 
 </body>

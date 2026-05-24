@@ -130,12 +130,11 @@
 }
 
 .stat-text p {
-  font-size: 0.78rem;
-  font-weight: 500;
+  font-size: clamp(0.75rem, 1vw, 1.25rem);
+  font-weight: 400;
+  font-family: "Inter", sans-serif;
   color: var(--text-secondary);
   margin: 0 0 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
 .stat-text h3 {
@@ -169,16 +168,16 @@
 }
 
 .stat-icon.sales {
-  background: var(--warning);
+  background: #edfff4;
 }
 .stat-icon.orders {
-  background: var(--info);
+  background: #eaf2ff;
 }
 .stat-icon.customers {
-  background: var(--success);
+  background: #edf3ff;
 }
 .stat-icon.stock {
-  background: var(--danger);
+  background: #fff5e4;
 }
 
 /* ══════════════════════════════════════

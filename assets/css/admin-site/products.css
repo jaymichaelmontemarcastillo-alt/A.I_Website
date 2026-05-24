@@ -6,13 +6,13 @@
   --primary-blue: #0f3d67;
   --hover-blue: #1a4d80;
   --dark-blue: #003a5a;
-
+  --defualt-light: #0f172a;
   --bg-light: #f4f7f9;
   --card-bg: #ffffff;
 
   --text-dark: #0d3b56;
   --text-muted: #6b7280;
-
+  --button-color: #0d3b56;
   --border: #e5e7eb;
   --category-bg: #eef2f7;
 
@@ -25,12 +25,14 @@
 
 /* 🌙 DARK MODE */
 body.dark-mode {
+  --defualt-light: #f4f7f9;
   --bg-light: #0f172a;
   --card-bg: #111827;
   --text-dark: #f1f5f9;
   --text-muted: #94a3b8;
   --border: #1f2937;
   --category-bg: #374151;
+  --button-color: hsl(215, 35%, 80%);
 }
 
 /* ================= BASE ================= */
@@ -97,18 +99,19 @@ body {
 }
 /* ================= BUTTONS ================= */
 .add-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--primary-blue);
-  color: #fff;
-  padding: 10px 14px;
+  padding: 10px 18px;
+  border: none;
   border-radius: var(--radius);
+  font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  transition: var(--transition);
-  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
   font-family: "Inter", sans-serif;
+  gap: 8px;
+  background-color: var(--button-color);
+  transition: var(--transition);
+  color: var(--card-bg);
 }
 .add-btn:hover {
   background: var(--hover-blue);
@@ -154,9 +157,11 @@ body {
 }
 .price {
   font-weight: 600;
-  color: var(--primary-blue);
+  color: var(--defualt-light);
 }
 .stock {
+  padding: 4px 10px;
+  border-radius: 999px;
   font-weight: 600;
   color: var(--primary-blue);
 }
@@ -194,7 +199,7 @@ body {
 }
 
 .action-btn.edit {
-  color: var(--primary-blue);
+  color: var(--defualt-light);
   border-color: var(--primary-blue);
 }
 

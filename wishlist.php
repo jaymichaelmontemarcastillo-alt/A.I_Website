@@ -46,9 +46,63 @@ $wishlist = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     .wishlist-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(clamp(160px, 100%, 280px), 1fr));
-        gap: clamp(15px, 3vw, 30px);
-        margin-top: clamp(20px, 3vw, 30px);
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 24px;
+
+        width: 100%;
+        max-width: 1400px;
+
+        margin: 30px auto 0;
+        padding: 0 20px;
+
+        box-sizing: border-box;
+    }
+
+    /* Large desktop */
+    @media (min-width: 1400px) {
+        .wishlist-grid {
+            grid-template-columns: repeat(5, 1fr);
+        }
+    }
+
+    /* Desktop */
+    @media (max-width: 1399px) {
+        .wishlist-grid {
+            grid-template-columns: repeat(4, 1fr);
+        }
+    }
+
+    /* Laptop */
+    @media (max-width: 1100px) {
+        .wishlist-grid {
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+    }
+
+    /* Tablet */
+    @media (max-width: 768px) {
+        .wishlist-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 0 15px;
+        }
+    }
+
+    /* Mobile */
+    @media (max-width: 480px) {
+        .wishlist-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 0 10px;
+        }
+    }
+
+    /* Small mobile */
+    @media (max-width: 360px) {
+        .wishlist-grid {
+            grid-template-columns: 1fr;
+        }
     }
 
     .wishlist-card {

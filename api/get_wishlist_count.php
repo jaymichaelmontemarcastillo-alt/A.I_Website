@@ -4,7 +4,9 @@ require_once '../connect/config.php';
 header('Content-Type: application/json');
 
 $sessionId = session_id();
+require_once '../connect/config.php';
 
+$pdo = getDBConnection();
 try {
     $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM wishlists WHERE session_id = ?");
     $stmt->execute([$sessionId]);
