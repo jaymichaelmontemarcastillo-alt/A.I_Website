@@ -1,0 +1,172 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Direct Audit API Test</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        background: #1a1a2e;
+        color: #eee;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px;
+        cursor: pointer;
+        background: #0f3460;
+        color: white;
+        border: none;
+        border-radius: 5px;
+      }
+      pre {
+        background: #16213e;
+        padding: 15px;
+        border-radius: 5px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+      }
+      .success {
+        color: #4ade80;
+      }
+      .error {
+        color: #f87171;
+      }
+      input,
+      select {
+        padding: 8px;
+        margin: 5px;
+        background: #0f3460;
+        color: white;
+        border: 1px solid #e94560;
+        border-radius: 3px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Direct Audit API Test</h1>
+
+    <div>
+      <h3>Test Data</h3>
+      <label
+        >Material ID: <input type="number" id="materialId" value="1"
+      /></label>
+      <label>Quantity: <input type="number" id="quantity" value="1" /></label>
+      <label
+        >Material Name:
+        <input type="text" id="materialName" value="Test Material"
+      /></label>
+      <button onclick="testCreateAudit()">Create Test Audit</button>
+      <button onclick="testSimpleRequest()">Test Simple Request</button>
+    </div>
+
+    <h3>Response:</h3>
+    <pre id="response">Click a button to test...</pre>
+
+    <h3>Log File Location:</h3>
+    <p>Check: <code>/logs/audit_debug.log</code></p>
+
+    <script>
+      async function testSimpleRequest() {
+        const responseDiv = document.getElementById("response");
+        responseDiv.innerHTML = "Sending request...";
+
+        const testData = {
+          items: [
+            {
+              name: "Test Product",
+              quantity: 1,
+              unit_price: 100,
+              total_amount: 100,
+            },
+          ],
+          materials: [],
+          rejects: [],
+          created_by: "Test Admin",
+          audited_by: "Test Auditor",
+          acknowledged_by: "Test Acknowledger",
+          auto_compute: true,
+        };
+
+        try {
+          const response = await fetch(
+            "../../api/admin_site/inventory/create_audit.php",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(testData),
+            },
+          );
+
+          const text = await response.text();
+          responseDiv.innerHTML = `Status: ${response.status}\n\nRaw Response:\n${text}`;
+
+          try {
+            const json = JSON.parse(text);
+            responseDiv.innerHTML += `\n\nParsed JSON:\n${JSON.stringify(json, null, 2)}`;
+          } catch (e) {
+            responseDiv.innerHTML += `\n\nJSON Parse Error: ${e.message}`;
+          }
+        } catch (error) {
+          responseDiv.innerHTML = `Error: ${error.message}`;
+        }
+      }
+
+      async function testCreateAudit() {
+        const responseDiv = document.getElementById("response");
+        responseDiv.innerHTML = "Sending request...";
+
+        const materialId = document.getElementById("materialId").value;
+        const quantity = document.getElementById("quantity").value;
+        const materialName = document.getElementById("materialName").value;
+
+        const testData = {
+          items: [],
+          materials: [
+            {
+              id: parseInt(materialId),
+              name: materialName,
+              quantity: parseInt(quantity),
+              unit_cost: 10,
+              total_cost: parseInt(quantity) * 10,
+            },
+          ],
+          rejects: [],
+          created_by: "Test Admin",
+          audited_by: "Test Auditor",
+          acknowledged_by: "Test Acknowledger",
+          auto_compute: true,
+        };
+
+        console.log("Sending:", testData);
+
+        try {
+          const response = await fetch(
+            "../../api/admin_site/inventory/create_audit.php",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(testData),
+            },
+          );
+
+          const text = await response.text();
+          responseDiv.innerHTML = `Status: ${response.status}\n\nRaw Response:\n${text}`;
+
+          try {
+            const json = JSON.parse(text);
+            responseDiv.innerHTML += `\n\nParsed JSON:\n${JSON.stringify(json, null, 2)}`;
+            if (json.success) {
+              responseDiv.innerHTML += `\n\n✅ SUCCESS! Audit ID: ${json.audit_id}`;
+            } else {
+              responseDiv.innerHTML += `\n\n❌ ERROR: ${json.message}`;
+            }
+          } catch (e) {
+            responseDiv.innerHTML += `\n\nJSON Parse Error: ${e.message}\n\nCheck the PHP error log for details.`;
+          }
+        } catch (error) {
+          responseDiv.innerHTML = `Fetch Error: ${error.message}`;
+        }
+      }
+    </script>
+  </body>
+</html>

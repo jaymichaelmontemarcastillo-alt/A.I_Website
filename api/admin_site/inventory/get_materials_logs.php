@@ -1,66 +1,8 @@
 <?php
+// api/admin_site/inventory/get_materials_logs.php
+// COMPLETE REWRITE - FIXED VERSION
 
 declare(strict_types=1);
-
-// ── DEBUG WRAPPER (remove once working) ─────────────────────
-ini_set('display_errors', '0');
-error_reporting(E_ALL);
-ob_start();
-set_error_handler(function (int $errno, string $errstr, string $errfile, int $errline): bool {
-    ob_end_clean();
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => false,
-        'debug'   => 'PHP Error',
-        'message' => $errstr,
-        'file'    => $errfile,
-        'line'    => $errline,
-        'errno'   => $errno,
-    ]);
-    exit;
-});
-set_exception_handler(function (Throwable $e): void {
-    ob_end_clean();
-    header('Content-Type: application/json');
-    echo json_encode([
-        'success' => false,
-        'debug'   => 'Uncaught Exception',
-        'message' => $e->getMessage(),
-        'file'    => $e->getFile(),
-        'line'    => $e->getLine(),
-        'trace'   => $e->getTraceAsString(),
-    ]);
-    exit;
-});
-register_shutdown_function(function (): void {
-    $err = error_get_last();
-    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
-        ob_end_clean();
-        header('Content-Type: application/json');
-        echo json_encode([
-            'success' => false,
-            'debug'   => 'Fatal Error',
-            'message' => $err['message'],
-            'file'    => $err['file'],
-            'line'    => $err['line'],
-        ]);
-    }
-});
-// ── END DEBUG WRAPPER ────────────────────────────────────────
-
-// ============================================================
-//  api/admin_site/materials/get_materials_logs.php (FIXED)
-//  Returns paginated materials_logs with material & admin info
-//  GET params:
-//    material_id  – filter by material
-//    change_type – add|subtract|order|return|adjust
-//    location    – shop_stock|ph_stock|total_stock
-//    date_from   – YYYY-MM-DD
-//    date_to     – YYYY-MM-DD
-//    page        – int (default 1)
-//    per_page    – int (default 15, max 50)
-// ============================================================
-
 header('Content-Type: application/json');
 
 require_once '../../../connect/config.php';
@@ -74,54 +16,57 @@ if (empty($_SESSION['admin_id'])) {
     exit;
 }
 
-// ── Params ───────────────────────────────────────────────────
-$materialId = isset($_GET['material_id'])  ? (int) $_GET['material_id']  : 0;
-$changeType = trim($_GET['change_type']  ?? '');
-$location   = trim($_GET['location']     ?? '');
-$dateFrom   = trim($_GET['date_from']    ?? '');
-$dateTo     = trim($_GET['date_to']      ?? '');
-$page       = max(1, (int) ($_GET['page']     ?? 1));
-$perPage    = min(50, max(1, (int) ($_GET['per_page'] ?? 15)));
-$offset     = ($page - 1) * $perPage;
+// Params
+$materialId = isset($_GET['material_id']) ? (int) $_GET['material_id'] : 0;
+$changeType = trim($_GET['change_type'] ?? '');
+$location = trim($_GET['location'] ?? '');
+$dateFrom = trim($_GET['date_from'] ?? '');
+$dateTo = trim($_GET['date_to'] ?? '');
+$auditId = isset($_GET['audit_id']) ? (int) $_GET['audit_id'] : 0;
+$page = max(1, (int) ($_GET['page'] ?? 1));
+$perPage = min(50, max(1, (int) ($_GET['per_page'] ?? 15)));
+$offset = ($page - 1) * $perPage;
 
-// ── Validate change_type ─────────────────────────────────────
 $validTypes = ['add', 'subtract', 'order', 'return', 'adjust'];
 if ($changeType && !in_array($changeType, $validTypes, true)) {
     $changeType = '';
 }
 
-// ── Validate location ────────────────────────────────────────
 $validLocations = ['shop_stock', 'ph_stock', 'total_stock'];
 if ($location && !in_array($location, $validLocations, true)) {
     $location = '';
 }
 
-// ── Build WHERE ──────────────────────────────────────────────
-$where  = [];
+$where = [];
 $params = [];
 
 if ($materialId > 0) {
-    $where[]            = 'ml.material_id = :material_id';
+    $where[] = 'il.material_id = :material_id';
     $params[':material_id'] = $materialId;
 }
 
 if ($changeType) {
-    $where[]            = 'ml.change_type = :change_type';
+    $where[] = 'il.change_type = :change_type';
     $params[':change_type'] = $changeType;
 }
 
 if ($location) {
-    $where[]         = 'ml.location = :location';
+    $where[] = 'il.location = :location';
     $params[':location'] = $location;
 }
 
+if ($auditId > 0) {
+    $where[] = 'il.audit_id = :audit_id';
+    $params[':audit_id'] = $auditId;
+}
+
 if ($dateFrom) {
-    $where[]          = 'DATE(ml.created_at) >= :date_from';
+    $where[] = 'DATE(il.created_at) >= :date_from';
     $params[':date_from'] = $dateFrom;
 }
 
 if ($dateTo) {
-    $where[]        = 'DATE(ml.created_at) <= :date_to';
+    $where[] = 'DATE(il.created_at) <= :date_to';
     $params[':date_to'] = $dateTo;
 }
 
@@ -130,75 +75,118 @@ $whereSQL = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 try {
     $pdo = getDBConnection();
 
-    // ── Verify required tables exist ─────────────────────────
-    $logTableCheck = $pdo->query("SHOW TABLES LIKE 'materials_logs'")->fetch();
-    if (!$logTableCheck) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'materials_logs table not found']);
-        exit;
+    // Check which log table to use (prefer inventory_logs)
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'inventory_logs'");
+    $useInventoryLogs = $tableCheck && $tableCheck->rowCount() > 0;
+
+    if (!$useInventoryLogs) {
+        // Fallback to materials_logs
+        $tableCheck2 = $pdo->query("SHOW TABLES LIKE 'materials_logs'");
+        if (!$tableCheck2 || $tableCheck2->rowCount() === 0) {
+            echo json_encode([
+                'success' => true,
+                'logs' => [],
+                'pagination' => ['total' => 0, 'per_page' => $perPage, 'current_page' => $page, 'last_page' => 0],
+                'message' => 'No log tables found'
+            ]);
+            exit;
+        }
+
+        // Count total
+        $countSQL = "SELECT COUNT(*) FROM materials_logs il $whereSQL";
+        $countStmt = $pdo->prepare($countSQL);
+        $countStmt->execute($params);
+        $total = (int) ($countStmt->fetchColumn() ?? 0);
+
+        // Get logs
+        $sql = "SELECT
+                    il.id,
+                    il.material_id,
+                    m.material_name,
+                    m.type AS material_type,
+                    il.change_type,
+                    il.quantity,
+                    il.previous_stock,
+                    il.new_stock,
+                    il.admin_id,
+                    COALESCE(a.FullName, 'Unknown Admin') AS admin_name,
+                    il.note,
+                    il.audit_id,
+                    il.created_at,
+                    il.location
+                FROM materials_logs il
+                JOIN materials m ON m.id = il.material_id
+                LEFT JOIN admins a ON a.AdminID = il.admin_id
+                $whereSQL
+                ORDER BY il.created_at DESC
+                LIMIT :limit OFFSET :offset";
+    } else {
+        // Use inventory_logs with proper columns
+        // Check if location column exists in inventory_logs
+        $colCheck = $pdo->query("SHOW COLUMNS FROM inventory_logs LIKE 'location'");
+        $hasLocation = $colCheck && $colCheck->rowCount() > 0;
+
+        // Count total
+        $countSQL = "SELECT COUNT(*) FROM inventory_logs il $whereSQL";
+        $countStmt = $pdo->prepare($countSQL);
+        $countStmt->execute($params);
+        $total = (int) ($countStmt->fetchColumn() ?? 0);
+
+        // Build select based on available columns
+        $locationSelect = $hasLocation ? "il.location," : "'total_stock' as location,";
+
+        $sql = "SELECT
+                    il.id,
+                    il.material_id,
+                    m.material_name,
+                    m.type AS material_type,
+                    il.change_type,
+                    il.quantity,
+                    il.previous_stock,
+                    il.new_stock,
+                    il.admin_id,
+                    COALESCE(a.FullName, 'Unknown Admin') AS admin_name,
+                    il.note,
+                    il.audit_id,
+                    il.created_at,
+                    $locationSelect
+                    ba.items as audit_items
+                FROM inventory_logs il
+                JOIN materials m ON m.id = il.material_id
+                LEFT JOIN admins a ON a.AdminID = il.admin_id
+                LEFT JOIN bom_audit ba ON ba.id = il.audit_id
+                $whereSQL
+                ORDER BY il.created_at DESC
+                LIMIT :limit OFFSET :offset";
     }
-
-    $matTableCheck = $pdo->query("SHOW TABLES LIKE 'materials'")->fetch();
-    if (!$matTableCheck) {
-        http_response_code(500);
-        echo json_encode(['success' => false, 'message' => 'materials table not found']);
-        exit;
-    }
-
-    // ── Count ────────────────────────────────────────────────
-    $countSQL  = "SELECT COUNT(*) FROM materials_logs ml $whereSQL";
-    $countStmt = $pdo->prepare($countSQL);
-    $countStmt->execute($params);
-    $total = (int) ($countStmt->fetchColumn() ?? 0);
-
-    // ── Logs ─────────────────────────────────────────────────
-    // NOTE: Verify your admins table column name — if it's 'id' instead of 'AdminID', adjust the JOIN
-    $sql = "SELECT
-                ml.id,
-                ml.material_id,
-                m.material_name,
-                m.type               AS material_type,
-                ml.location,
-                ml.change_type,
-                ml.quantity,
-                ml.previous_stock,
-                ml.new_stock,
-                ml.admin_id,
-                COALESCE(a.FullName, 'Unknown Admin') AS admin_name,
-                ml.note,
-                ml.created_at
-            FROM materials_logs ml
-            JOIN materials m ON m.id = ml.material_id
-            LEFT JOIN admins a ON a.AdminID = ml.admin_id
-            $whereSQL
-            ORDER BY ml.created_at DESC
-            LIMIT :limit OFFSET :offset";
 
     $stmt = $pdo->prepare($sql);
     foreach ($params as $k => $v) {
         $stmt->bindValue($k, $v);
     }
-    $stmt->bindValue(':limit',  $perPage, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', $offset,  PDO::PARAM_INT);
+    $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
     $stmt->execute();
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Cast numeric fields with null safety
+    // Cast numeric fields
     foreach ($logs as &$log) {
-        $log['quantity']       = (int) ($log['quantity'] ?? 0);
+        $log['quantity'] = (int) ($log['quantity'] ?? 0);
         $log['previous_stock'] = (int) ($log['previous_stock'] ?? 0);
-        $log['new_stock']      = (int) ($log['new_stock'] ?? 0);
+        $log['new_stock'] = (int) ($log['new_stock'] ?? 0);
+        $log['audit_id'] = $log['audit_id'] ? (int) $log['audit_id'] : null;
+        $log['location'] = $log['location'] ?? 'total_stock';
+        $log['delta'] = $log['new_stock'] - $log['previous_stock'];
     }
-    unset($log);
 
     echo json_encode([
         'success' => true,
-        'logs'    => $logs,
+        'logs' => $logs,
         'pagination' => [
-            'total'        => $total,
-            'per_page'     => $perPage,
+            'total' => $total,
+            'per_page' => $perPage,
             'current_page' => $page,
-            'last_page'    => (int) ceil($total / $perPage),
+            'last_page' => (int) ceil($total / $perPage),
         ],
     ]);
 } catch (PDOException $e) {
@@ -206,17 +194,7 @@ try {
     http_response_code(500);
     echo json_encode([
         'success' => false,
-        'debug'   => 'PDOException',
-        'message' => $e->getMessage(),
-        'file'    => $e->getFile(),
-        'line'    => $e->getLine(),
-    ]);
-} catch (Exception $e) {
-    error_log('get_materials_logs.php error: ' . $e->getMessage());
-    http_response_code(500);
-    echo json_encode([
-        'success' => false,
-        'debug'   => 'Exception',
-        'message' => $e->getMessage(),
+        'message' => 'Database error: ' . $e->getMessage()
     ]);
 }
+exit;

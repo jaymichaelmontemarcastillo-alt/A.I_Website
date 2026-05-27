@@ -3,7 +3,6 @@ include 'auth_check.php';
 include '../includes/header.php';
 ?>
 
-
 <body>
     <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
     <div class="admin-wrapper">
@@ -17,6 +16,55 @@ include '../includes/header.php';
             <section class="content-body">
                 <h1 class="page-title">Quotations</h1>
 
+                <!-- DASHBOARD CARDS -->
+                <div class="dashboard-cards">
+                    <div class="card card-total" onclick="quotationManager.filterByStatus('all')">
+                        <div class="card-icon">
+                            <i class="fa-solid fa-file-invoice"></i>
+                        </div>
+                        <div class="card-info">
+                            <h3 id="totalQuotes">0</h3>
+                            <p>Total Quotes</p>
+                        </div>
+                    </div>
+                    <div class="card card-pending" onclick="quotationManager.filterByStatus('draft')">
+                        <div class="card-icon">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div class="card-info">
+                            <h3 id="pendingQuotes">0</h3>
+                            <p>Pending / Draft</p>
+                        </div>
+                    </div>
+                    <div class="card card-approved" onclick="quotationManager.filterByStatus('accepted')">
+                        <div class="card-icon">
+                            <i class="fa-solid fa-check-circle"></i>
+                        </div>
+                        <div class="card-info">
+                            <h3 id="approvedQuotes">0</h3>
+                            <p>Approved</p>
+                        </div>
+                    </div>
+                    <div class="card card-declined" onclick="quotationManager.filterByStatus('expired')">
+                        <div class="card-icon">
+                            <i class="fa-solid fa-times-circle"></i>
+                        </div>
+                        <div class="card-info">
+                            <h3 id="declinedQuotes">0</h3>
+                            <p>Declined / Expired</p>
+                        </div>
+                    </div>
+                    <div class="card card-delivered" onclick="quotationManager.filterByStatus('converted')">
+                        <div class="card-icon">
+                            <i class="fa-solid fa-truck"></i>
+                        </div>
+                        <div class="card-info">
+                            <h3 id="deliveredQuotes">0</h3>
+                            <p>Delivered</p>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- QUOTATIONS HEADER WITH SEARCH AND FILTER -->
                 <div class="quotations-header">
                     <div class="search-bar">
@@ -28,22 +76,22 @@ include '../includes/header.php';
                         <label for="statusFilter">Filter by Status:</label>
                         <select id="statusFilter">
                             <option value="all">All Statuses</option>
-                            <option value="draft">Draft</option>
+                            <option value="draft">Draft / Pending</option>
                             <option value="sent">Sent</option>
-                            <option value="accepted">Accepted</option>
-                            <option value="expired">Expired</option>
-                            <option value="converted">Converted</option>
+                            <option value="accepted">Accepted / Approved</option>
+                            <option value="expired">Expired / Declined</option>
+                            <option value="converted">Converted / Delivered</option>
                         </select>
                     </div>
-                    <!--
+
                     <div class="quotations-info">
-                        <button class="btn-primary" onclick="window.location.href='quotation-create.php'">
+                        <button class="btn-primary" onclick="quotationManager.openCreateModal()">
                             <i class="fa-solid fa-plus"></i> New Quotation
                         </button>
                         <button class="btn-secondary" onclick="quotationManager.refresh()">
                             <i class="fa-solid fa-refresh"></i> Refresh
                         </button>
-                    </div>-->
+                    </div>
                 </div>
 
                 <!-- QUOTATIONS TABLE -->
@@ -91,7 +139,7 @@ include '../includes/header.php';
         </main>
     </div>
 
-    <!-- QUOTATION DETAIL MODAL (Optional for quick view) -->
+    <!-- QUOTATION DETAIL MODAL (View Only) -->
     <div id="QuotationModal" class="QuotationModal" style="display:none;">
         <div class="modal-content large">
             <div class="modal-header">
@@ -107,21 +155,15 @@ include '../includes/header.php';
         </div>
     </div>
 
-    <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
-    <!-- Load JavaScript -->
-
-    <!-- QUOTATION EDIT MODAL -->
-    <!-- Insert this block in Quotation.php, just before the closing </body> tag -->
-
+    <!-- QUOTATION EDIT/CREATE MODAL -->
     <div id="QuotationEditModal" class="qe-overlay" style="display:none;">
         <div class="qe-modal">
-
             <!-- HEADER -->
             <div class="qe-header">
                 <div class="qe-header-left">
                     <span class="qe-icon"><i class="fa-solid fa-file-pen"></i></span>
                     <div>
-                        <h2 class="qe-title">Edit Quotation</h2>
+                        <h2 class="qe-title" id="qeModalTitle">Edit Quotation</h2>
                         <p class="qe-subtitle" id="qeQuoteNumber">—</p>
                     </div>
                 </div>
@@ -132,7 +174,6 @@ include '../includes/header.php';
 
             <!-- SCROLLABLE BODY -->
             <div class="qe-body">
-
                 <!-- SECTION 1: CLIENT INFO -->
                 <div class="qe-section">
                     <div class="qe-section-label">
@@ -219,8 +260,7 @@ include '../includes/header.php';
                     <textarea id="qeNotes" class="qe-textarea" rows="4"
                         placeholder="Additional notes, terms, or conditions..."></textarea>
                 </div>
-
-            </div><!-- end qe-body -->
+            </div>
 
             <!-- FOOTER ACTIONS -->
             <div class="qe-footer">
@@ -228,6 +268,9 @@ include '../includes/header.php';
                     <i class="fa-solid fa-xmark"></i> Cancel
                 </button>
                 <div class="qe-footer-right">
+                    <button class="qe-btn-delivery" id="qeDeliveryReceiptBtn" onclick="quotationManager.generateDeliveryReceiptFromModal()" style="display:none;">
+                        <i class="fa-solid fa-truck"></i> Generate Delivery Receipt
+                    </button>
                     <button class="qe-btn-save-pdf" id="qeSavePdfBtn" onclick="quotationManager.saveAndGeneratePDF()">
                         <i class="fa-solid fa-file-pdf"></i> Save & Generate PDF
                     </button>
@@ -237,8 +280,229 @@ include '../includes/header.php';
                 </div>
             </div>
 
+            <style>
+                .qe-btn-delivery {
+                    background: #ff9800;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: background 0.2s;
+                }
+
+                .qe-btn-delivery:hover {
+                    background: #f57c00;
+                }
+            </style>
         </div>
     </div>
+
+    <!-- APPROVAL CONFIRMATION MODAL (For generating Delivery Receipt) -->
+    <div id="ApprovalModal" class="approval-overlay" style="display:none;">
+        <div class="approval-modal">
+            <div class="approval-header">
+                <i class="fa-solid fa-check-circle"></i>
+                <h2>Quotation Approved</h2>
+            </div>
+            <div class="approval-body">
+                <p>This quotation has been approved. Would you like to proceed with generating the Delivery Receipt?</p>
+                <div class="approval-info">
+                    <strong>Quote #: <span id="approvalQuoteNumber"></span></strong>
+                </div>
+            </div>
+            <div class="approval-footer">
+                <button class="approval-btn-cancel" onclick="quotationManager.closeApprovalModal()">
+                    <i class="fa-solid fa-times"></i> Cancel
+                </button>
+                <button class="approval-btn-generate" onclick="quotationManager.generateDeliveryReceipt()">
+                    <i class="fa-solid fa-file-pdf"></i> Generate Delivery Receipt
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
+    <style>
+        /* Dashboard Cards Styles */
+        .dashboard-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .card-total .card-icon {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .card-pending .card-icon {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+
+        .card-approved .card-icon {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+
+        .card-declined .card-icon {
+            background: #ffebee;
+            color: #f44336;
+        }
+
+        .card-delivered .card-icon {
+            background: #e0f2f1;
+            color: #009688;
+        }
+
+        .card-info h3 {
+            font-size: 28px;
+            margin: 0;
+            font-weight: 700;
+        }
+
+        .card-info p {
+            margin: 5px 0 0;
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Approval Modal Styles */
+        .approval-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100000;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .approval-modal {
+            background: white;
+            border-radius: 16px;
+            width: 450px;
+            max-width: 90%;
+            overflow: hidden;
+            animation: slideInUp 0.3s ease;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .approval-header {
+            background: #4caf50;
+            padding: 25px;
+            text-align: center;
+            color: white;
+        }
+
+        .approval-header i {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .approval-header h2 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .approval-body {
+            padding: 25px;
+            text-align: center;
+        }
+
+        .approval-body p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .approval-info {
+            background: #f5f5f5;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 18px;
+        }
+
+        .approval-footer {
+            padding: 20px 25px;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            border-top: 1px solid #eee;
+        }
+
+        .approval-btn-cancel,
+        .approval-btn-generate {
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .approval-btn-cancel {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .approval-btn-cancel:hover {
+            background: #e0e0e0;
+        }
+
+        .approval-btn-generate {
+            background: #ff9800;
+            color: white;
+        }
+
+        .approval-btn-generate:hover {
+            background: #f57c00;
+        }
+    </style>
+
 </body>
 <script src="../../assets/js/admin-site-functions/admin_data_fetch/fetch_quotations.js"></script>
 

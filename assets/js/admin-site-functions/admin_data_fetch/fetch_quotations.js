@@ -1,23 +1,19 @@
 /* assets/js/admin-site-functions/admin_data_fetch/fetch_quotations.js
  *
- * Changes from previous version:
- *  1. Description field is now a rich contenteditable editor with toolbar
- *     (bold, bullets, indent/tab, new line) — preserves formatting in PDF.
- *  2. deleteQuotation() now shows a custom confirmation modal instead of
- *     the native browser confirm().
- *  3. Rich text is serialised to HTML stored in the description column,
- *     and generate_quotation_pdf.php renders it directly via nl2br/innerHTML.
+ * Complete Quotation Management System with:
+ *  - Dashboard cards with statistics
+ *  - Create new quotation functionality
+ *  - Edit existing quotations
+ *  - Status update with approval modal
+ *  - Delivery Receipt generation from edit modal when status is accepted
  */
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Inject delete-confirm modal + rich-editor styles once
-// ─────────────────────────────────────────────────────────────────────────────
+// Inject styles
 (function injectStyles() {
   if (document.getElementById("qm-extra-styles")) return;
   const style = document.createElement("style");
   style.id = "qm-extra-styles";
   style.textContent = `
-    /* ── Delete confirmation modal ───────────────────────────── */
     .qm-confirm-overlay {
       position: fixed; inset: 0; z-index: 100000;
       background: rgba(0,0,0,.45);
@@ -50,17 +46,16 @@
     .qm-confirm-cancel {
       flex: 1; padding: 10px 0; border-radius: 7px; border: 1.5px solid #ddd;
       background: #fff; font-size: 14px; font-weight: 600; color: #444;
-      cursor: pointer; transition: background .15s;
+      cursor: pointer;
     }
     .qm-confirm-cancel:hover { background: #f5f5f5; }
     .qm-confirm-delete {
       flex: 1; padding: 10px 0; border-radius: 7px; border: none;
       background: #e53935; font-size: 14px; font-weight: 600; color: #fff;
-      cursor: pointer; transition: background .15s;
+      cursor: pointer;
     }
     .qm-confirm-delete:hover { background: #c62828; }
 
-    /* ── Rich text editor toolbar ────────────────────────────── */
     .qe-editor-toolbar {
       display: flex; gap: 4px; flex-wrap: wrap;
       padding: 6px 8px; background: #f8fafc;
@@ -70,36 +65,25 @@
     .qe-toolbar-btn {
       padding: 4px 9px; border-radius: 4px; border: 1px solid #e2e8f0;
       background: #fff; font-size: 12px; color: #374151;
-      cursor: pointer; font-family: inherit; line-height: 1.5;
-      transition: background .12s, border-color .12s;
-      white-space: nowrap;
+      cursor: pointer;
     }
     .qe-toolbar-btn:hover { background: #e8f0fe; border-color: #93c5fd; }
-    .qe-toolbar-btn.active { background: #1a56db; color: #fff; border-color: #1a56db; }
-    .qe-toolbar-sep {
-      width: 1px; background: #e2e8f0; margin: 3px 2px; align-self: stretch;
-    }
     .qe-editor-content {
-      min-height: 120px; max-height: 260px; overflow-y: auto;
+      min-height: 80px; max-height: 200px; overflow-y: auto;
       border: 1px solid #e2e8f0; border-radius: 0 0 6px 6px;
-      padding: 10px 12px; font-size: 14px; color: #111;
-      background: #fff; outline: none; line-height: 1.65;
+      padding: 10px 12px; font-size: 14px; background: #fff;
+      outline: none; line-height: 1.65;
     }
-    .qe-editor-content:focus { border-color: #1a56db; box-shadow: 0 0 0 2px #dbeafe; }
-    .qe-editor-content ul { margin: 4px 0 4px 20px; padding: 0; }
-    .qe-editor-content li { margin: 2px 0; }
-    .qe-editor-content b, .qe-editor-content strong { font-weight: 700; }
-
+    .qe-editor-content:focus { border-color: #1a56db; }
+    
     @keyframes qmFadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes qmSlideIn  { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:none; } }
+    @keyframes qmSlideIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:none; } }
     @keyframes qmSlideOut { from { opacity:1; transform:none; } to { opacity:0; transform:translateX(30px); } }
   `;
   document.head.appendChild(style);
 })();
 
-// ─────────────────────────────────────────────────────────────────────────────
-// QuotationManager
-// ─────────────────────────────────────────────────────────────────────────────
+// QuotationManager Class
 class QuotationManager {
   constructor(config = {}) {
     this.config = {
@@ -107,9 +91,13 @@ class QuotationManager {
       apiUrl: "../../api/admin_site/get_quotations.php",
       statusApiUrl: "../../api/admin_site/update_quotation_status.php",
       pdfApiUrl: "../../api/admin_site/generate_quotation_pdf.php",
+      deliveryReceiptApiUrl:
+        "../../api/admin_site/generate_delivery_receipt.php",
       getSingleApiUrl: "../../api/admin_site/get_single_quotation.php",
       updateApiUrl: "../../api/admin_site/update_quotation.php",
+      createApiUrl: "../../api/admin_site/create_quotation.php",
       deleteApiUrl: "../../api/admin_site/delete_quotation.php",
+      statsApiUrl: "../../api/admin_site/get_quotation_stats.php",
       limit: 10,
       ...config,
     };
@@ -118,17 +106,19 @@ class QuotationManager {
     this.currentFilter = "all";
     this.currentSearch = "";
     this._editingId = null;
+    this._isCreateMode = false;
+    this._currentQuotationStatus = null;
     this._rowCounter = 0;
     this._isSaving = false;
+    this._pendingApprovalId = null;
 
     this.init();
   }
 
-  // ── INIT ──────────────────────────────────────────────────────────────────
-
-  init() {
+  async init() {
     this._attachEventListeners();
-    this.fetchQuotations();
+    await this.fetchQuotations();
+    await this.fetchStats();
   }
 
   _attachEventListeners() {
@@ -169,132 +159,85 @@ class QuotationManager {
     });
   }
 
-  // ── FETCH & RENDER TABLE ──────────────────────────────────────────────────
-
-  async fetchQuotations() {
-    const tbody = document.getElementById(this.config.tableBodyId);
-    if (tbody) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="9" class="text-center" style="padding:40px;">
-            <i class="fa-solid fa-spinner fa-spin"></i> Loading quotations...
-          </td>
-        </tr>`;
-    }
-
+  // ── DASHBOARD STATS ──────────────────────────────────────────────────────
+  async fetchStats() {
     try {
-      const params = new URLSearchParams({
-        page: this.currentPage,
-        limit: this.config.limit,
-        status: this.currentFilter !== "all" ? this.currentFilter : "",
-        search: this.currentSearch,
-      });
-
-      const response = await fetch(`${this.config.apiUrl}?${params}`);
+      const response = await fetch(this.config.statsApiUrl);
       const result = await this._parseJSON(response);
 
       if (result.success) {
-        this._renderTable(result.data);
-        this._renderPagination(result.pagination);
-      } else {
-        this.showNotification(
-          result.message || "Failed to load quotations",
-          "error",
-        );
-        if (tbody)
-          tbody.innerHTML = `<tr><td colspan="9" class="text-center">Failed to load quotations.</td></tr>`;
+        const stats = result.data;
+        document.getElementById("totalQuotes").textContent = stats.total || 0;
+        document.getElementById("pendingQuotes").textContent = stats.draft || 0;
+        document.getElementById("approvedQuotes").textContent =
+          stats.accepted || 0;
+        document.getElementById("declinedQuotes").textContent =
+          stats.expired || 0;
+        document.getElementById("deliveredQuotes").textContent =
+          stats.converted || 0;
       }
     } catch (err) {
-      console.error("fetchQuotations error:", err);
-      this.showNotification(
-        "Error fetching quotations: " + err.message,
-        "error",
-      );
+      console.error("fetchStats error:", err);
     }
   }
 
-  _renderTable(quotations) {
-    const tbody = document.getElementById(this.config.tableBodyId);
-    if (!tbody) return;
+  filterByStatus(status) {
+    const filterSelect = document.getElementById("statusFilter");
+    let filterValue = "all";
 
-    if (!quotations || quotations.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="9" class="text-center">No quotations found.</td></tr>`;
+    if (status === "draft") filterValue = "draft";
+    else if (status === "accepted") filterValue = "accepted";
+    else if (status === "expired") filterValue = "expired";
+    else if (status === "converted") filterValue = "converted";
+
+    if (filterSelect) {
+      filterSelect.value = filterValue;
+      this.currentFilter = filterValue;
+      this.currentPage = 1;
+      this.fetchQuotations();
+    }
+  }
+
+  // ── CREATE MODAL ─────────────────────────────────────────────────────────
+  openCreateModal() {
+    this._isCreateMode = true;
+    this._editingId = null;
+    this._currentQuotationStatus = null;
+    this._rowCounter = 0;
+
+    const overlay = document.getElementById("QuotationEditModal");
+    if (!overlay) {
+      this.showNotification("Error: Modal element not found", "error");
       return;
     }
 
-    tbody.innerHTML = quotations
-      .map(
-        (q) => `
-      <tr>
-        <td>${this._esc(q.quote_number)}</td>
-        <td>${this._esc(q.client_name)}</td>
-        <td>${this._esc(q.contact_person || "")}</td>
-        <td>${this._esc(q.email || "")}</td>
-        <td>${this._esc(q.phone || "")}</td>
-        <td>Php ${parseFloat(q.total || 0).toFixed(2)}</td>
-        <td>${new Date(q.created_at).toLocaleDateString()}</td>
-        <td>
-          <select class="status-select" data-id="${q.id}"
-            onchange="quotationManager.updateStatus(${q.id}, this.value)">
-            <option value="draft"     ${q.status === "draft" ? "selected" : ""}>Draft</option>
-            <option value="sent"      ${q.status === "sent" ? "selected" : ""}>Sent</option>
-            <option value="accepted"  ${q.status === "accepted" ? "selected" : ""}>Accepted</option>
-            <option value="expired"   ${q.status === "expired" ? "selected" : ""}>Expired</option>
-            <option value="converted" ${q.status === "converted" ? "selected" : ""}>Converted</option>
-          </select>
-        </td>
-        <td>
-          <div class="action-buttons">
-            <button class="btn-edit"
-              onclick="quotationManager.openEditModal(${q.id})" title="Edit">
-              <i class="fa-solid fa-edit"></i>
-            </button>
-            <button class="btn-pdf"
-              onclick="quotationManager.generatePDF(${q.id})" title="Generate PDF">
-              <i class="fa-solid fa-file-pdf"></i>
-            </button>
-            <button class="btn-delete"
-              onclick="quotationManager.deleteQuotation(${q.id}, '${this._esc(q.quote_number)}')" title="Delete">
-              <i class="fa-solid fa-trash"></i>
-            </button>
-          </div>
-        </td>
-      </tr>`,
-      )
-      .join("");
+    const titleEl = document.getElementById("qeModalTitle");
+    const subtitleEl = document.getElementById("qeQuoteNumber");
+    if (titleEl) titleEl.textContent = "Create New Quotation";
+    if (subtitleEl) subtitleEl.textContent = "New Quotation";
+
+    // Hide delivery receipt button for new quotations
+    this._toggleDeliveryReceiptButton(false);
+
+    overlay.style.display = "flex";
+    document.body.style.overflow = "hidden";
+
+    this._clearModalFields();
+
+    const tbody = document.getElementById("qeItemsBody");
+    if (tbody) tbody.innerHTML = "";
+    this._appendItemRow();
+    this.recalcTotals();
   }
 
-  // ── STATUS UPDATE ─────────────────────────────────────────────────────────
-
-  async updateStatus(id, status) {
-    try {
-      const response = await fetch(this.config.statusApiUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status }),
-      });
-      const result = await this._parseJSON(response);
-
-      if (result.success) {
-        this.showNotification(`Status updated to "${status}"`, "success");
-      } else {
-        this.showNotification(
-          result.message || "Failed to update status",
-          "error",
-        );
-      }
-    } catch (err) {
-      console.error("updateStatus error:", err);
-      this.showNotification("Error updating status: " + err.message, "error");
-    }
-    this.fetchQuotations();
-  }
-
-  // ── EDIT MODAL — OPEN / CLOSE ─────────────────────────────────────────────
-
+  // ── EDIT MODAL ───────────────────────────────────────────────────────────
   async openEditModal(id) {
+    this._isCreateMode = false;
     this._editingId = id;
     this._rowCounter = 0;
+
+    const titleEl = document.getElementById("qeModalTitle");
+    if (titleEl) titleEl.textContent = "Edit Quotation";
 
     const overlay = document.getElementById("QuotationEditModal");
     if (!overlay) {
@@ -308,19 +251,7 @@ class QuotationManager {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     const modal = overlay.querySelector(".qe-modal");
-    let loader = modal.querySelector(".qe-loading");
-    if (!loader) {
-      loader = document.createElement("div");
-      loader.className = "qe-loading";
-      loader.style.cssText =
-        "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;" +
-        "background:rgba(255,255,255,0.85);z-index:10;border-radius:inherit;font-size:14px;gap:8px;";
-      modal.style.position = "relative";
-      modal.appendChild(loader);
-    }
-    loader.innerHTML =
-      '<i class="fa-solid fa-spinner fa-spin"></i> Loading quotation...';
-    loader.style.display = "flex";
+    let loader = this._showLoader(modal);
 
     try {
       const response = await fetch(`${this.config.getSingleApiUrl}?id=${id}`);
@@ -335,11 +266,12 @@ class QuotationManager {
         return;
       }
 
-      if (!result.data || !result.data.quotation) {
-        this.showNotification("Invalid response format from server", "error");
-        this.closeEditModal();
-        return;
-      }
+      this._currentQuotationStatus = result.data.quotation.status;
+
+      // Show delivery receipt button only if status is 'accepted'
+      this._toggleDeliveryReceiptButton(
+        result.data.quotation.status === "accepted",
+      );
 
       this._populateEditModal(result.data.quotation, result.data.items || []);
     } catch (err) {
@@ -347,8 +279,27 @@ class QuotationManager {
       this.showNotification("Error loading quotation: " + err.message, "error");
       this.closeEditModal();
     } finally {
-      if (loader) loader.style.display = "none";
+      if (loader) loader.remove();
     }
+  }
+
+  _toggleDeliveryReceiptButton(show) {
+    const btn = document.getElementById("qeDeliveryReceiptBtn");
+    if (btn) {
+      btn.style.display = show ? "inline-flex" : "none";
+    }
+  }
+
+  _showLoader(modal) {
+    const loader = document.createElement("div");
+    loader.className = "qe-loading";
+    loader.style.cssText =
+      "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.85);z-index:10;font-size:14px;gap:8px;";
+    loader.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Loading quotation...';
+    modal.style.position = "relative";
+    modal.appendChild(loader);
+    return loader;
   }
 
   closeEditModal() {
@@ -356,14 +307,17 @@ class QuotationManager {
     if (overlay) overlay.style.display = "none";
     document.body.style.overflow = "";
     this._editingId = null;
+    this._isCreateMode = false;
+    this._currentQuotationStatus = null;
     this._rowCounter = 0;
+    this._toggleDeliveryReceiptButton(false);
   }
 
   _populateEditModal(quotation, items) {
     this._clearModalFields();
 
     const sub = document.getElementById("qeQuoteNumber");
-    if (sub) sub.textContent = quotation.quote_number || "";
+    if (sub) sub.textContent = quotation.quote_number || "New Quotation";
 
     this._setVal("qeClientName", quotation.client_name || "");
     this._setVal("qeContactPerson", quotation.contact_person || "");
@@ -403,20 +357,14 @@ class QuotationManager {
   _setVal(id, value) {
     const el = document.getElementById(id);
     if (el) el.value = value;
-    else console.warn(`Element "${id}" not found`);
   }
 
-  // ── ITEM ROWS ─────────────────────────────────────────────────────────────
-
+  // ── ITEM ROWS ────────────────────────────────────────────────────────────
   addItemRow() {
     this._appendItemRow();
     this.recalcTotals();
   }
 
-  /**
-   * Builds a table row where the description cell is a rich contenteditable
-   * editor with its own mini-toolbar (bold, bullet list, indent).
-   */
   _appendItemRow(item = {}) {
     const tbody = document.getElementById("qeItemsBody");
     if (!tbody) return;
@@ -425,50 +373,33 @@ class QuotationManager {
     const qty = item.quantity ?? "";
     const price = item.unit_price ?? "";
     const total = parseFloat(item.total || 0).toFixed(2);
-
-    // Description may be stored as HTML (with <b>, <ul>, etc.)
-    // or as plain text — both are safe to set as innerHTML after sanitisation.
     const descHtml = this._sanitiseHtml(item.description || "");
 
     const tr = document.createElement("tr");
     tr.setAttribute("data-row-id", rid);
     tr.innerHTML = `
-      <td>
+      <tr>
         <input type="number" class="qe-item-input qe-qty" data-row="${rid}"
           value="${this._esc(String(qty))}" min="0" step="1" placeholder="1"
           oninput="quotationManager._rowCalc(${rid})">
       </td>
       <td class="qe-desc-cell">
-        <!-- Toolbar -->
         <div class="qe-editor-toolbar">
           <button type="button" class="qe-toolbar-btn" title="Bold"
             onmousedown="event.preventDefault(); quotationManager._cmd('bold')">
             <b>B</b>
           </button>
-          <div class="qe-toolbar-sep"></div>
           <button type="button" class="qe-toolbar-btn" title="Bullet list"
             onmousedown="event.preventDefault(); quotationManager._cmd('insertUnorderedList')">
             &#8226; List
           </button>
-          <button type="button" class="qe-toolbar-btn" title="Indent"
-            onmousedown="event.preventDefault(); quotationManager._cmd('indent')">
-            &#8677; Indent
-          </button>
-          <button type="button" class="qe-toolbar-btn" title="Outdent"
-            onmousedown="event.preventDefault(); quotationManager._cmd('outdent')">
-            &#8676; Outdent
-          </button>
-          <div class="qe-toolbar-sep"></div>
           <button type="button" class="qe-toolbar-btn" title="Clear formatting"
             onmousedown="event.preventDefault(); quotationManager._cmd('removeFormat')">
-            &#10005; Clear
+            Clear
           </button>
         </div>
-        <!-- Editor -->
         <div class="qe-editor-content qe-desc" data-row="${rid}"
-          contenteditable="true"
-          spellcheck="true"
-          data-placeholder="Item description..."
+          contenteditable="true" spellcheck="true"
         >${descHtml}</div>
       </td>
       <td>
@@ -483,12 +414,12 @@ class QuotationManager {
         <button class="qe-btn-remove" onclick="quotationManager._removeRow(${rid})" title="Remove">
           <i class="fa-solid fa-trash"></i>
         </button>
-      </td>`;
+      </td>
+    </tr>`;
 
     tbody.appendChild(tr);
   }
 
-  /** Executes a document.execCommand on the currently focused editor */
   _cmd(command, value = null) {
     document.execCommand(command, false, value);
   }
@@ -518,8 +449,6 @@ class QuotationManager {
     this.recalcTotals();
   }
 
-  // ── TOTALS ────────────────────────────────────────────────────────────────
-
   recalcTotals() {
     let subtotal = 0;
 
@@ -546,25 +475,22 @@ class QuotationManager {
     if (grandEl) grandEl.textContent = `Php ${grand.toFixed(2)}`;
   }
 
-  // ── COLLECT FORM DATA ─────────────────────────────────────────────────────
-
+  // ── COLLECT FORM DATA ────────────────────────────────────────────────────
   _collectFormData() {
     const items = [];
 
     document.querySelectorAll("#qeItemsBody tr[data-row-id]").forEach((tr) => {
       const qty = parseFloat(tr.querySelector(".qe-qty")?.value) || 0;
       const price = parseFloat(tr.querySelector(".qe-price")?.value) || 0;
-
-      // Get HTML content from contenteditable editor
       const editor = tr.querySelector(".qe-desc[contenteditable]");
       const desc = editor ? editor.innerHTML.trim() : "";
       const descText = editor
         ? (editor.innerText || editor.textContent || "").trim()
         : "";
 
-      if (descText.length > 0 && (qty > 0 || price > 0)) {
+      if (descText.length > 0) {
         items.push({
-          description: desc, // store as HTML — rendered directly in PDF
+          description: desc,
           quantity: qty,
           unit_price: price,
         });
@@ -572,7 +498,7 @@ class QuotationManager {
     });
 
     return {
-      id: this._editingId,
+      id: this._isCreateMode ? null : this._editingId,
       client_name: (
         document.getElementById("qeClientName")?.value || ""
       ).trim(),
@@ -588,15 +514,9 @@ class QuotationManager {
     };
   }
 
-  // ── VALIDATION & SHARED SAVE ──────────────────────────────────────────────
-
   _validatePayload(payload) {
     if (!payload.client_name) {
       this.showNotification("Client name is required.", "error");
-      return false;
-    }
-    if (!payload.id) {
-      this.showNotification("Error: Quotation ID is missing.", "error");
       return false;
     }
     if (payload.items.length === 0) {
@@ -612,21 +532,13 @@ class QuotationManager {
   _setButtonsDisabled(disabled) {
     const saveBtn = document.getElementById("qeSaveBtn");
     const savePdfBtn = document.getElementById("qeSavePdfBtn");
+    const deliveryBtn = document.getElementById("qeDeliveryReceiptBtn");
     if (saveBtn) saveBtn.disabled = disabled;
     if (savePdfBtn) savePdfBtn.disabled = disabled;
+    if (deliveryBtn) deliveryBtn.disabled = disabled;
   }
 
-  async _doSave(payload) {
-    const response = await fetch(this.config.updateApiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    return this._parseJSON(response);
-  }
-
-  // ── SAVE ONLY ─────────────────────────────────────────────────────────────
-
+  // ── SAVE (Create or Update) ──────────────────────────────────────────────
   async saveQuotation() {
     if (this._isSaving) {
       this.showNotification("Save in progress, please wait...", "info");
@@ -640,14 +552,27 @@ class QuotationManager {
     this._setButtonsDisabled(true);
 
     try {
-      const result = await this._doSave(payload);
+      const apiUrl = this._isCreateMode
+        ? this.config.createApiUrl
+        : this.config.updateApiUrl;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await this._parseJSON(response);
+
       if (result.success) {
-        this.showNotification("Quotation updated successfully!", "success");
+        this.showNotification(
+          result.message || "Quotation saved successfully!",
+          "success",
+        );
         this.closeEditModal();
-        this.fetchQuotations();
+        await this.fetchQuotations();
+        await this.fetchStats();
       } else {
         this.showNotification(
-          result.message || "Failed to update quotation",
+          result.message || "Failed to save quotation",
           "error",
         );
       }
@@ -660,8 +585,7 @@ class QuotationManager {
     }
   }
 
-  // ── SAVE + GENERATE PDF ───────────────────────────────────────────────────
-
+  // ── SAVE + GENERATE PDF ──────────────────────────────────────────────────
   async saveAndGeneratePDF() {
     if (this._isSaving) {
       this.showNotification("Save in progress, please wait...", "info");
@@ -671,20 +595,30 @@ class QuotationManager {
     const payload = this._collectFormData();
     if (!this._validatePayload(payload)) return;
 
-    const quotationId = this._editingId;
     this._isSaving = true;
     this._setButtonsDisabled(true);
 
     try {
-      const result = await this._doSave(payload);
+      const apiUrl = this._isCreateMode
+        ? this.config.createApiUrl
+        : this.config.updateApiUrl;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await this._parseJSON(response);
+
       if (result.success) {
+        const quotationId = result.quotation_id || this._editingId;
         this.showNotification("Saved! Generating PDF...", "success");
         this.closeEditModal();
-        this.fetchQuotations();
+        await this.fetchQuotations();
+        await this.fetchStats();
         await this.generatePDF(quotationId);
       } else {
         this.showNotification(
-          result.message || "Failed to update quotation",
+          result.message || "Failed to save quotation",
           "error",
         );
       }
@@ -697,8 +631,99 @@ class QuotationManager {
     }
   }
 
-  // ── PDF GENERATION ────────────────────────────────────────────────────────
+  // ── STATUS UPDATE ────────────────────────────────────────────────────────
+  async updateStatus(id, status) {
+    try {
+      const response = await fetch(this.config.statusApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      const result = await this._parseJSON(response);
 
+      if (result.success) {
+        this.showNotification(`Status updated to "${status}"`, "success");
+
+        // Refresh the table and stats
+        await this.fetchQuotations();
+        await this.fetchStats();
+      } else {
+        this.showNotification(
+          result.message || "Failed to update status",
+          "error",
+        );
+      }
+    } catch (err) {
+      console.error("updateStatus error:", err);
+      this.showNotification("Error updating status: " + err.message, "error");
+    }
+  }
+
+  // ── DELIVERY RECEIPT FROM MODAL ──────────────────────────────────────────
+  async generateDeliveryReceiptFromModal() {
+    const quotationId = this._editingId;
+
+    if (!quotationId) {
+      this.showNotification(
+        "No quotation selected for delivery receipt.",
+        "error",
+      );
+      return;
+    }
+
+    this.showNotification(
+      "Generating Delivery Receipt, please wait...",
+      "info",
+    );
+
+    try {
+      // Generate delivery receipt using the current quotation ID
+      const response = await fetch(this.config.deliveryReceiptApiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: quotationId }),
+      });
+
+      const result = await this._parseJSON(response);
+
+      if (result.success) {
+        this.showNotification(
+          "Delivery Receipt generated successfully!",
+          "success",
+        );
+        if (result.pdf_url) {
+          window.open(result.pdf_url, "_blank");
+        }
+
+        // After generating delivery receipt, update status to converted
+        const statusResponse = await fetch(this.config.statusApiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: quotationId, status: "converted" }),
+        });
+        await this._parseJSON(statusResponse);
+
+        // Hide the delivery receipt button since status is now converted
+        this._toggleDeliveryReceiptButton(false);
+
+        await this.fetchQuotations();
+        await this.fetchStats();
+      } else {
+        this.showNotification(
+          result.message || "Failed to generate Delivery Receipt",
+          "error",
+        );
+      }
+    } catch (err) {
+      console.error("generateDeliveryReceiptFromModal error:", err);
+      this.showNotification(
+        "Error generating Delivery Receipt: " + err.message,
+        "error",
+      );
+    }
+  }
+
+  // ── PDF GENERATION ────────────────────────────────────────────────────────
   async generatePDF(id) {
     if (!id) {
       this.showNotification("Error: No quotation ID provided.", "error");
@@ -729,10 +754,95 @@ class QuotationManager {
     }
   }
 
-  // ── DELETE (with confirmation modal) ─────────────────────────────────────
+  // ── FETCH & RENDER TABLE ─────────────────────────────────────────────────
+  async fetchQuotations() {
+    const tbody = document.getElementById(this.config.tableBodyId);
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center" style="padding:40px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading quotations...</td></tr>`;
+    }
 
+    try {
+      const params = new URLSearchParams({
+        page: this.currentPage,
+        limit: this.config.limit,
+        status: this.currentFilter !== "all" ? this.currentFilter : "",
+        search: this.currentSearch,
+      });
+
+      const response = await fetch(`${this.config.apiUrl}?${params}`);
+      const result = await this._parseJSON(response);
+
+      if (result.success) {
+        this._renderTable(result.data);
+        this._renderPagination(result.pagination);
+      } else {
+        this.showNotification(
+          result.message || "Failed to load quotations",
+          "error",
+        );
+        if (tbody)
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center">Failed to load quotations.</td></tr>`;
+      }
+    } catch (err) {
+      console.error("fetchQuotations error:", err);
+      this.showNotification(
+        "Error fetching quotations: " + err.message,
+        "error",
+      );
+    }
+  }
+
+  _renderTable(quotations) {
+    const tbody = document.getElementById(this.config.tableBodyId);
+    if (!tbody) return;
+
+    if (!quotations || quotations.length === 0) {
+      tbody.innerHTML = `<td><td colspan="9" class="text-center">No quotations found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = quotations
+      .map(
+        (q) => `
+      <tr>
+        <td>${this._esc(q.quote_number)}</td>
+        <td>${this._esc(q.client_name)}</td>
+        <td>${this._esc(q.contact_person || "")}</td>
+        <td>${this._esc(q.email || "")}</td>
+        <td>${this._esc(q.phone || "")}</td>
+        <td>Php ${parseFloat(q.total || 0).toFixed(2)}</td>
+        <td>${new Date(q.created_at).toLocaleDateString()}</td>
+        <td>
+          <select class="status-select" data-id="${q.id}"
+            onchange="quotationManager.updateStatus(${q.id}, this.value)">
+            <option value="draft"     ${q.status === "draft" ? "selected" : ""}>Draft / Pending</option>
+            <option value="sent"      ${q.status === "sent" ? "selected" : ""}>Sent</option>
+            <option value="accepted"  ${q.status === "accepted" ? "selected" : ""}>Accepted / Approved</option>
+            <option value="expired"   ${q.status === "expired" ? "selected" : ""}>Expired / Declined</option>
+            <option value="converted" ${q.status === "converted" ? "selected" : ""}>Converted / Delivered</option>
+          </select>
+        </td>
+        <td>
+          <div class="action-buttons">
+            <button class="btn-edit" onclick="quotationManager.openEditModal(${q.id})" title="Edit">
+              <i class="fa-solid fa-edit"></i>
+            </button>
+            <button class="btn-pdf" onclick="quotationManager.generatePDF(${q.id})" title="Generate PDF">
+              <i class="fa-solid fa-file-pdf"></i>
+            </button>
+            <button class="btn-delete" onclick="quotationManager.deleteQuotation(${q.id}, '${this._esc(q.quote_number)}')" title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `,
+      )
+      .join("");
+  }
+
+  // ── DELETE ────────────────────────────────────────────────────────────────
   deleteQuotation(id, quoteNumber = "") {
-    // Remove any existing confirm dialog
     document
       .querySelectorAll(".qm-confirm-overlay")
       .forEach((el) => el.remove());
@@ -748,7 +858,7 @@ class QuotationManager {
         <div class="qm-confirm-msg">
           You are about to permanently delete
           <strong>${this._esc(quoteNumber || String(id))}</strong>.<br>
-          This action cannot be undone and will also remove all line items.
+          This action cannot be undone.
         </div>
         <div class="qm-confirm-actions">
           <button class="qm-confirm-cancel" id="qmCancelDelete">Cancel</button>
@@ -760,7 +870,6 @@ class QuotationManager {
 
     document.body.appendChild(overlay);
 
-    // Close on backdrop click
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) overlay.remove();
     });
@@ -794,7 +903,8 @@ class QuotationManager {
               result.message || "Quotation deleted successfully.",
               "success",
             );
-            this.fetchQuotations();
+            await this.fetchQuotations();
+            await this.fetchStats();
           } else {
             this.showNotification(
               result.message || "Failed to delete quotation",
@@ -812,8 +922,7 @@ class QuotationManager {
       });
   }
 
-  // ── PAGINATION ────────────────────────────────────────────────────────────
-
+  // ── PAGINATION ───────────────────────────────────────────────────────────
   _renderPagination(pagination) {
     const pageInfo = document.getElementById("pageInfo");
     const prevBtn = document.getElementById("prevPage");
@@ -831,6 +940,7 @@ class QuotationManager {
     this.fetchQuotations();
     this._scrollToTop();
   }
+
   prevPage() {
     if (this.currentPage > 1) {
       this.currentPage--;
@@ -838,12 +948,11 @@ class QuotationManager {
       this._scrollToTop();
     }
   }
+
   _scrollToTop() {
     const el = document.querySelector(".content-body");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
-
-  // ── PUBLIC ALIASES ────────────────────────────────────────────────────────
 
   refresh() {
     this.currentPage = 1;
@@ -854,21 +963,10 @@ class QuotationManager {
     const si = document.getElementById("quotationSearch");
     if (si) si.value = "";
     this.fetchQuotations();
+    this.fetchStats();
   }
 
-  viewQuotation(id) {
-    window.location.href = `quotation-view.php?id=${id}`;
-  }
-  editQuotation(id) {
-    this.openEditModal(id);
-  }
-
-  // ── UTILITIES ─────────────────────────────────────────────────────────────
-
-  /**
-   * Sanitise HTML from the editor before storing/rendering.
-   * Allows only safe formatting tags; strips scripts and event handlers.
-   */
+  // ── UTILITIES ────────────────────────────────────────────────────────────
   _sanitiseHtml(html) {
     const allowed = new Set([
       "B",
@@ -891,12 +989,10 @@ class QuotationManager {
       [...node.childNodes].forEach((child) => {
         if (child.nodeType === Node.ELEMENT_NODE) {
           if (!allowed.has(child.tagName)) {
-            // Replace disallowed element with its children
             while (child.firstChild)
               child.parentNode.insertBefore(child.firstChild, child);
             child.remove();
           } else {
-            // Strip all attributes (removes onclick, style injections, etc.)
             [...child.attributes].forEach((attr) =>
               child.removeAttribute(attr.name),
             );
@@ -912,13 +1008,11 @@ class QuotationManager {
 
   async _parseJSON(response) {
     const raw = await response.text();
+    console.log("Raw response:", raw.substring(0, 500));
     try {
       return JSON.parse(raw);
     } catch (e) {
-      console.error("Non-JSON response:", raw);
-      throw new Error(
-        `Server returned invalid JSON (HTTP ${response.status}).`,
-      );
+      throw new Error(`Invalid JSON: ${raw.substring(0, 200)}`);
     }
   }
 
@@ -961,7 +1055,6 @@ class QuotationManager {
   }
 }
 
-// Initialize on DOM ready
 let quotationManager;
 document.addEventListener("DOMContentLoaded", () => {
   quotationManager = new QuotationManager();
