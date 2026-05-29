@@ -19,6 +19,46 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 require_once '../../connect/config.php';
 
+/**
+ * Generate a unique quotation number in format: XX-MMYY-NNNN
+ * Example: AI-0526-0001 (May 2026, first quotation)
+ * 
+ * @param PDO $conn Database connection
+ * @param string $prefix 2-letter prefix (e.g., 'AI', 'QT', 'IN')
+ * @return string Generated quote number
+ */
+function generateQuoteNumber($conn, $prefix = 'AI')
+{
+    // Get current month and year (MMYY format) - month first, then year
+    $monthYear = date('my'); // e.g., 0526 for May 2026
+
+    // Query to get the highest sequential number for this month-year
+    $pattern = $prefix . '-' . $monthYear . '-%';
+
+    $stmt = $conn->prepare("
+        SELECT quote_number 
+        FROM quotations 
+        WHERE quote_number LIKE :pattern 
+        ORDER BY id DESC 
+        LIMIT 1
+    ");
+    $stmt->execute([':pattern' => $pattern]);
+    $lastQuote = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $nextNumber = 1;
+    if ($lastQuote) {
+        // Extract the last 4 digits from the quote number
+        $parts = explode('-', $lastQuote['quote_number']);
+        $lastSeq = (int)end($parts);
+        $nextNumber = $lastSeq + 1;
+    }
+
+    // Format with leading zeros (4 digits)
+    $sequence = str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+
+    return $prefix . '-' . $monthYear . '-' . $sequence;
+}
+
 try {
     $conn = getDBConnection();
     if (!$conn) {
@@ -36,10 +76,12 @@ try {
     $contact_person = trim($input['contact_person'] ?? '');
     $email          = trim($input['email'] ?? '');
     $phone          = trim($input['phone'] ?? '');
+    $address        = trim($input['address'] ?? '');
     $tax            = max(0, (float)($input['tax'] ?? 0));
     $discount       = max(0, (float)($input['discount'] ?? 0));
     $notes          = trim($input['notes'] ?? '');
     $items          = $input['items'] ?? [];
+    $prefix         = trim($input['quote_prefix'] ?? 'AI');
 
     if ($client_name === '') {
         http_response_code(400);
@@ -80,28 +122,27 @@ try {
     $taxAmount  = $subtotal * ($tax / 100);
     $grandTotal = max(0.0, $subtotal + $taxAmount - $discount);
 
-    // Generate unique quote number
-    $quote_number = 'QT-' . date('Ymd') . '-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
+    // Generate unique quote number in format: XX-MMYY-NNNN
+    $quote_number = generateQuoteNumber($conn, $prefix);
 
-    // Check for uniqueness
+    // Double-check uniqueness (fallback safety)
     $checkStmt = $conn->prepare('SELECT id FROM quotations WHERE quote_number = ?');
     $checkStmt->execute([$quote_number]);
-    while ($checkStmt->fetch()) {
-        $quote_number = 'QT-' . date('Ymd') . '-' . str_pad(rand(0, 9999), 4, '0', STR_PAD_LEFT);
-        $checkStmt->execute([$quote_number]);
+    if ($checkStmt->fetch()) {
+        $quote_number = generateQuoteNumber($conn, $prefix);
     }
 
     $conn->beginTransaction();
 
     try {
-        // Insert quotation
+        // Insert quotation with audited = 0 by default
         $insertSql = '
             INSERT INTO quotations 
-                (quote_number, client_name, contact_person, email, phone, 
-                 subtotal, tax, discount, total, notes, status)
+                (quote_number, client_name, contact_person, email, phone, address,
+                 subtotal, tax, discount, total, notes, status, audited)
             VALUES
-                (:quote_number, :client_name, :contact_person, :email, :phone,
-                 :subtotal, :tax, :discount, :total, :notes, "draft")';
+                (:quote_number, :client_name, :contact_person, :email, :phone, :address,
+                 :subtotal, :tax, :discount, :total, :notes, "draft", 0)';
 
         $stmt = $conn->prepare($insertSql);
         $stmt->execute([
@@ -110,6 +151,7 @@ try {
             ':contact_person'  => $contact_person,
             ':email'           => $email,
             ':phone'           => $phone,
+            ':address'         => $address,
             ':subtotal'        => round($subtotal, 4),
             ':tax'             => round($tax, 4),
             ':discount'        => round($discount, 4),

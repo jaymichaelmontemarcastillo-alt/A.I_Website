@@ -51,7 +51,7 @@ include '../includes/header.php';
                         </div>
                         <div class="card-info">
                             <h3 id="declinedQuotes">0</h3>
-                            <p>Declined / Expired</p>
+                            <p>Declined</p>
                         </div>
                     </div>
                     <div class="card card-delivered" onclick="quotationManager.filterByStatus('converted')">
@@ -99,18 +99,16 @@ include '../includes/header.php';
                     <table class="quotations-table">
                         <thead>
                             <tr>
-                                <th>Quote ID</th>
-                                <th>Customer</th>
-                                <th>Contact Person</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Total</th>
-                                <th>Created Date</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th class="col-quote-id" style="width: 100px;">Quote ID</th>
+                                <th class="col-customer" style="width: 140px;">Customer</th>
+                                <th class="col-contact" style="width: 120px;">Contact Person</th>
+                                <th class="col-total" style="width: 90px;">Total</th>
+                                <th class="col-date" style="width: 90px;">Created Date</th>
+                                <th class="col-status" style="width: 120px;">Status</th>
+                                <th class="col-audit" style="width: 90px;">Audit</th>
+                                <th class="col-actions" style="width: 100px;">Actions</th>
                             </tr>
                         </thead>
-
                         <tbody id="quotationsTableBody">
                             <tr>
                                 <td colspan="9" class="text-center" style="padding: 40px;">
@@ -249,6 +247,10 @@ include '../includes/header.php';
                             <span class="qe-summary-label">Grand Total</span>
                             <span class="qe-summary-value qe-grand" id="qeGrandTotal">Php 0.00</span>
                         </div>
+                        <div class="qe-field" style="grid-column: span 2;">
+                            <label class="qe-label">Address</label>
+                            <textarea id="qeAddress" class="qe-input" rows="2" placeholder="Client address for delivery..."></textarea>
+                        </div>
                     </div>
                 </div>
 
@@ -263,6 +265,7 @@ include '../includes/header.php';
             </div>
 
             <!-- FOOTER ACTIONS -->
+            <!-- FOOTER ACTIONS -->
             <div class="qe-footer">
                 <button class="qe-btn-cancel" onclick="quotationManager.closeEditModal()">
                     <i class="fa-solid fa-xmark"></i> Cancel
@@ -270,6 +273,9 @@ include '../includes/header.php';
                 <div class="qe-footer-right">
                     <button class="qe-btn-delivery" id="qeDeliveryReceiptBtn" onclick="quotationManager.generateDeliveryReceiptFromModal()" style="display:none;">
                         <i class="fa-solid fa-truck"></i> Generate Delivery Receipt
+                    </button>
+                    <button class="qe-btn-audit" id="qeCreateAuditBtn" onclick="quotationManager.createAuditFromModal()" style="display:none;">
+                        <i class="fa-solid fa-clipboard-list"></i> Create Audit Now
                     </button>
                     <button class="qe-btn-save-pdf" id="qeSavePdfBtn" onclick="quotationManager.saveAndGeneratePDF()">
                         <i class="fa-solid fa-file-pdf"></i> Save & Generate PDF
@@ -325,183 +331,6 @@ include '../includes/header.php';
     </div>
 
     <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
-    <style>
-        /* Dashboard Cards Styles */
-        .dashboard-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-
-        .card {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-        }
-
-        .card-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-        }
-
-        .card-total .card-icon {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-
-        .card-pending .card-icon {
-            background: #fff3e0;
-            color: #ff9800;
-        }
-
-        .card-approved .card-icon {
-            background: #e8f5e9;
-            color: #4caf50;
-        }
-
-        .card-declined .card-icon {
-            background: #ffebee;
-            color: #f44336;
-        }
-
-        .card-delivered .card-icon {
-            background: #e0f2f1;
-            color: #009688;
-        }
-
-        .card-info h3 {
-            font-size: 28px;
-            margin: 0;
-            font-weight: 700;
-        }
-
-        .card-info p {
-            margin: 5px 0 0;
-            font-size: 14px;
-            color: #666;
-        }
-
-        /* Approval Modal Styles */
-        .approval-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 100000;
-            background: rgba(0, 0, 0, 0.5);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .approval-modal {
-            background: white;
-            border-radius: 16px;
-            width: 450px;
-            max-width: 90%;
-            overflow: hidden;
-            animation: slideInUp 0.3s ease;
-        }
-
-        @keyframes slideInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .approval-header {
-            background: #4caf50;
-            padding: 25px;
-            text-align: center;
-            color: white;
-        }
-
-        .approval-header i {
-            font-size: 48px;
-            margin-bottom: 10px;
-        }
-
-        .approval-header h2 {
-            margin: 0;
-            font-size: 24px;
-        }
-
-        .approval-body {
-            padding: 25px;
-            text-align: center;
-        }
-
-        .approval-body p {
-            font-size: 16px;
-            margin-bottom: 20px;
-            color: #333;
-        }
-
-        .approval-info {
-            background: #f5f5f5;
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 18px;
-        }
-
-        .approval-footer {
-            padding: 20px 25px;
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-            border-top: 1px solid #eee;
-        }
-
-        .approval-btn-cancel,
-        .approval-btn-generate {
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
-
-        .approval-btn-cancel {
-            background: #f5f5f5;
-            color: #666;
-        }
-
-        .approval-btn-cancel:hover {
-            background: #e0e0e0;
-        }
-
-        .approval-btn-generate {
-            background: #ff9800;
-            color: white;
-        }
-
-        .approval-btn-generate:hover {
-            background: #f57c00;
-        }
-    </style>
 
 </body>
 <script src="../../assets/js/admin-site-functions/admin_data_fetch/fetch_quotations.js"></script>

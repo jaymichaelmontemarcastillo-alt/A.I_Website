@@ -13,8 +13,12 @@ try {
 
     $offset = ($page - 1) * $limit;
 
-    // Build query
-    $query = "SELECT * FROM quotations WHERE 1=1";
+    // Build query - ADDED audited, audit_id, audited_at, audited_by fields
+    $query = "SELECT id, quote_number, client_name, contact_person, email, phone, 
+                     address, subtotal, tax, discount, total, notes, status, 
+                     pdf_url, created_at, expires_at, updated_at,
+                     audited, audit_id, audited_at, audited_by 
+              FROM quotations WHERE 1=1";
     $params = [];
 
     if ($status) {
@@ -31,18 +35,28 @@ try {
     }
 
     // Count total
-    $countStmt = $pdo->prepare(str_replace("SELECT *", "SELECT COUNT(*) as count", $query));
-    $countStmt->execute($params);
-    $total = $countStmt->fetch()['count'];
+    $countStmt = $pdo->prepare(str_replace("FROM quotations", "FROM quotations", $query));
+    $countQuery = "SELECT COUNT(*) as count FROM quotations WHERE 1=1";
 
-    // Get data
+    if ($status) {
+        $countQuery .= " AND status = ?";
+    }
+    if ($search) {
+        $countQuery .= " AND (quote_number LIKE ? OR client_name LIKE ? OR email LIKE ?)";
+    }
+
+    $countStmt = $pdo->prepare($countQuery);
+    $countStmt->execute($params);
+    $total = $countStmt->fetch(PDO::FETCH_ASSOC)['count'];
+
+    // Get data with ORDER BY and LIMIT
     $query .= " ORDER BY created_at DESC LIMIT ? OFFSET ?";
     $params[] = $limit;
     $params[] = $offset;
 
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
-    $quotations = $stmt->fetchAll();
+    $quotations = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     $totalPages = ceil($total / $limit);
 

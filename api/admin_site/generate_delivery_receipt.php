@@ -456,8 +456,8 @@ body {
         <td class="deliver-label">DELIVER TO:</td>
         <td class="deliver-value">
             ' . eq($clientName) . '
-            ' . (!empty($clientAddress) ? '<div class="deliver-address">' . eq($clientAddress) . '</div>' : '') . '
-         </td>
+            ' . (!empty($clientAddress) ? '<div class="deliver-address">' . nl2br(eq($clientAddress)) . '</div>' : '') . '
+          </td>
     </tr>
 </table>
 
@@ -560,7 +560,10 @@ body {
         'dr_number' => $drNumber,
         'dr_id'     => $drId,
         'filename'  => $filename,
-        'message'   => 'Delivery Receipt generated successfully.',
+        'quotation_id' => $quotationId,
+        'quotation_number' => $orderNo,
+        'show_audit_prompt' => true,
+        'message'   => 'Delivery Receipt generated successfully. Would you like to create an audit for this quotation?',
     ]);
 } catch (Exception $e) {
     error_log('generate_delivery_receipt.php ERROR: ' . $e->getMessage());

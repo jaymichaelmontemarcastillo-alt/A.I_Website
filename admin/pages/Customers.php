@@ -14,19 +14,18 @@ include '../includes/header.php';
         <?php include 'admin_page_header.php'; ?>
 
         <section class="content-body">
-
-            <!-- ── Page Header ──────────────────────────────────────────── -->
+            <!-- Page Header -->
             <div class="page-header">
                 <div>
-                    <h1 class="page-title">Customers</h1>
-                    <p class="page-subtitle">Unified CRM — orders &amp; quotations</p>
+                    <h1 class="page-title">Customer Management</h1>
+                    <p class="page-subtitle">Customer insights based on quotation history</p>
                 </div>
-                <!--   <button class="btn-export" id="btnExport">
+                <button class="btn-export" id="btnExport">
                     <i class="fa-solid fa-file-arrow-down"></i> Export CSV
-                </button>-->
+                </button>
             </div>
 
-            <!-- ── Summary Cards ─────────────────────────────────────────── -->
+            <!-- Stats Cards -->
             <div class="stats-grid" id="statsGrid">
                 <div class="stat-card" data-filter="all">
                     <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
@@ -35,70 +34,79 @@ include '../includes/header.php';
                         <p>Total Customers</p>
                     </div>
                 </div>
-                <div class="stat-card" data-filter="orders">
-                    <div class="stat-icon accent-green"><i class="fa-solid fa-bag-shopping"></i></div>
+                <div class="stat-card" data-filter="has_quotations">
+                    <div class="stat-icon accent-green"><i class="fa-solid fa-file-invoice"></i></div>
                     <div class="stat-body">
-                        <h3 id="statActive">—</h3>
-                        <p>Has Orders</p>
+                        <h3 id="statHasQuotations">—</h3>
+                        <p>Has Quotations</p>
                     </div>
                 </div>
-                <div class="stat-card" data-filter="quotations">
-                    <div class="stat-icon accent-amber"><i class="fa-solid fa-file-invoice"></i></div>
+                <div class="stat-card" data-filter="high_value">
+                    <div class="stat-icon accent-amber"><i class="fa-solid fa-chart-line"></i></div>
                     <div class="stat-body">
-                        <h3 id="statQuoteOnly">—</h3>
-                        <p>Quotation Only</p>
+                        <h3 id="statHighValue">—</h3>
+                        <p>High Value (>₱50k)</p>
                     </div>
                 </div>
-                <div class="stat-card" data-filter="highvalue">
-                    <div class="stat-icon accent-purple"><i class="fa-solid fa-arrow-trend-up"></i></div>
+                <div class="stat-card" data-filter="delivered">
+                    <div class="stat-icon accent-purple"><i class="fa-solid fa-truck"></i></div>
                     <div class="stat-body">
-                        <h3 id="statRepeat">—</h3>
-                        <p>Repeat Customers</p>
+                        <h3 id="statDelivered">—</h3>
+                        <p>Received Delivery</p>
+                    </div>
+                </div>
+                <div class="stat-card" data-filter="cancelled">
+                    <div class="stat-icon accent-red"><i class="fa-solid fa-ban"></i></div>
+                    <div class="stat-body">
+                        <h3 id="statCancelled">—</h3>
+                        <p>Cancelled Quotations</p>
+                    </div>
+                </div>
+                <div class="stat-card" data-filter="pending">
+                    <div class="stat-icon accent-blue"><i class="fa-solid fa-clock"></i></div>
+                    <div class="stat-body">
+                        <h3 id="statPending">—</h3>
+                        <p>Pending</p>
                     </div>
                 </div>
             </div>
 
-            <!-- ── Table Container ──────────────────────────────────────── -->
+            <!-- Table Container -->
             <div class="table-container">
-
                 <div class="table-header">
                     <div class="search-bar">
                         <i class="fa-solid fa-magnifying-glass"></i>
-                        <input type="text" id="searchInput"
-                            placeholder="Search name, email, phone…"
-                            class="search-input" autocomplete="off">
+                        <input type="text" id="searchInput" placeholder="Search by name, email, phone, or address..." autocomplete="off">
                     </div>
-
                     <div class="filter-pills" id="filterPills">
-                        <button class="pill active" data-filter="all">All</button>
-                        <button class="pill" data-filter="orders">Has Orders</button>
-                        <button class="pill" data-filter="quotations">Has Quotations</button>
-                        <button class="pill" data-filter="active">Active (30d)</button>
-                        <button class="pill" data-filter="highvalue">High Value</button>
+                        <button class="pill active" data-filter="all">All Customers</button>
+                        <button class="pill" data-filter="has_quotations">Has Quotations</button>
+                        <button class="pill" data-filter="high_value">High Value (>₱50k)</button>
+                        <button class="pill" data-filter="delivered">Received Delivery</button>
+                        <button class="pill" data-filter="cancelled">Cancelled</button>
+                        <button class="pill" data-filter="pending">Pending</button>
                     </div>
                 </div>
 
                 <div class="table-scroll">
                     <table class="customer-table" id="customerTable">
-                        <!-- colgroup gives table-layout: fixed its column widths -->
                         <thead>
                             <tr>
                                 <th>Customer</th>
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>Orders</th>
-                                <th>Quotations</th>
-                                <th>Total Spent</th>
-                                <th>Last Activity</th>
-                                <th>Type</th>
+                                <th>Address</th>
+                                <th>Last Order</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="customerTbody">
                             <tr class="loading-row">
-                                <td colspan="9">
+                                <td colspan="7">
                                     <div class="loading">
                                         <div class="spinner"></div>
-                                        <span>Loading customers…</span>
+                                        <span>Loading customers...</span>
                                     </div>
                                 </td>
                             </tr>
@@ -106,26 +114,22 @@ include '../includes/header.php';
                     </table>
                 </div>
 
-                <!-- Pagination -->
-                <div class=" pagination-bar" id="paginationBar">
-                </div>
+                <div class="pagination-bar" id="paginationBar"></div>
             </div>
-
         </section>
     </main>
 </div>
 
-<!-- ── Customer Detail Modal ─────────────────────────────────────────── -->
+<!-- Customer Detail Modal -->
 <div class="modal-overlay" id="modalOverlay">
     <div class="modal-box">
-
         <div class="modal-content" id="modalContent" style="display:none">
             <button class="modal-close" id="modalClose" aria-label="Close">
                 <i class="fa-solid fa-xmark"></i>
             </button>
             <div class="modal-loading" id="modalLoading">
                 <div class="spinner"></div>
-                <p>Loading profile…</p>
+                <p>Loading customer profile...</p>
             </div>
 
             <!-- Profile Header -->
@@ -133,53 +137,43 @@ include '../includes/header.php';
                 <div class="modal-avatar" id="modalAvatar"></div>
                 <div class="modal-profile-info">
                     <h2 id="modalCustomerName"></h2>
-                    <p id="modalCustomerEmail"></p>
-                    <p id="modalCustomerPhone"></p>
-                    <span class="badge" id="modalCustomerType"></span>
+                    <p><i class="fa-solid fa-envelope"></i> <span id="modalCustomerEmail"></span></p>
+                    <p><i class="fa-solid fa-phone"></i> <span id="modalCustomerPhone"></span></p>
+                    <p><i class="fa-solid fa-location-dot"></i> <span id="modalCustomerAddress">—</span></p>
                 </div>
             </div>
 
             <!-- Summary Tiles -->
             <div class="modal-summary-tiles">
                 <div class="m-tile">
-                    <span id="mTileOrders">0</span>
-                    <p>Orders</p>
-                </div>
-                <div class="m-tile">
                     <span id="mTileQuotes">0</span>
-                    <p>Quotations</p>
+                    <p>Total Quotations</p>
                 </div>
                 <div class="m-tile">
-                    <span id="mTileSpent">₱0</span>
-                    <p>Total Spent</p>
+                    <span id="mTileTotal">₱0</span>
+                    <p>Total Amount</p>
                 </div>
                 <div class="m-tile">
-                    <span id="mTileActivity">—</span>
-                    <p>Last Activity</p>
+                    <span id="mTileConverted">0</span>
+                    <p>Converted to Order</p>
                 </div>
-            </div>
-
-            <!-- Tabs -->
-            <div class="modal-tabs">
-                <button class="m-tab active" data-tab="orders">Order History</button>
-                <button class="m-tab" data-tab="quotations">Quotation History</button>
-            </div>
-
-            <!-- Orders Tab -->
-            <div class="tab-panel active" id="tabOrders">
-                <div class="history-list" id="ordersList"></div>
-                <p class="empty-note" id="ordersEmpty" style="display:none">No orders found.</p>
+                <div class="m-tile">
+                    <span id="mTileLastQuote">—</span>
+                    <p>Last Quotation</p>
+                </div>
             </div>
 
             <!-- Quotations Tab -->
-            <div class="tab-panel" id="tabQuotations">
-                <div class="history-list" id="quotesList"></div>
-                <p class="empty-note" id="quotesEmpty" style="display:none">No quotations found.</p>
+            <div class="modal-tabs">
+                <button class="m-tab active" data-tab="quotations">Quotation History</button>
             </div>
 
-        </div><!-- /modal-content -->
-    </div><!-- /modal-box -->
-</div><!-- /modal-overlay -->
+            <div class="tab-panel active" id="tabQuotations">
+                <div class="history-list" id="quotesList"></div>
+                <p class="empty-note" id="quotesEmpty" style="display:none">No quotations found for this customer.</p>
+            </div>
+        </div>
+    </div>
+</div>
 
-<!-- ── External JavaScript ───────────────────────────────────────────── -->
-<script src="../../assets/js/admin-site-functions/admin_customer.js" defer></script>
+<script src="../../assets/js/admin-site-functions/admin_customer.js"></script>

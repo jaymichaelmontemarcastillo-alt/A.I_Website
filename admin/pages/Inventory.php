@@ -18,24 +18,18 @@ include '../includes/header.php';
         <?php include 'admin_page_header.php'; ?>
 
         <section class="content-body">
-
             <div class="mat-page-header">
                 <div>
                     <h1 class="page-title">Materials Inventory</h1>
                     <p class="page-subtitle">Stock levels, locations, and history</p>
                 </div>
-                <div style="display: flex; gap: 12px;">
-                    <button class="btn-add-item" onclick="matOpenAddItemModal()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                        <i class="fa-solid fa-plus"></i> Add New Item
-                    </button>
-                    <button class="btn-import" onclick="matOpenImportModal()" style="background: var(--surface); border: 1px solid var(--border); padding: 10px 18px; border-radius: 8px; cursor: pointer;">
+                <div class="top-btn" style="display: flex; gap: 12px;">
+
+                    <button class="btn-import" onclick="matOpenImportModal()">
                         <i class="fa-solid fa-upload"></i> Import
                     </button>
-                    <button class="btn-export" onclick="matExportData()" style="background: var(--surface); border: 1px solid var(--border); padding: 10px 18px; border-radius: 8px; cursor: pointer;">
+                    <button class="btn-export" onclick="matExportData()">
                         <i class="fa-solid fa-download"></i> Export
-                    </button>
-                    <button class="btn-primary" onclick="matOpenAuditModal()" style="background: #2563eb; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                        <i class="fa-solid fa-clipboard-list"></i> Create Audit / BOM
                     </button>
                 </div>
             </div>
@@ -363,6 +357,7 @@ include '../includes/header.php';
                 <div id="matAlertsContainer"></div>
             </div>
 -->
+
             <!-- Materials Table -->
             <div class="table-container">
                 <div class="table-header">
@@ -384,6 +379,15 @@ include '../includes/header.php';
                             <option value="name_asc">Name A–Z</option>
                             <option value="name_desc">Name Z–A</option>
                         </select>
+                        <div class="top-btn" style="display: flex; gap: 12px;">
+                            <button class="btn-add-item" onclick="matOpenAddItemModal()">
+                                <i class="fa-solid fa-plus"></i> Add New Item
+                            </button>
+                            <button class="btn-primary" onclick="matOpenAuditModal()">
+                                <i class="fa-solid fa-clipboard-list"></i> Create Audit
+                            </button>
+
+                        </div>
                     </div>
                 </div>
                 <div class="table-scroll">
@@ -610,8 +614,179 @@ include '../includes/header.php';
             </div>
         </div>
     </main>
+    <!-- ═══════════════════════════════════════════════════════════════
+     QUOTATION AUDIT MODAL (Created from quotation selection)
+     ═══════════════════════════════════════════════════════════════ -->
+    <!-- QUOTATION AUDIT MODAL (Updated with proper overflow) -->
+    <div id="quotationAuditModal" class="quotation-audit-modal" style="display:none;">
+        <div class="quotation-audit-container">
+            <div class="quotation-audit-header">
+                <h3><i class="fa-solid fa-clipboard-list"></i> Create Audit from Quotation</h3>
+                <button class="quotation-audit-close" onclick="quotationAuditIntegration.closeAuditModal()">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            <div class="quotation-audit-body">
+                <!-- Loading Overlay -->
+                <div class="audit-loading-overlay" id="auditLoadingOverlay" style="display:none;">
+                    <div class="audit-loading-spinner">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Loading quotation data...
+                    </div>
+                </div>
+
+                <!-- Item Information Section -->
+                <div class="audit-section">
+                    <div class="audit-section-title">
+                        <i class="fa-solid fa-tag"></i> Item Information
+                    </div>
+                    <div class="audit-section-body">
+                        <input type="text" id="qaAuditItemName" class="qa-input-full" placeholder="Enter item/product name..." style="width:100%; padding:12px; border:1px solid #d1d5db; border-radius:8px;">
+                    </div>
+                </div>
+
+                <!-- Material Costs Section -->
+                <div class="audit-section">
+                    <div class="audit-section-title">
+                        <i class="fa-solid fa-cubes"></i> Material Costs
+                    </div>
+                    <div class="audit-section-body">
+                        <div class="qa-table-header">
+                            <span style="flex:2;">Material</span>
+                            <span style="flex:0.8; text-align: center;">Quantity</span>
+                            <span style="flex:1; text-align: center;">Cost Per Unit</span>
+                            <span style="flex:1; text-align: center;">Total</span>
+                            <span style="flex:0.3; text-align: center;"></span>
+                        </div>
+                        <div id="qaMaterialCostsContainer" class="qa-dynamic-container"></div>
+                        <button type="button" class="qa-add-row-btn" onclick="quotationAuditIntegration.addMaterialRowWithManualEntry()">
+                            <i class="fa-solid fa-plus"></i> Add Material
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Reject Costs Section -->
+                <div class="audit-section">
+                    <div class="audit-section-title">
+                        <i class="fa-solid fa-trash-alt"></i> Reject Costs
+                    </div>
+                    <div class="audit-section-body">
+                        <div class="reject-note">
+                            <i class="fa-solid fa-info-circle"></i> Remove materials from the list if there are no reject materials
+                        </div>
+                        <div class="qa-table-header">
+                            <span style="flex:2;">Material</span>
+                            <span style="flex:0.8; text-align: center;">Quantity</span>
+                            <span style="flex:1; text-align: center;">Cost Per Unit</span>
+                            <span style="flex:1; text-align: center;">Total</span>
+                            <span style="flex:0.3; text-align: center;"></span>
+                        </div>
+                        <div id="qaRejectCostsContainer" class="qa-dynamic-container"></div>
+                        <button type="button" class="qa-add-row-btn" onclick="quotationAuditIntegration.addRejectRow()">
+                            <i class="fa-solid fa-plus"></i> Add Reject Material
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Items Section -->
+                <div class="audit-section">
+                    <div class="audit-section-title">
+                        <i class="fa-solid fa-list-ul"></i> Items
+                    </div>
+                    <div class="audit-section-body">
+                        <div class="qa-table-header">
+                            <span style="flex:2;">Item Name</span>
+                            <span style="flex:0.8; text-align: center;">Quantity</span>
+                            <span style="flex:1; text-align: center;">Unit Price</span>
+                            <span style="flex:1; text-align: center;">Total Amount</span>
+                            <span style="flex:0.3; text-align: center;"></span>
+                        </div>
+                        <div id="qaItemsContainer" class="qa-dynamic-container"></div>
+                        <button type="button" class="qa-add-row-btn" onclick="quotationAuditIntegration.addItemRow()">
+                            <i class="fa-solid fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Totals Section -->
+                <div class="qa-totals-grid">
+                    <div class="qa-total-card">
+                        <label>Total Material Cost</label>
+                        <div class="qa-total-value" id="qaTotalMaterialCost">₱0.00</div>
+                    </div>
+                    <div class="qa-total-divider"></div>
+                    <div class="qa-total-card">
+                        <label>Total Reject Cost</label>
+                        <div class="qa-total-value" id="qaTotalRejectCost">₱0.00</div>
+                    </div>
+                    <div class="qa-total-divider"></div>
+                    <div class="qa-total-card">
+                        <label>Total Amount Due</label>
+                        <div class="qa-total-value" id="qaTotalAmountDue">₱0.00</div>
+                    </div>
+                    <div class="qa-total-divider"></div>
+                    <div class="qa-total-card">
+                        <label>Profit</label>
+                        <div class="qa-total-value profit-value" id="qaProfit">₱0.00</div>
+                    </div>
+                </div>
+
+                <!-- Signatures Section -->
+                <div class="qa-signatures-grid">
+                    <div class="qa-signature-field">
+                        <label><i class="fa-regular fa-user"></i> Created By</label>
+                        <input type="text" id="qaCreatedBy" placeholder="Enter name...">
+                    </div>
+                    <div class="qa-signature-field">
+                        <label><i class="fa-regular fa-user-check"></i> Audited By</label>
+                        <input type="text" id="qaAuditedBy" placeholder="Enter name...">
+                    </div>
+                    <div class="qa-signature-field">
+                        <label><i class="fa-regular fa-hand-peace"></i> Acknowledged By</label>
+                        <input type="text" id="qaAcknowledgedBy" placeholder="Enter name...">
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="qa-modal-actions">
+                    <button class="qa-btn-cancel" onclick="quotationAuditIntegration.closeAuditModal()">
+                        <i class="fa-solid fa-times"></i> Cancel
+                    </button>
+                    <button class="qa-btn-submit" onclick="quotationAuditIntegration.submitAudit()">
+                        <i class="fa-solid fa-save"></i> Create Audit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- PENDING AUDIT QUOTATIONS MODAL -->
+    <div id="pendingAuditModal" class="pending-audit-modal" style="display:none;">
+        <div class="pending-audit-container">
+            <div class="pending-audit-header">
+                <h3><i class="fa-solid fa-clipboard-list"></i> Pending Audit Quotations</h3>
+                <button class="pending-audit-close" onclick="closePendingAuditModal()">&times;</button>
+            </div>
+            <div class="pending-audit-body">
+                <p class="pending-audit-desc">Select a quotation to create an inventory audit for material consumption tracking.</p>
+                <div class="pending-audit-search">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="pendingAuditSearch" placeholder="Search by quote number or customer..." onkeyup="filterPendingAuditList()">
+                </div>
+                <div class="pending-audit-list" id="pendingAuditList">
+                    <div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending quotations...</div>
+                </div>
+            </div>
+            <div class="pending-audit-footer">
+                <button class="pending-audit-btn cancel" onclick="closePendingAuditModal()">
+                    <i class="fa-solid fa-times"></i> Cancel
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Materials JS loaded LAST — all DOM elements guaranteed to exist -->
 <script src="../../assets/js/admin-site-functions/admin_materials.js"></script>
 <script src="../../assets/js/admin-site-functions/inventory_item_manager.js"></script>
+<script src="../../assets/js/admin-site-functions/quotation_audit_integration.js"></script>
+<script src="../../assets/js/admin-site-functions/update_inventory_materials.js"></script>
+<script src="../../assets/js/admin-site-functions/pending_audit_manager.js"></script>

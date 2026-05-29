@@ -1,479 +1,521 @@
-/* ============================= */
-/* 📦 ADMIN PRODUCTS MANAGEMENT  */
-/*      Full AJAX — No Reloads   */
-/* ============================= */
+// ============================================================
+// ADMIN PRODUCTS JS - Complete CRUD with search and filters
+// ============================================================
 
-let currentEditingId = null;
+let currentPage = 1;
+let totalPages = 1;
+let currentDeleteId = null;
+let currentDeleteName = "";
 
-/* ─── DOM refs (resolved once on load) ──────────────────────────────────── */
-let productModal,
-  deleteConfirmModal,
-  productForm,
-  productId,
-  productName,
-  productCategory,
-  productPrice,
-  productStock,
-  previewImg,
-  modalTitle,
-  deleteMessage,
-  deleteConfirmBtn,
-  productTableBody,
-  productCountEl;
+// API Endpoints
+const API = {
+  getProducts: "../../api/admin_site/products/get_products.php",
+  addProduct: "../../api/admin_site/products/add_product.php",
+  updateProduct: "../../api/admin_site/products/update_product.php",
+  deleteProduct: "../../api/admin_site/products/delete_product.php",
+};
 
-/* ============================= */
-/* 🔔 NOTIFICATION               */
-/* ============================= */
-function showNotification(message, type = "success") {
-  const notif = document.getElementById("notification");
-  if (!notif) return;
+// Load products with filters
+async function loadProducts() {
+  const search = document.getElementById("searchInput")?.value || "";
+  const categoryId = document.getElementById("categoryFilter")?.value || "";
+  const productTypeId = document.getElementById("typeFilter")?.value || "";
+  const stockStatus = document.getElementById("stockStatusFilter")?.value || "";
 
-  notif.className = `notification ${type}`;
-  notif.textContent = message;
-  notif.style.display = "block";
-  notif.style.opacity = "0";
-  notif.style.transform = "translateX(20px)";
-
-  setTimeout(() => {
-    notif.style.transition = "opacity .25s, transform .25s";
-    notif.style.opacity = "1";
-    notif.style.transform = "translateX(0)";
-  }, 30);
-
-  clearTimeout(notif._hideTimer);
-  notif._hideTimer = setTimeout(() => {
-    notif.style.opacity = "0";
-    notif.style.transform = "translateX(20px)";
-    setTimeout(() => {
-      notif.style.display = "none";
-    }, 300);
-  }, 2800);
-}
-
-/* ============================= */
-/* 🧼 FORM VALIDATION            */
-/* ============================= */
-function clearErrors() {
-  document.querySelectorAll(".form-error").forEach((el) => {
-    el.classList.remove("show");
-    el.textContent = "";
-  });
-}
-
-function showFieldError(fieldId, message) {
-  const el = document.getElementById(fieldId);
-  if (el) {
-    el.textContent = message;
-    el.classList.add("show");
-  }
-}
-
-function validateForm() {
-  clearErrors();
-  let ok = true;
-
-  const name = productName.value.trim();
-  const category = productCategory.value.trim();
-  const price = parseFloat(productPrice.value);
-  const stock = parseInt(productStock.value, 10);
-
-  if (name.length < 3) {
-    showFieldError("nameError", "Name must be at least 3 characters");
-    ok = false;
-  }
-  if (category.length < 2) {
-    showFieldError("categoryError", "Category must be at least 2 characters");
-    ok = false;
-  }
-  if (isNaN(price) || price < 0) {
-    showFieldError("priceError", "Invalid price");
-    ok = false;
-  }
-  if (isNaN(stock) || stock < 0) {
-    showFieldError("stockError", "Invalid stock");
-    ok = false;
-  }
-
-  return ok;
-}
-
-/* ============================= */
-/* 📊 PRODUCT COUNT              */
-/* ============================= */
-function updateProductCount(delta) {
-  if (!productCountEl) return;
-  const current = parseInt(productCountEl.textContent, 10) || 0;
-  const next = current + delta;
-  productCountEl.textContent = `${next} product${next !== 1 ? "s" : ""}`;
-}
-
-/* ============================= */
-/* 🏗  DOM ROW BUILDER           */
-/* ============================= */
-function buildRow(product) {
-  const tr = document.createElement("tr");
-  tr.dataset.productId = product.id;
-
-  const imageSrc = product.image
-    ? product.image.startsWith("http")
-      ? product.image
-      : `../../${product.image}`
-    : "https://via.placeholder.com/60?text=No+Image";
-
-  tr.innerHTML = `
-    <td><img src="${imageSrc}" class="table-img" alt="${escHtml(product.name)}"></td>
-    <td>${escHtml(product.name)}</td>
-    <td><span class="category">${escHtml(product.category)}</span></td>
-    <td><span class="price">₱${parseFloat(product.price).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></td>
-    <td><span class="stock">${parseInt(product.stock, 10)}</span></td>
-    <td>
-      <div class="action-buttons">
-        <button class="action-btn edit" type="button" title="Edit product">
-          <i class="fa-solid fa-pen"></i> Edit
-        </button>
-        <button class="action-btn delete" type="button" title="Delete product" data-product-id="${product.id}">
-          <i class="fa-solid fa-trash"></i> Delete
-        </button>
-      </div>
-    </td>`;
-
-  /* Attach edit handler with the full product object */
-  tr.querySelector(".edit").addEventListener("click", () =>
-    openProductEditModal(product),
-  );
-  tr.querySelector(".delete").addEventListener("click", function () {
-    showDeleteConfirm(this.dataset.productId);
+  const params = new URLSearchParams({
+    page: currentPage,
+    limit: 12,
+    search: search,
+    category_id: categoryId,
+    product_type_id: productTypeId,
+    stock_status: stockStatus,
   });
 
-  return tr;
-}
+  const grid = document.getElementById("productsGrid");
+  if (grid) {
+    grid.innerHTML =
+      '<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading products...</p></div>';
+  }
 
-function escHtml(str) {
-  const d = document.createElement("div");
-  d.appendChild(document.createTextNode(str ?? ""));
-  return d.innerHTML;
-}
+  try {
+    const response = await fetch(`${API.getProducts}?${params}`);
+    const data = await response.json();
 
-/* ============================= */
-/* 🚫 EMPTY STATE                */
-/* ============================= */
-function checkEmptyState() {
-  const rows = productTableBody.querySelectorAll("tr[data-product-id]");
-  if (rows.length === 0) {
-    const emptyRow = productTableBody.querySelector(".empty-row");
-    if (!emptyRow) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td colspan="6" class="empty-row">
-          <div class="empty-state">
-            <i class="fa-regular fa-box-open fa-2x"></i>
-            <p>No products found</p>
-            <p>Click "Add Product" to create your first product.</p>
-          </div>
-        </td>`;
-      productTableBody.appendChild(tr);
+    if (data.success) {
+      renderProducts(data.data);
+      updatePagination(data.pagination);
+
+      const resultCount = document.getElementById("resultCount");
+      if (resultCount) {
+        resultCount.textContent = `${data.pagination.total} product${data.pagination.total !== 1 ? "s" : ""}`;
+      }
+    } else {
+      throw new Error(data.message);
     }
-  } else {
-    const emptyRow = productTableBody.querySelector(".empty-row");
-    if (emptyRow) emptyRow.parentElement.remove();
-  }
-}
-
-/* ============================= */
-/* 📦 MODAL OPEN / CLOSE         */
-/* ============================= */
-function openProductModal() {
-  currentEditingId = null;
-  productForm.reset();
-  previewImg.src = "https://via.placeholder.com/300?text=No+Image";
-  productId.value = "";
-  modalTitle.innerHTML = '<i class="fa-solid fa-box"></i> Add Product';
-  clearErrors();
-  productModal.classList.add("show");
-}
-
-function openProductEditModal(product) {
-  currentEditingId = product.id;
-  productId.value = product.id;
-  productName.value = product.name;
-  productCategory.value = product.category;
-  productPrice.value = product.price;
-  productStock.value = product.stock;
-
-  const imageSrc = product.image
-    ? product.image.startsWith("http")
-      ? product.image
-      : `../../${product.image}`
-    : "https://via.placeholder.com/300?text=No+Image";
-  previewImg.src = imageSrc;
-
-  modalTitle.innerHTML =
-    '<i class="fa-solid fa-pen-to-square"></i> Edit Product';
-  clearErrors();
-  productModal.classList.add("show");
-}
-
-function closeProductModal() {
-  productModal.classList.remove("show");
-  productForm.reset();
-  clearErrors();
-}
-
-/* ============================= */
-/* 🖼  IMAGE PREVIEW             */
-/* ============================= */
-function setupImagePreview() {
-  const imgInput = document.getElementById("productImage");
-  if (!imgInput) return;
-  imgInput.addEventListener("change", function () {
-    const file = this.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      previewImg.src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-/* ============================= */
-/* 🚀 AJAX FORM SUBMIT           */
-/* ============================= */
-function setupFormSubmission() {
-  if (!productForm) return;
-
-  productForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    if (!validateForm()) {
-      showNotification("Please fix the errors above", "error");
-      return;
+  } catch (error) {
+    console.error("Error loading products:", error);
+    if (grid) {
+      grid.innerHTML = `<div class="error-state"><i class="fa-solid fa-circle-exclamation"></i><p>Error: ${error.message}</p><button onclick="loadProducts()" style="margin-top:10px;padding:8px 16px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;">Retry</button></div>`;
     }
-
-    const formData = new FormData(this);
-    const id = productId.value;
-    const endpoint = id
-      ? "../../api/admin_site/products/update_products.php"
-      : "../../api/admin_site/products/add_products.php";
-
-    const submitBtn = document.getElementById("submitBtn");
-    const originalHTML = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML =
-      '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
-
-    /* ⚠️ Snapshot form values NOW — before closeProductModal() resets the form */
-    const snapshot = {
-      name: productName.value.trim(),
-      category: productCategory.value.trim(),
-      price: parseFloat(productPrice.value),
-      stock: parseInt(productStock.value, 10),
-    };
-
-    fetch(endpoint, { method: "POST", body: formData })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          const action = id ? "updated" : "added";
-          showNotification(
-            `✓ Product "${snapshot.name}" ${action} successfully!`,
-            "success",
-          );
-          closeProductModal(); /* safe to reset form now — we already have snapshot */
-
-          if (id) {
-            /* ── UPDATE existing row in-place ────────────────────────────── */
-            const row = productTableBody.querySelector(
-              `tr[data-product-id="${id}"]`,
-            );
-            if (row) {
-              const existingImgSrc = row.querySelector(".table-img")?.src ?? "";
-
-              const updatedProduct = {
-                id,
-                name: snapshot.name,
-                category: snapshot.category,
-                price: snapshot.price,
-                stock: snapshot.stock,
-                /* Server returns new image path only when a new file was uploaded */
-                image: data.image ?? null,
-              };
-
-              const newRow = buildRow(updatedProduct);
-
-              /* If no new image was uploaded, restore the existing img src directly */
-              if (!data.image && existingImgSrc) {
-                newRow.querySelector(".table-img").src = existingImgSrc;
-              }
-
-              row.replaceWith(newRow);
-            }
-          } else {
-            /* ── INSERT new row at top ────────────────────────────────────── */
-            if (data.id) {
-              const newProduct = {
-                id: data.id,
-                name: snapshot.name,
-                category: snapshot.category,
-                price: snapshot.price,
-                stock: snapshot.stock,
-                image: data.image ?? "",
-              };
-              const newRow = buildRow(newProduct);
-
-              /* Animate in */
-              newRow.style.opacity = "0";
-              newRow.style.transition = "opacity .3s";
-
-              /* Remove empty-state row if present */
-              const emptyRow = productTableBody.querySelector(".empty-row");
-              if (emptyRow) emptyRow.parentElement.remove();
-
-              productTableBody.insertBefore(
-                newRow,
-                productTableBody.firstChild,
-              );
-              requestAnimationFrame(() => {
-                newRow.style.opacity = "1";
-              });
-
-              updateProductCount(1);
-            }
-          }
-        } else {
-          showNotification(data.message || "Error occurred", "error");
-        }
-      })
-      .catch(() => showNotification("Server error. Please try again.", "error"))
-      .finally(() => {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalHTML;
-      });
-  });
+  }
 }
 
-/* ============================= */
-/* ❌ DELETE FLOW                */
-/* ============================= */
-function showDeleteConfirm(id) {
-  const row = productTableBody.querySelector(`tr[data-product-id="${id}"]`);
-  if (!row) return;
+// Render products grid
+function renderProducts(products) {
+  const grid = document.getElementById("productsGrid");
+  if (!grid) return;
 
-  const name =
-    row.querySelector("td:nth-child(2)")?.textContent.trim() ?? "this product";
-  deleteMessage.innerHTML = `
-    <strong>Are you sure you want to delete 
-    <span style="color:#dc3545;">"${escHtml(name)}"</span>?</strong>`;
-
-  deleteConfirmModal.classList.add("show");
-
-  /* Replace button to clear any previous listener */
-  const freshBtn = deleteConfirmBtn.cloneNode(true);
-  deleteConfirmBtn.parentNode.replaceChild(freshBtn, deleteConfirmBtn);
-  deleteConfirmBtn = freshBtn; /* keep reference in sync */
-
-  freshBtn.addEventListener("click", () => performDelete(id, name));
-}
-
-function performDelete(id, name) {
-  const formData = new FormData();
-  formData.append("id", id);
-
-  const btn = document.getElementById("deleteConfirmBtn");
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = "Deleting...";
+  if (!products || products.length === 0) {
+    grid.innerHTML =
+      '<div class="empty-state"><i class="fa-regular fa-box-open"></i><h3>No Products Found</h3><p>Click "Add Product" to create your first product.</p></div>';
+    return;
   }
 
-  fetch("../../api/admin_site/products/delete_products.php", {
-    method: "POST",
-    body: formData,
-  })
-    .then((res) => res.json())
-    .then((data) => {
-      closeProductDeleteModal();
+  grid.innerHTML = products
+    .map((product) => {
+      const stockStatus =
+        product.stock_status ||
+        (product.stock > 10
+          ? "in_stock"
+          : product.stock > 0
+            ? "low_stock"
+            : "out_of_stock");
+      const stockText =
+        product.stock > 10
+          ? "In Stock"
+          : product.stock > 0
+            ? "Low Stock"
+            : "Out of Stock";
+      const imagePath = product.image
+        ? `../../${product.image}`
+        : "../../assets/images/admin-site/default.png";
+      const categoryName = product.category_name || product.category || "";
+      const productTypeName =
+        product.product_type_name || product.product_type || "";
 
-      if (data.success) {
-        showNotification(`✓ Product "${name}" deleted!`, "success");
+      return `
+            <div class="product-card" data-id="${product.id}">
+                <div class="product-image-wrapper">
+                    <img src="${imagePath}" class="product-image" alt="${escapeHtml(product.name)}" onerror="this.src='../../assets/images/admin-site/default.png'">
+                    <div class="product-status ${stockStatus}">${stockText}</div>
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name">${escapeHtml(product.name)}</h3>
+                    ${categoryName ? `<span class="product-category">${escapeHtml(categoryName)}</span>` : ""}
+                    ${productTypeName ? `<span class="product-category" style="color:#6b7280;">${escapeHtml(productTypeName)}</span>` : ""}
+                    <div class="product-price">₱${parseFloat(product.price || 0).toFixed(2)}</div>
+                    <div class="product-stock">
+                        <i class="fa-solid fa-boxes"></i> Stock: <strong>${product.stock || 0}</strong>
+                    </div>
+                    ${product.sku ? `<div class="product-sku" style="font-size:11px;color:#9ca3af;">SKU: ${escapeHtml(product.sku)}</div>` : ""}
+                    <div class="product-actions">
+                        <button class="btn-icon btn-edit" onclick="editProduct(${product.id})">
+                            <i class="fa-solid fa-pen"></i> Edit
+                        </button>
+                        <button class="btn-icon btn-delete" onclick="confirmDelete(${product.id}, '${escapeHtml(product.name)}')">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    })
+    .join("");
+}
 
-        const row = productTableBody.querySelector(
-          `tr[data-product-id="${id}"]`,
-        );
-        if (row) {
-          row.style.transition = "opacity .3s, transform .3s";
-          row.style.opacity = "0";
-          row.style.transform = "translateX(-10px)";
-          setTimeout(() => {
-            row.remove();
-            updateProductCount(-1);
-            checkEmptyState();
-          }, 300);
+// Update pagination
+function updatePagination(pagination) {
+  const container = document.getElementById("paginationContainer");
+  if (!container) return;
+
+  totalPages = pagination.pages || 1;
+  currentPage = pagination.page || 1;
+
+  if (totalPages <= 1) {
+    container.innerHTML = "";
+    return;
+  }
+
+  let html = '<div class="pagination">';
+  html += `<button class="page-btn" ${currentPage <= 1 ? "disabled" : ""} onclick="goToPage(${currentPage - 1})">‹ Prev</button>`;
+
+  const startPage = Math.max(1, currentPage - 2);
+  const endPage = Math.min(totalPages, startPage + 4);
+
+  if (startPage > 1) {
+    html += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+    if (startPage > 2) html += '<span class="page-dots">...</span>';
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    html += `<button class="page-btn ${i === currentPage ? "active" : ""}" onclick="goToPage(${i})">${i}</button>`;
+  }
+
+  if (endPage < totalPages) {
+    if (endPage < totalPages - 1) html += '<span class="page-dots">...</span>';
+    html += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+  }
+
+  html += `<button class="page-btn" ${currentPage >= totalPages ? "disabled" : ""} onclick="goToPage(${currentPage + 1})">Next ›</button>`;
+  html += "</div>";
+  container.innerHTML = html;
+}
+
+// Go to page
+function goToPage(page) {
+  if (page < 1 || page > totalPages) return;
+  currentPage = page;
+  loadProducts();
+}
+
+// Open add product modal
+function openAddModal() {
+  const modal = document.getElementById("productModal");
+  const title = document.getElementById("modalTitle");
+  const form = document.getElementById("productForm");
+
+  if (title) title.innerHTML = '<i class="fa-solid fa-box"></i> Add Product';
+  if (form) form.reset();
+
+  document.getElementById("productId").value = "";
+  document.getElementById("previewImg").src =
+    "../../assets/images/admin-site/default.png";
+  document.getElementById("productCategoryId").value = "";
+  document.getElementById("productTypeId").value = "";
+  document.getElementById("materialType").value = "assembled_product";
+  document.getElementById("unit").value = "piece";
+
+  if (modal) {
+    modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  }
+}
+
+// Edit product
+async function editProduct(id) {
+  try {
+    const response = await fetch(`${API.getProducts}?page=1&limit=1000`);
+    const data = await response.json();
+
+    if (data.success) {
+      const product = data.data.find((p) => p.id === id);
+      if (product) {
+        document.getElementById("productId").value = product.id;
+        document.getElementById("productName").value = product.name;
+        document.getElementById("productSku").value = product.sku || "";
+        document.getElementById("productCategoryId").value =
+          product.category_id || "";
+        document.getElementById("productTypeId").value =
+          product.product_type_id || "";
+        document.getElementById("materialType").value =
+          product.material_type || "assembled_product";
+        document.getElementById("unit").value = product.unit || "piece";
+        document.getElementById("productPrice").value = product.price;
+        document.getElementById("productStock").value = product.stock;
+        document.getElementById("productDescription").value =
+          product.description || "";
+
+        const imagePath = product.image
+          ? `../../${product.image}`
+          : "../../assets/images/admin-site/default.png";
+        document.getElementById("previewImg").src = imagePath;
+
+        const title = document.getElementById("modalTitle");
+        if (title)
+          title.innerHTML = '<i class="fa-solid fa-pen"></i> Edit Product';
+
+        const modal = document.getElementById("productModal");
+        if (modal) {
+          modal.style.display = "flex";
+          document.body.style.overflow = "hidden";
         }
       } else {
-        showNotification(data.message || "Delete failed", "error");
+        alert("Product not found");
       }
-    })
-    .catch(() => showNotification("Delete failed. Please try again.", "error"))
-    .finally(() => {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = "Delete Product";
-      }
+    } else {
+      throw new Error(data.message);
+    }
+  } catch (error) {
+    console.error("Error loading product:", error);
+    alert("Failed to load product details: " + error.message);
+  }
+}
+
+// Confirm delete
+function confirmDelete(id, name) {
+  currentDeleteId = id;
+  currentDeleteName = name;
+
+  const messageEl = document.getElementById("deleteMessage");
+  if (messageEl) {
+    messageEl.innerHTML = `Are you sure you want to delete <strong>${escapeHtml(name)}</strong>?`;
+  }
+
+  const modal = document.getElementById("deleteModal");
+  if (modal) {
+    modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  }
+}
+
+// Delete product
+async function deleteProduct() {
+  if (!currentDeleteId) return;
+
+  try {
+    const response = await fetch(API.deleteProduct, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: currentDeleteId }),
     });
+
+    const data = await response.json();
+
+    if (data.success) {
+      closeDeleteModal();
+      loadProducts();
+      showToast("Product deleted successfully!", "success");
+    } else {
+      throw new Error(data.message);
+    }
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    alert("Failed to delete product: " + error.message);
+  }
 }
 
-function closeProductDeleteModal() {
-  deleteConfirmModal.classList.remove("show");
-}
+// Save product
+async function saveProduct(event) {
+  event.preventDefault();
 
-/* ============================= */
-/* 🔍 LIVE SEARCH (optional)     */
-/* Keep URL-based search working */
-/* ============================= */
-function setupLiveSearch() {
-  const searchInput = document.querySelector(
-    ".search-form input[name='search']",
+  const formData = new FormData();
+  const id = document.getElementById("productId").value;
+
+  if (id) formData.append("id", id);
+  formData.append("name", document.getElementById("productName").value.trim());
+  formData.append("sku", document.getElementById("productSku").value.trim());
+  formData.append(
+    "category_id",
+    document.getElementById("productCategoryId").value,
   );
-  const searchForm = document.querySelector(".search-form");
-  if (!searchInput || !searchForm) return;
+  formData.append(
+    "product_type_id",
+    document.getElementById("productTypeId").value,
+  );
+  formData.append(
+    "material_type",
+    document.getElementById("materialType").value,
+  );
+  formData.append("unit", document.getElementById("unit").value.trim());
+  formData.append("price", document.getElementById("productPrice").value);
+  formData.append("stock", document.getElementById("productStock").value);
+  formData.append(
+    "description",
+    document.getElementById("productDescription").value.trim(),
+  );
 
-  /* Allow existing server-side search to still work.
-     Optionally wire up a debounced AJAX search here if needed. */
-}
+  const imageFile = document.getElementById("productImage").files[0];
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
 
-/* ============================= */
-/* 🧠 INIT                       */
-/* ============================= */
-function initProducts() {
-  /* Resolve all DOM refs */
-  productModal = document.getElementById("productModal");
-  deleteConfirmModal = document.getElementById("deleteConfirmModal");
-  productForm = document.getElementById("productForm");
-  productId = document.getElementById("productId");
-  productName = document.getElementById("productName");
-  productCategory = document.getElementById("productCategory");
-  productPrice = document.getElementById("productPrice");
-  productStock = document.getElementById("productStock");
-  previewImg = document.getElementById("previewImg");
-  modalTitle = document.getElementById("modalTitle");
-  deleteMessage = document.getElementById("deleteMessage");
-  deleteConfirmBtn = document.getElementById("deleteConfirmBtn");
-  productTableBody = document.getElementById("productTableBody");
-  productCountEl = document.querySelector(".product-count");
+  // Validation
+  const name = document.getElementById("productName").value.trim();
+  if (!name || name.length < 3) {
+    alert("Product name must be at least 3 characters");
+    return;
+  }
 
-  /* Re-attach delete listeners for server-rendered rows */
-  productTableBody?.querySelectorAll(".delete").forEach((btn) => {
-    btn.addEventListener("click", function () {
-      showDeleteConfirm(this.closest("tr").dataset.productId);
+  const price = parseFloat(document.getElementById("productPrice").value);
+  if (isNaN(price) || price < 0) {
+    alert("Please enter a valid price");
+    return;
+  }
+
+  const stock = parseInt(document.getElementById("productStock").value);
+  if (isNaN(stock) || stock < 0) {
+    alert("Please enter a valid stock quantity");
+    return;
+  }
+
+  const url = id ? API.updateProduct : API.addProduct;
+
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      body: formData,
     });
-  });
 
-  /* Re-attach edit listeners for server-rendered rows.
-     The PHP passes data via onclick="openProductEditModal(...)" — those still work.
-     We additionally set up the pattern for dynamically inserted rows via buildRow(). */
+    const data = await response.json();
 
-  setupImagePreview();
-  setupFormSubmission();
-  setupLiveSearch();
+    if (data.success) {
+      closeModal();
+      loadProducts();
+      showToast(data.message, "success");
+    } else {
+      throw new Error(data.message);
+    }
+  } catch (error) {
+    console.error("Error saving product:", error);
+    alert("Failed to save product: " + error.message);
+  }
 }
 
-document.addEventListener("DOMContentLoaded", initProducts);
+// Close modal
+function closeModal() {
+  const modal = document.getElementById("productModal");
+  if (modal) {
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+}
+
+// Close delete modal
+function closeDeleteModal() {
+  const modal = document.getElementById("deleteModal");
+  if (modal) {
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+  currentDeleteId = null;
+}
+
+// Show toast notification
+function showToast(message, type = "success") {
+  const existingToast = document.querySelector(".toast-notification");
+  if (existingToast) existingToast.remove();
+
+  const toast = document.createElement("div");
+  toast.className = `toast-notification toast-${type}`;
+  toast.innerHTML = `<i class="fa-solid ${type === "success" ? "fa-circle-check" : "fa-circle-exclamation"}"></i><span>${escapeHtml(message)}</span>`;
+  document.body.appendChild(toast);
+
+  setTimeout(() => {
+    toast.style.animation = "slideOut 0.3s ease";
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+
+// Image preview
+function initImagePreview() {
+  const previewBox = document.getElementById("imagePreviewBox");
+  const imageInput = document.getElementById("productImage");
+
+  if (previewBox) {
+    previewBox.addEventListener("click", () => {
+      if (imageInput) imageInput.click();
+    });
+  }
+
+  if (imageInput) {
+    imageInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const previewImg = document.getElementById("previewImg");
+          if (previewImg) previewImg.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+}
+
+// Escape HTML
+function escapeHtml(text) {
+  if (!text) return "";
+  const div = document.createElement("div");
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Event listeners
+document.addEventListener("DOMContentLoaded", () => {
+  loadProducts();
+  initImagePreview();
+
+  const addBtn = document.getElementById("addProductBtn");
+  if (addBtn) addBtn.addEventListener("click", openAddModal);
+
+  const closeBtn = document.getElementById("closeModalBtn");
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+
+  const cancelBtn = document.getElementById("cancelModalBtn");
+  if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+
+  const closeDeleteBtn = document.getElementById("closeDeleteBtn");
+  if (closeDeleteBtn)
+    closeDeleteBtn.addEventListener("click", closeDeleteModal);
+
+  const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
+  if (cancelDeleteBtn)
+    cancelDeleteBtn.addEventListener("click", closeDeleteModal);
+
+  const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+  if (confirmDeleteBtn)
+    confirmDeleteBtn.addEventListener("click", deleteProduct);
+
+  const form = document.getElementById("productForm");
+  if (form) form.addEventListener("submit", saveProduct);
+
+  // Filters
+  const searchInput = document.getElementById("searchInput");
+  if (searchInput) {
+    let timeout;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        currentPage = 1;
+        loadProducts();
+      }, 300);
+    });
+  }
+
+  const categoryFilter = document.getElementById("categoryFilter");
+  if (categoryFilter) {
+    categoryFilter.addEventListener("change", () => {
+      currentPage = 1;
+      loadProducts();
+    });
+  }
+
+  const typeFilter = document.getElementById("typeFilter");
+  if (typeFilter) {
+    typeFilter.addEventListener("change", () => {
+      currentPage = 1;
+      loadProducts();
+    });
+  }
+
+  const stockStatusFilter = document.getElementById("stockStatusFilter");
+  if (stockStatusFilter) {
+    stockStatusFilter.addEventListener("change", () => {
+      currentPage = 1;
+      loadProducts();
+    });
+  }
+
+  // Close modal on backdrop click
+  const modal = document.getElementById("productModal");
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeModal();
+    });
+  }
+
+  const deleteModal = document.getElementById("deleteModal");
+  if (deleteModal) {
+    deleteModal.addEventListener("click", (e) => {
+      if (e.target === deleteModal) closeDeleteModal();
+    });
+  }
+
+  // Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeModal();
+      closeDeleteModal();
+    }
+  });
+});

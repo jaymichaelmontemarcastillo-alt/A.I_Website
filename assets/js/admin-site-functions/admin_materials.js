@@ -286,14 +286,18 @@ class MaterialSelector {
 /* ══════════════════════════════════════════════════════════════
    BOOT
 ══════════════════════════════════════════════════════════════ */
+// Update the existing DOMContentLoaded event at the end of the file
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 Materials inventory page loaded");
   matInitModal();
   matInitToast();
-  matInitAddItemModal(); // NEW: Initialize add item modal
+  matInitAddItemModal();
   matLoadMaterials();
   matLoadLogs();
   setTimeout(matAddAuditListButton, 500);
+
+  // NEW: Check for pending audit from quotation
+  initPendingAuditCheck();
 });
 
 /* ══════════════════════════════════════════════════════════════
@@ -374,6 +378,7 @@ const matRenderAlerts = (materials = []) => {
       ),
     );
 };
+// Replace the matRenderMaterialRows function in admin_materials.js (around line 200-230)
 
 const matRenderMaterialRows = (materials = []) => {
   const tbody = document.getElementById("materialsTableBody");
@@ -388,24 +393,54 @@ const matRenderMaterialRows = (materials = []) => {
       const costPerUnit = m.unit_cost
         ? parseFloat(m.unit_cost).toFixed(4)
         : "—";
-      return `<tr><td><div class="mat-cell"><span>${matEsc(m.material_name)}</span></div></td>
+      return `<tr>
+                  <td><div class="mat-cell"><span>${matEsc(m.material_name)}</span></div></td>
                   <td>${matEsc(m.type || "—")}</td>
                   <td><strong>${m.shop_stock}</strong></td>
                   <td><strong>${m.ph_stock}</strong></td>
                   <td><strong>${m.total_stock}</strong></td>
                   <td>${costPerUnit}</td>
                   <td><span class="badge ${badge.cls}">${badge.label}</span></td>
-                  <td><button class="btn-action mat-update-btn" data-id="${m.id}" data-name="${matEsc(m.material_name)}" data-stock="${m.total_stock}"><i class="fa-solid fa-pen-to-square"></i> Update</button></td>
-              </tr>`;
+                  <td class="mat_table_action_col">
+                    <button class="btn-action mat-edit-item-btn" 
+                      data-id="${m.id}" 
+                      data-name="${matEsc(m.material_name)}" 
+                      data-type="${matEsc(m.type || "")}" 
+                      data-shop="${m.shop_stock}" 
+                      data-ph="${m.ph_stock}" 
+                      data-cost="${m.unit_cost}">
+                      <i class="fa-solid fa-pencil"></i> Edit
+                    </button>
+                    <button class="btn-action mat-update-btn" 
+                      data-id="${m.id}" 
+                      data-name="${matEsc(m.material_name)}" 
+                      data-stock="${m.total_stock}">
+                      <i class="fa-solid fa-pen-to-square"></i> Stock
+                    </button>
+                   </div>
+                </tr>`;
     })
     .join("");
-  tbody
-    .querySelectorAll(".mat-update-btn")
-    .forEach((btn) =>
-      btn.addEventListener("click", () =>
-        matOpenModal(btn.dataset.id, btn.dataset.name, btn.dataset.stock),
-      ),
+
+  // Add event listeners for Edit Item buttons
+  tbody.querySelectorAll(".mat-edit-item-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const name = btn.dataset.name;
+      const type = btn.dataset.type;
+      const shopStock = btn.dataset.shop;
+      const phStock = btn.dataset.ph;
+      const unitCost = btn.dataset.cost;
+      matOpenEditItemModal(id, name, type, shopStock, phStock, unitCost);
+    });
+  });
+
+  // Add event listeners for Update Stock buttons
+  tbody.querySelectorAll(".mat-update-btn").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      matOpenModal(btn.dataset.id, btn.dataset.name, btn.dataset.stock),
     );
+  });
 };
 
 /* ══════════════════════════════════════════════════════════════
@@ -745,13 +780,13 @@ const matFetch = async (url, options = {}) => {
       throw new Error(`Failed to parse JSON response: ${parseErr.message}`);
     }
     if (!data.success) throw new Error(data.message || "Unknown server error");
+    // Return the data object so the caller can access properties like .audit_id
     return data;
   } catch (err) {
     console.error("❌ matFetch Error:", err.message);
     throw err;
   }
 };
-
 const matStockBadge = (status, stock) => {
   if (status === "out_of_stock")
     return { cls: "badge-danger", label: "Out of Stock" };
@@ -976,7 +1011,7 @@ const matAddNewItem = async () => {
 ══════════════════════════════════════════════════════════════ */
 const matInitAuditModal = () => {
   if (!document.getElementById("auditModal")) {
-    const modalHtml = `<div id="auditModal"><div class="audit-modal-container"><div class="audit-modal-header"><h2><i class="fa-solid fa-clipboard-list"></i> Create Bill of Materials / Audit</h2><button class="audit-modal-close" onclick="matCloseAuditModal()">&times;</button></div><div class="audit-modal-body"><div class="audit-section"><h3 class="audit-section-title">Item Information</h3><input type="text" id="auditItemName" placeholder="Enter item/product name..."></div><div class="audit-section"><h3 class="audit-section-title">Material Costs</h3><div id="materialCostsContainer"></div><button type="button" class="add-row-btn" onclick="matAddMaterialRow()"><i class="fa-solid fa-plus"></i> Add Material</button></div><div class="audit-section"><h3 class="audit-section-title">Reject Costs</h3><div class="reject-note"><i class="fa-solid fa-info-circle"></i> Remove materials from the list if there are no reject materials</div><div id="rejectCostsContainer"></div><button type="button" class="add-row-btn" onclick="matAddRejectRow()"><i class="fa-solid fa-plus"></i> Add Reject Material</button></div><div class="audit-section"><h3 class="audit-section-title">Items</h3><div id="itemsContainer"></div><button type="button" class="add-row-btn" onclick="matAddItemRow()"><i class="fa-solid fa-plus"></i> Add Item</button></div><div class="totals-grid"><div class="total-card"><label>Total Material Cost</label><div class="total-value" id="totalMaterialCost">₱0.00</div></div><div class="total-card"><label>Total Reject Cost</label><div class="total-value" id="totalRejectCost">₱0.00</div></div><div class="total-card"><label>Total Amount Due</label><div class="total-value" id="totalAmountDue">₱0.00</div></div><div class="total-card"><label>Profit <input type="checkbox" id="manualProfitCheck" title="Enable manual profit entry" style="margin-left:8px;"></label><div class="total-value profit-value" id="profitDisplay" style="cursor:pointer;">₱0.00</div><input type="number" id="manualProfitInput" placeholder="Enter profit amount" step="0.01" style="display:none;width:100%;margin-top:5px;padding:8px;border:1px solid #ddd;border-radius:4px;"></div></div><div class="auto-compute-row"><label for="autoComputeCheck">Auto-compute totals</label><input type="checkbox" id="autoComputeCheck" checked></div><div class="signatures-grid"><div class="signature-field"><label>Created By</label><input type="text" id="createdBy" placeholder="Enter name..."></div><div class="signature-field"><label>Audited By</label><input type="text" id="auditedBy" placeholder="Enter name..."></div><div class="signature-field"><label>Acknowledged By</label><input type="text" id="acknowledgedBy" placeholder="Enter name..."></div></div><div class="modal-actions"><button type="button" class="btn-cancel" onclick="matCloseAuditModal()">Cancel</button><button type="button" class="btn-submit" onclick="matSubmitAudit()"><i class="fa-solid fa-save"></i> Create Audit</button></div></div></div></div>`;
+    const modalHtml = `<div id="auditModal"><div class="audit-modal-container"><div class="audit-modal-header"><h2><i class="fa-solid fa-clipboard-list"></i> Create Audit</h2><button class="audit-modal-close" onclick="matCloseAuditModal()">&times;</button></div><div class="audit-modal-body"><div class="audit-section"><h3 class="audit-section-title">Item Information</h3><input type="text" id="auditItemName" placeholder="Enter item/product name..."></div><div class="audit-section"><h3 class="audit-section-title">Material Costs</h3><div id="materialCostsContainer"></div><button type="button" class="add-row-btn" onclick="matAddMaterialRow()"><i class="fa-solid fa-plus"></i> Add Material</button></div><div class="audit-section"><h3 class="audit-section-title">Reject Costs</h3><div class="reject-note"><i class="fa-solid fa-info-circle"></i> Remove materials from the list if there are no reject materials</div><div id="rejectCostsContainer"></div><button type="button" class="add-row-btn" onclick="matAddRejectRow()"><i class="fa-solid fa-plus"></i> Add Reject Material</button></div><div class="audit-section"><h3 class="audit-section-title">Items</h3><div id="itemsContainer"></div><button type="button" class="add-row-btn" onclick="matAddItemRow()"><i class="fa-solid fa-plus"></i> Add Item</button></div><div class="totals-grid"><div class="total-card"><label>Total Material Cost</label><div class="total-value" id="totalMaterialCost">₱0.00</div></div><div class="total-card"><label>Total Reject Cost</label><div class="total-value" id="totalRejectCost">₱0.00</div></div><div class="total-card"><label>Total Amount Due</label><div class="total-value" id="totalAmountDue">₱0.00</div></div><div class="total-card"><label>Profit <input type="checkbox" id="manualProfitCheck" title="Enable manual profit entry" style="margin-left:8px;"></label><div class="total-value profit-value" id="profitDisplay" style="cursor:pointer;">₱0.00</div><input type="number" id="manualProfitInput" placeholder="Enter profit amount" step="0.01" style="display:none;width:100%;margin-top:5px;padding:8px;border:1px solid #ddd;border-radius:4px;"></div></div><div class="auto-compute-row"><label for="autoComputeCheck">Auto-compute totals</label><input type="checkbox" id="autoComputeCheck" checked></div><div class="signatures-grid"><div class="signature-field"><label>Created By</label><input type="text" id="createdBy" placeholder="Enter name..."></div><div class="signature-field"><label>Audited By</label><input type="text" id="auditedBy" placeholder="Enter name..."></div><div class="signature-field"><label>Acknowledged By</label><input type="text" id="acknowledgedBy" placeholder="Enter name..."></div></div><div class="modal-actions"><button type="button" class="btn-cancel" onclick="matCloseAuditModal()">Cancel</button><button type="button" class="btn-submit" onclick="matSubmitAudit()"><i class="fa-solid fa-save"></i> Create Audit</button></div></div></div></div>`;
     document.body.insertAdjacentHTML("beforeend", modalHtml);
   }
   document
@@ -1204,7 +1239,6 @@ const matCloseAuditModal = () => {
   document.getElementById("auditModal").style.display = "none";
   document.body.style.overflow = "";
 };
-
 const matSubmitAudit = async () => {
   const materials = [];
   document
@@ -1291,20 +1325,74 @@ const matSubmitAudit = async () => {
   }
 
   try {
-    await matFetch(MAT_API.createAudit, {
+    // IMPORTANT: Capture the result from matFetch
+    const result = await matFetch(MAT_API.createAudit, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+
     matCloseAuditModal();
-    matShowToast(
-      "Audit created successfully! Inventory has been updated.",
-      "success",
+
+    // Remove quotation info banner if exists
+    const infoBanner = document.querySelector(
+      "#auditModal .audit-quotation-info",
     );
+    if (infoBanner) {
+      infoBanner.remove();
+    }
+
+    // If there's a pending quotation ID, update its audited status
+    if (window.currentAuditQuotationId && result.audit_id) {
+      try {
+        const markResponse = await fetch(
+          "../../api/admin_site/mark_quotation_audited.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              quotation_id: window.currentAuditQuotationId,
+              audit_id: result.audit_id,
+            }),
+          },
+        );
+        const markResult = await markResponse.json();
+        if (markResult.success) {
+          matShowToast(
+            "Audit created! Quotation has been marked as audited.",
+            "success",
+          );
+        } else {
+          matShowToast(
+            "Audit created but failed to mark quotation as audited.",
+            "warning",
+          );
+        }
+        window.currentAuditQuotationId = null;
+      } catch (err) {
+        console.error("Error marking quotation as audited:", err);
+        matShowToast(
+          "Audit created! Please manually mark quotation as audited.",
+          "warning",
+        );
+      }
+    } else {
+      matShowToast(
+        "Audit created successfully! Inventory has been updated.",
+        "success",
+      );
+    }
+
     matReloadMaterials(true);
     matReloadLogs(true);
+
+    // Also refresh quotations if the page has quotationManager
+    if (window.quotationManager) {
+      window.quotationManager.fetchQuotations();
+      window.quotationManager.fetchStats();
+    }
   } catch (err) {
-    matShowToast(err.message, "error");
+    matShowToast(err.message || "Failed to create audit", "error");
   }
 };
 
@@ -1330,25 +1418,164 @@ const matShowAuditPreviewModal = (audit) => {
     previewModal.className = "audit-preview-modal";
     document.body.appendChild(previewModal);
   }
-  const itemsHtml = (audit.items || [])
-    .map(
-      (item) =>
-        `<tr><td style="padding:10px">${matEsc(item.name)}</td><td style="padding:10px;text-align:center">${item.quantity || 0}</td><td style="padding:10px;text-align:right">₱${(parseFloat(item.unit_price) || 0).toFixed(2)}</td><td style="padding:10px;text-align:right">₱${(parseFloat(item.total_amount) || 0).toFixed(2)}</td></tr>`,
-    )
-    .join("");
+
+  // Get the main item name (from the top field) - this is the product/bom name
+  const mainItemName = audit.item_name || "";
+
+  // Filter out the duplicate item (the one with quantity 1 and price 0 that came from item_name field)
+  // In the audit creation, we push item_name as first item. We need to separate it.
+  const allItems = audit.items || [];
+
+  // The first item is often the main item name with quantity 1 and price 0
+  // We'll treat it as the header, not as a table row
+  let mainItemHeader = "";
+  let displayItems = [...allItems];
+
+  if (
+    allItems.length > 0 &&
+    allItems[0].quantity === 1 &&
+    parseFloat(allItems[0].unit_price || 0) === 0
+  ) {
+    // First item is the header item (from item_name field)
+    mainItemHeader = allItems[0].name;
+    displayItems = allItems.slice(1); // Remove the first item from display
+  } else if (mainItemName) {
+    mainItemHeader = mainItemName;
+  }
+
   const materialsHtml = (audit.materials || [])
     .map(
       (mat) =>
         `<tr><td style="padding:10px">${matEsc(mat.name)}</td><td style="padding:10px;text-align:center">${mat.quantity || 0}</td><td style="padding:10px;text-align:right">₱${(parseFloat(mat.unit_cost) || 0).toFixed(4)}</td><td style="padding:10px;text-align:right">₱${(parseFloat(mat.total_cost) || 0).toFixed(2)}</td></tr>`,
     )
     .join("");
+
   const rejectsHtml = (audit.rejects || [])
     .map(
       (rej) =>
         `<tr><td style="padding:10px">${matEsc(rej.name)}</td><td style="padding:10px;text-align:center">${rej.quantity || 0}</td><td style="padding:10px;text-align:right">₱${(parseFloat(rej.unit_cost) || 0).toFixed(4)}</td><td style="padding:10px;text-align:right">₱${(parseFloat(rej.total_cost) || 0).toFixed(2)}</td></tr>`,
     )
     .join("");
-  previewModal.innerHTML = `<div class="audit-preview-container"><div class="audit-preview-header"><h3><i class="fa-solid fa-receipt"></i> Bill of Materials / Audit #${audit.id}</h3><button class="audit-preview-close" onclick="matCloseAuditPreview()">&times;</button></div><div class="audit-preview-body">${itemsHtml ? `<div class="audit-preview-section"><h4>Items</h4><table class="audit-table"><thead><tr><th>Item</th><th>QTY</th><th>Unit Price</th><th>Total Amount</th></tr></thead><tbody>${itemsHtml}</tbody></table></div>` : ""}${materialsHtml ? `<div class="audit-preview-section"><h4>Material Costs</h4><table class="audit-table"><thead><tr><th>Material</th><th>QTY</th><th>Cost per Unit</th><th>Total Cost</th></tr></thead><tbody>${materialsHtml}</tbody></table></div>` : ""}${rejectsHtml ? `<div class="audit-preview-section"><h4>Reject Costs</h4><table class="audit-table"><thead><tr><th>Material</th><th>QTY</th><th>Cost per Unit</th><th>Total Cost</th></tr></thead><tbody>${rejectsHtml}</tbody></table></div>` : ""}<div class="audit-preview-totals"><div>Total Material Cost: <strong>₱${(parseFloat(audit.total_material_cost) || 0).toFixed(2)}</strong></div><div>Total Reject Cost: <strong>₱${(parseFloat(audit.total_reject_cost) || 0).toFixed(2)}</strong></div><div>Total Amount Due: <strong>₱${(parseFloat(audit.total_amount_due) || 0).toFixed(2)}</strong></div><div>Profit: <strong class="profit">₱${(parseFloat(audit.profit) || 0).toFixed(2)}</strong></div></div><div class="audit-preview-signatures"><div>Created By: ${matEsc(audit.signatures?.created_by || "—")}</div><div>Audited By: ${matEsc(audit.signatures?.audited_by || "—")}</div><div>Acknowledged By: ${matEsc(audit.signatures?.acknowledged_by || "—")}</div></div><div class="audit-preview-date">Created: ${new Date(audit.created_at).toLocaleString()}</div></div></div>`;
+
+  const itemsHtml = displayItems
+    .map(
+      (item) =>
+        `<tr><td style="padding:10px">${matEsc(item.name)}</td><td style="padding:10px;text-align:center">${item.quantity || 0}</td><td style="padding:10px;text-align:right">₱${(parseFloat(item.unit_price) || 0).toFixed(2)}</td><td style="padding:10px;text-align:right">₱${(parseFloat(item.total_amount) || 0).toFixed(2)}</td></tr>`,
+    )
+    .join("");
+
+  previewModal.innerHTML = `
+    <div class="audit-preview-container">
+      <div class="audit-preview-header">
+        <h3><i class="fa-solid fa-receipt"></i> Audit #${audit.id}</h3>
+        <button class="audit-preview-close" onclick="matCloseAuditPreview()">&times;</button>
+      </div>
+      <div class="audit-preview-body">
+        ${
+          mainItemHeader
+            ? `
+        <div class="audit-main-item">
+          <h4><i class="fa-solid fa-tag"></i> ${matEsc(mainItemHeader)}</h4>
+        </div>
+        `
+            : ""
+        }
+        
+        ${
+          itemsHtml
+            ? `
+        <div class="audit-preview-section">
+          <h4><i class="fa-solid fa-cube"></i> Items</h4>
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>QTY</th>
+                <th>Unit Price</th>
+                <th>Total Amount</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+        </div>
+        `
+            : ""
+        }
+        
+        ${
+          materialsHtml
+            ? `
+        <div class="audit-preview-section">
+          <h4><i class="fa-solid fa-box"></i> Material Costs</h4>
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>QTY</th>
+                <th>Cost per Unit</th>
+                <th>Total Cost</th>
+              </tr>
+            </thead>
+            <tbody>${materialsHtml}</tbody>
+          </table>
+        </div>
+        `
+            : ""
+        }
+        
+        ${
+          rejectsHtml
+            ? `
+        <div class="audit-preview-section">
+          <h4><i class="fa-solid fa-trash"></i> Reject Costs</h4>
+          <table class="audit-table">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th>QTY</th>
+                <th>Cost per Unit</th>
+                <th>Total Cost</th>
+              </tr>
+            </thead>
+            <tbody>${rejectsHtml}</tbody>
+          </table>
+        </div>
+        `
+            : ""
+        }
+        
+        <div class="audit-preview-totals">
+          <div class="total-item">
+            <span>Total Material Cost:</span>
+            <strong>₱${(parseFloat(audit.total_material_cost) || 0).toFixed(2)}</strong>
+          </div>
+          <div class="total-item">
+            <span>Total Reject Cost:</span>
+            <strong>₱${(parseFloat(audit.total_reject_cost) || 0).toFixed(2)}</strong>
+          </div>
+          <div class="total-item">
+            <span>Total Amount Due:</span>
+            <strong>₱${(parseFloat(audit.total_amount_due) || 0).toFixed(2)}</strong>
+          </div>
+          <div class="total-item profit-item">
+            <span>Profit:</span>
+            <strong class="profit">₱${(parseFloat(audit.profit) || 0).toFixed(2)}</strong>
+          </div>
+        </div>
+        
+        <div class="audit-preview-signatures">
+          <div><i class="fa-regular fa-user"></i> Created By: ${matEsc(audit.signatures?.created_by || "—")}</div>
+          <div><i class="fa-regular fa-user-check"></i> Audited By: ${matEsc(audit.signatures?.audited_by || "—")}</div>
+          <div><i class="fa-regular fa-hand-peace"></i> Acknowledged By: ${matEsc(audit.signatures?.acknowledged_by || "—")}</div>
+        </div>
+        
+        <div class="audit-preview-date">
+          <i class="fa-regular fa-calendar"></i> Created: ${new Date(audit.created_at).toLocaleString()}
+        </div>
+      </div>
+    </div>
+  `;
+
   previewModal.style.display = "flex";
   document.body.style.overflow = "hidden";
 };
@@ -1358,10 +1585,20 @@ const matCloseAuditPreview = () => {
   if (modal) modal.style.display = "none";
   document.body.style.overflow = "";
 };
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") matCloseAuditPreview();
-});
 
+// Make sure the Escape key listener is properly set
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      matCloseAuditPreview();
+      matCloseDetailedAudit();
+      matCloseAuditList();
+      matCloseModal();
+      matCloseAddItemModal();
+      matCloseAuditModal();
+    }
+  });
+}
 /* ══════════════════════════════════════════════════════════════
    IMPORT/EXPORT
 ══════════════════════════════════════════════════════════════ */
@@ -1473,10 +1710,7 @@ const matInitAuditList = () => {
     const modalHtml = `
         <div id="auditListModal" class="audit-list-modal">
             <div class="audit-list-container">
-                <div class="audit-list-header">
-                    <h3><i class="fa-solid fa-history"></i> Bill of Materials / Audit History</h3>
-                    <button class="audit-list-close" onclick="matCloseAuditList()">&times;</button>
-                </div>
+            
                 <div class="audit-list-search">
                     <input type="text" id="auditSearchInput" placeholder="Search audits by ID, item, or creator..." 
                            oninput="matDebouncedAuditSearch()">
@@ -1674,7 +1908,7 @@ const matShowDetailedAuditModal = (audit, inventoryLogs, auditLogs) => {
   modal.innerHTML = `
     <div class="detailed-audit-container">
         <div class="detailed-audit-header">
-            <h2><i class="fa-solid fa-receipt"></i> Bill of Materials / Audit #${audit.id}</h2>
+            <h2><i class="fa-solid fa-receipt"></i> Audit #${audit.id}</h2>
             <button class="detailed-audit-close" onclick="matCloseDetailedAudit()">&times;</button>
         </div>
         <div class="detailed-audit-tabs">
@@ -1885,18 +2119,274 @@ const matCloseDetailedAudit = () => {
   if (modal) modal.style.display = "none";
   document.body.style.overflow = "";
 };
+/* ══════════════════════════════════════════════════════════════
+   PENDING AUDIT QUOTATIONS - AUTO SHOW MODAL
+══════════════════════════════════════════════════════════════ */
 
-const matAddAuditListButton = () => {
-  const headerButtons = document.querySelector(
-    '.mat-page-header div[style*="display: flex"]',
+// Call this when the inventory page loads - AFTER DOM is ready
+function initPendingAuditCheck() {
+  console.log("Checking for pending audit...");
+
+  // Check sessionStorage for pending audit
+  const pendingQuotationId = sessionStorage.getItem(
+    "pending_audit_quotation_id",
   );
-  if (headerButtons && !document.getElementById("auditListBtn")) {
-    const btn = document.createElement("button");
-    btn.id = "auditListBtn";
-    btn.innerHTML = '<i class="fa-solid fa-history"></i> Audit History';
-    btn.style.cssText =
-      "background: var(--surface); border: 1px solid var(--border); padding: 10px 18px; border-radius: 8px; cursor: pointer;";
-    btn.onclick = matOpenAuditList;
-    headerButtons.appendChild(btn);
+  const pendingQuotationNumber = sessionStorage.getItem(
+    "pending_audit_quotation_number",
+  );
+  const pendingTimestamp = sessionStorage.getItem("pending_audit_timestamp");
+
+  console.log("SessionStorage values:", {
+    id: pendingQuotationId,
+    number: pendingQuotationNumber,
+    timestamp: pendingTimestamp,
+  });
+
+  if (pendingQuotationId && pendingQuotationNumber) {
+    // Clear the storage immediately to prevent multiple triggers
+    sessionStorage.removeItem("pending_audit_quotation_id");
+    sessionStorage.removeItem("pending_audit_quotation_number");
+    sessionStorage.removeItem("pending_audit_timestamp");
+
+    // Small delay to ensure page is fully loaded
+    setTimeout(() => {
+      console.log(
+        "Opening pending audit modal for quotation:",
+        pendingQuotationId,
+      );
+      matShowToast(
+        `Ready to create audit for Quotation ${pendingQuotationNumber}`,
+        "info",
+      );
+
+      // Open the pending audit modal and auto-select this quotation
+      openPendingAuditModalWithSelection(
+        pendingQuotationId,
+        pendingQuotationNumber,
+      );
+    }, 800);
+  } else {
+    // Optional: Still check if there are any pending audits on page load
+    setTimeout(() => {
+      checkForPendingAuditsAndShowBadge();
+    }, 500);
   }
-};
+}
+
+// Open modal and automatically select a specific quotation
+async function openPendingAuditModalWithSelection(
+  quotationId,
+  quotationNumber,
+) {
+  // First, open the modal
+  openPendingAuditModal();
+
+  // Wait for modal to open and load data
+  setTimeout(async () => {
+    // Find and select the specific quotation
+    const selectedItem = document.querySelector(
+      `.pending-audit-item[data-id="${quotationId}"]`,
+    );
+
+    if (selectedItem) {
+      // Scroll to the item
+      selectedItem.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      // Highlight it
+      selectedItem.style.transition = "all 0.3s";
+      selectedItem.style.backgroundColor = "#dbeafe";
+      selectedItem.style.borderColor = "#2563eb";
+
+      // Add selected class
+      selectedItem.classList.add("selected");
+
+      // Store the selected quotation
+      selectedPendingQuotation = pendingQuotationsList.find(
+        (q) => q.id == quotationId,
+      );
+
+      // Show a confirmation message
+      matShowToast(
+        `Quotation ${quotationNumber} is selected. Click it to start the audit.`,
+        "info",
+      );
+
+      // Auto-select after 1 second
+      setTimeout(() => {
+        if (selectedPendingQuotation) {
+          closePendingAuditModal();
+          openAuditModalWithQuotation(quotationId, quotationNumber);
+        }
+      }, 1500);
+    } else {
+      // If quotation not found in list, show message
+      matShowToast(
+        `Quotation ${quotationNumber} is ready for audit. Please select it from the list.`,
+        "warning",
+      );
+    }
+  }, 1000);
+}
+
+// Open the pending audit modal
+function openPendingAuditModal() {
+  const modal = document.getElementById("pendingAuditModal");
+  if (!modal) {
+    console.error("Pending audit modal not found in DOM");
+    return;
+  }
+
+  modal.style.display = "flex";
+  document.body.style.overflow = "hidden";
+  loadPendingAuditQuotations();
+}
+
+// Close the pending audit modal
+function closePendingAuditModal() {
+  const modal = document.getElementById("pendingAuditModal");
+  if (modal) modal.style.display = "none";
+  document.body.style.overflow = "";
+  selectedPendingQuotation = null;
+}
+
+// Load pending audit quotations from server
+async function loadPendingAuditQuotations() {
+  const listContainer = document.getElementById("pendingAuditList");
+  if (!listContainer) return;
+
+  listContainer.innerHTML =
+    '<div class="loading-spinner"><i class="fa-solid fa-spinner fa-spin"></i> Loading pending quotations...</div>';
+
+  try {
+    const response = await fetch(
+      "../../api/admin_site/get_pending_audit_quotations.php",
+    );
+    const result = await response.json();
+
+    console.log("Pending audits response:", result);
+
+    if (result.success) {
+      pendingQuotationsList = result.quotations;
+      renderPendingAuditList(pendingQuotationsList);
+
+      // Show modal title with count
+      const headerTitle = document.querySelector("#pendingAuditModal h3");
+      if (headerTitle && result.count > 0) {
+        headerTitle.innerHTML = `<i class="fa-solid fa-clipboard-list"></i> Pending Audit Quotations (${result.count})`;
+      }
+    } else {
+      listContainer.innerHTML = `<div class="empty-pending"><i class="fa-solid fa-exclamation-triangle"></i><p>${result.message}</p></div>`;
+    }
+  } catch (error) {
+    console.error("Error loading pending audits:", error);
+    listContainer.innerHTML =
+      '<div class="empty-pending"><i class="fa-solid fa-circle-exclamation"></i><p>Failed to load quotations</p></div>';
+  }
+}
+
+// Render the list of pending audit quotations
+function renderPendingAuditList(quotations) {
+  const listContainer = document.getElementById("pendingAuditList");
+  if (!listContainer) return;
+
+  if (!quotations || quotations.length === 0) {
+    listContainer.innerHTML =
+      '<div class="empty-pending"><i class="fa-solid fa-check-circle"></i><p>No pending audits! All delivered quotations have been audited.</p></div>';
+    return;
+  }
+
+  listContainer.innerHTML = quotations
+    .map(
+      (quote) => `
+        <div class="pending-audit-item" data-id="${quote.id}" onclick="selectPendingQuotation(${quote.id})">
+            <div class="pending-audit-item-header">
+                <span class="pending-audit-quote-num"><i class="fa-solid fa-file-invoice"></i> ${escapeHtml(quote.quote_number)}</span>
+                <span class="pending-audit-date"><i class="fa-regular fa-calendar"></i> ${new Date(quote.created_at).toLocaleDateString()}</span>
+            </div>
+            <div class="pending-audit-client">
+                <i class="fa-solid fa-building"></i> ${escapeHtml(quote.client_name)}
+            </div>
+            <div class="pending-audit-details">
+                <span><i class="fa-regular fa-user"></i> ${escapeHtml(quote.contact_person || "N/A")}</span>
+                <span><i class="fa-regular fa-envelope"></i> ${escapeHtml(quote.email || "N/A")}</span>
+                <span><i class="fa-solid fa-phone"></i> ${escapeHtml(quote.phone || "N/A")}</span>
+                <span><i class="fa-solid fa-money-bill"></i> ₱ ${parseFloat(quote.total || 0).toFixed(2)}</span>
+            </div>
+        </div>
+    `,
+    )
+    .join("");
+}
+
+// Filter pending audit list by search term
+function filterPendingAuditList() {
+  const searchTerm =
+    document.getElementById("pendingAuditSearch")?.value.toLowerCase() || "";
+
+  if (!searchTerm) {
+    renderPendingAuditList(pendingQuotationsList);
+    return;
+  }
+
+  const filtered = pendingQuotationsList.filter(
+    (quote) =>
+      quote.quote_number.toLowerCase().includes(searchTerm) ||
+      quote.client_name.toLowerCase().includes(searchTerm) ||
+      (quote.contact_person &&
+        quote.contact_person.toLowerCase().includes(searchTerm)) ||
+      (quote.email && quote.email.toLowerCase().includes(searchTerm)),
+  );
+
+  renderPendingAuditList(filtered);
+}
+
+// Select a quotation and open audit modal with its data
+async function selectPendingQuotation(quotationId) {
+  const selectedItem = document.querySelector(".pending-audit-item.selected");
+  if (selectedItem) {
+    selectedItem.classList.remove("selected");
+  }
+
+  const newSelected = document.querySelector(
+    `.pending-audit-item[data-id="${quotationId}"]`,
+  );
+  if (newSelected) {
+    newSelected.classList.add("selected");
+  }
+
+  selectedPendingQuotation = pendingQuotationsList.find(
+    (q) => q.id == quotationId,
+  );
+
+  if (selectedPendingQuotation) {
+    // Close the pending audit modal
+    closePendingAuditModal();
+
+    // Open the audit modal with quotation data
+    await openAuditModalWithQuotation(
+      selectedPendingQuotation.id,
+      selectedPendingQuotation.quote_number,
+    );
+  }
+}
+
+// Check for pending audits and show a badge/notification (optional)
+async function checkForPendingAuditsAndShowBadge() {
+  try {
+    const response = await fetch(
+      "../../api/admin_site/get_pending_audit_quotations.php",
+    );
+    const result = await response.json();
+
+    if (result.success && result.count > 0) {
+      console.log(`${result.count} pending audit(s) waiting`);
+      // Optional: Show a small badge or notification
+      matShowToast(
+        `${result.count} quotation(s) need inventory audit. Click the Audit button to process.`,
+        "info",
+      );
+    }
+  } catch (err) {
+    console.error("Error checking pending audits:", err);
+  }
+}
