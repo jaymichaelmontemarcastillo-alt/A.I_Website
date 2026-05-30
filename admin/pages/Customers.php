@@ -27,42 +27,42 @@ include '../includes/header.php';
 
             <!-- Stats Cards -->
             <div class="stats-grid" id="statsGrid">
-                <div class="stat-card" data-filter="all">
+                <div class="customer-stat-card" data-filter="all">
                     <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
                     <div class="stat-body">
                         <h3 id="statTotal">—</h3>
                         <p>Total Customers</p>
                     </div>
                 </div>
-                <div class="stat-card" data-filter="has_quotations">
+                <div class="customer-stat-card" data-filter="has_quotations">
                     <div class="stat-icon accent-green"><i class="fa-solid fa-file-invoice"></i></div>
                     <div class="stat-body">
                         <h3 id="statHasQuotations">—</h3>
                         <p>Has Quotations</p>
                     </div>
                 </div>
-                <div class="stat-card" data-filter="high_value">
+                <div class="customer-stat-card" data-filter="high_value">
                     <div class="stat-icon accent-amber"><i class="fa-solid fa-chart-line"></i></div>
                     <div class="stat-body">
                         <h3 id="statHighValue">—</h3>
                         <p>High Value (>₱50k)</p>
                     </div>
                 </div>
-                <div class="stat-card" data-filter="delivered">
+                <div class="customer-stat-card" data-filter="delivered">
                     <div class="stat-icon accent-purple"><i class="fa-solid fa-truck"></i></div>
                     <div class="stat-body">
                         <h3 id="statDelivered">—</h3>
                         <p>Received Delivery</p>
                     </div>
                 </div>
-                <div class="stat-card" data-filter="cancelled">
+                <div class="customer-stat-card" data-filter="cancelled">
                     <div class="stat-icon accent-red"><i class="fa-solid fa-ban"></i></div>
                     <div class="stat-body">
                         <h3 id="statCancelled">—</h3>
                         <p>Cancelled Quotations</p>
                     </div>
                 </div>
-                <div class="stat-card" data-filter="pending">
+                <div class="customer-stat-card" data-filter="pending">
                     <div class="stat-icon accent-blue"><i class="fa-solid fa-clock"></i></div>
                     <div class="stat-body">
                         <h3 id="statPending">—</h3>

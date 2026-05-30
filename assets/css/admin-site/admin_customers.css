@@ -182,7 +182,7 @@ body {
   margin-bottom: var(--spacing-2xl);
 }
 
-.stat-card {
+.customer-stat-card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);

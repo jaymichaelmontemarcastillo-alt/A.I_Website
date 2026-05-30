@@ -22,7 +22,7 @@
       tbody: document.getElementById("customerTbody"),
       searchInput: document.getElementById("searchInput"),
       filterPills: document.querySelectorAll(".pill"),
-      statCards: document.querySelectorAll(".stat-card"),
+      statCards: document.querySelectorAll(".customer-stat-card"),
       paginationBar: document.getElementById("paginationBar"),
       modalOverlay: document.getElementById("modalOverlay"),
       modalClose: document.getElementById("modalClose"),
