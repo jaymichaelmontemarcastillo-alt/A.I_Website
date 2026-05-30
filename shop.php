@@ -1,7 +1,13 @@
 <?php
-require_once 'connect/config.php';
 // shop.php - Main shopping page with product listing, category filters, and add to cart/wishlist functionality
+require_once 'connect/config.php';
 $pdo = getDBConnection();
+
+// Get all categories for filter buttons
+$stmt = $pdo->query("SELECT id, name FROM categories WHERE status = 'active' ORDER BY name");
+$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Get products with category information
 $products = getProducts($pdo);
 ?>
 <?php include 'includes/header.php'; ?>
@@ -49,7 +55,6 @@ $products = getProducts($pdo);
         }
     }
 
-    /* Loading spinner */
     .fa-spinner {
         animation: spin 1s linear infinite;
     }
@@ -64,24 +69,6 @@ $products = getProducts($pdo);
         }
     }
 
-    .cart-container {
-        position: relative;
-        display: inline-block;
-    }
-
-    .cart-badge {
-        position: absolute;
-        top: -8px;
-        right: -8px;
-        background-color: #ff4444;
-        color: white;
-        border-radius: 50%;
-        padding: 2px 6px;
-        font-size: 12px;
-        min-width: 18px;
-        text-align: center;
-    }
-
     @media (max-width: 768px) {
         .toast {
             bottom: 15px;
@@ -94,7 +81,7 @@ $products = getProducts($pdo);
 
 <main>
 
-    <!-- ================= CATEGORY ================= -->
+    <!-- ================= CATEGORY SECTION ================= -->
     <section class="category-section-prod-page">
         <div class="section-title">
             <h2>Our Products</h2>
@@ -102,46 +89,38 @@ $products = getProducts($pdo);
         </div>
 
         <div class="category-buttons">
-            <button onclick="filterByCategory('birthday')">Birthday</button>
-            <button onclick="filterByCategory('anniversary')">Anniversary</button>
-            <button onclick="filterByCategory('holiday')">Holiday</button>
-            <button onclick="filterByCategory('thank you')">Thank You</button>
-            <button onclick="filterByCategory('baby shower')">Baby Shower</button>
-            <button onclick="filterByCategory('wedding')">Wedding</button>
-            <button onclick="filterByCategory('graduation')">Graduation</button>
-            <button onclick="filterByCategory('valentine')">Valentine</button>
-            <button onclick="filterByCategory('corporate')">Corporate</button>
+            <?php foreach ($categories as $cat): ?>
+                <button onclick="filterByCategory('<?= htmlspecialchars(strtolower($cat['name'])) ?>')">
+                    <?= htmlspecialchars($cat['name']) ?>
+                </button>
+            <?php endforeach; ?>
             <button onclick="resetFilters()" class="reset-btn">Show All</button>
         </div>
     </section>
 
-    <!-- ================= FEATURED GIFTS ================= -->
+    <!-- ================= PRODUCTS GRID ================= -->
     <section class="featured-section">
-
         <div class="featured-grid" id="productsGrid">
-
             <?php foreach ($products as $product): ?>
-
                 <div class="gift-card"
-                    data-name="<?= strtolower($product['name']); ?>"
-                    data-category="<?= strtolower($product['category']); ?>"
-                    data-description="<?= strtolower($product['description']); ?>"
+                    data-name="<?= strtolower(htmlspecialchars($product['name'])); ?>"
+                    data-category="<?= strtolower(htmlspecialchars($product['category_name'] ?? $product['category'] ?? '')); ?>"
+                    data-description="<?= strtolower(htmlspecialchars($product['description'] ?? '')); ?>"
                     data-id="<?= $product['id']; ?>">
 
                     <div class="gift-img" onclick="viewProduct(<?= $product['id']; ?>)">
-                        <span class="badge"><?= $product['category']; ?></span>
-                        <img src="<?= $product['image']; ?>" alt="<?= $product['name']; ?>">
+                        <span class="badge"><?= htmlspecialchars($product['category_name'] ?? 'Uncategorized'); ?></span>
+                        <img src="<?= htmlspecialchars($product['image']); ?>" alt="<?= htmlspecialchars($product['name']); ?>">
                     </div>
 
                     <div class="gift-info">
-                        <h4 onclick="viewProduct(<?= $product['id']; ?>)"><?= $product['name']; ?></h4>
-                        <p onclick="viewProduct(<?= $product['id']; ?>)"><?= $product['description']; ?></p>
+                        <h4 onclick="viewProduct(<?= $product['id']; ?>)"><?= htmlspecialchars($product['name']); ?></h4>
+                        <p onclick="viewProduct(<?= $product['id']; ?>)"><?= htmlspecialchars(substr($product['description'] ?? '', 0, 100)); ?>...</p>
 
                         <div class="gift-bottom">
                             <span class="price">₱<?= number_format($product['price']); ?></span>
 
                             <div class="card-icons">
-
                                 <!-- Wishlist -->
                                 <button class="icon-btn wishlist"
                                     id="wishlistBtn_<?= $product['id']; ?>"
@@ -154,16 +133,12 @@ $products = getProducts($pdo);
                                     onclick="event.stopPropagation(); addToCart(<?= $product['id']; ?>)">
                                     <i class="fa-solid fa-cart-shopping"></i>
                                 </button>
-
                             </div>
                         </div>
                     </div>
                 </div>
-
             <?php endforeach; ?>
-
         </div>
-
     </section>
 </main>
 
@@ -173,13 +148,6 @@ $products = getProducts($pdo);
     <span id="toastMessage">Item added to cart!</span>
 </div>
 
-<?php
-// shop.php — replace ONLY the bottom <script> block with this.
-?>
-
-<!-- ============================================================
-     REPLACE the entire <script> block at bottom of shop.php
-============================================================ -->
 <script>
     const products = <?= json_encode(array_values($products)) ?>;
 
@@ -231,7 +199,7 @@ $products = getProducts($pdo);
                     id: productId,
                     name: product.name,
                     price: product.price,
-                    category: product.category,
+                    category: product.category_name || product.category || 'Uncategorized',
                     image: product.image,
                     quantity: 1
                 })
@@ -278,7 +246,7 @@ $products = getProducts($pdo);
                     id: productId,
                     name: product.name,
                     price: product.price,
-                    category: product.category,
+                    category: product.category_name || product.category || 'Uncategorized',
                     image: product.image,
                     description: product.description
                 })
@@ -311,12 +279,18 @@ $products = getProducts($pdo);
     // ==================== FILTER BY CATEGORY ====================
     function filterByCategory(category) {
         let visible = 0;
+        const categoryLower = category.toLowerCase();
+
         document.querySelectorAll('.gift-card').forEach(card => {
-            const match = card.getAttribute('data-category').includes(category.toLowerCase());
+            const cardCategory = card.getAttribute('data-category').toLowerCase();
+            const match = cardCategory === categoryLower;
             card.style.display = match ? 'block' : 'none';
             if (match) visible++;
         });
-        if (visible === 0) showToast('No products found in this category', true);
+
+        if (visible === 0) {
+            showToast('No products found in this category', true);
+        }
     }
 
     function resetFilters() {
@@ -343,7 +317,7 @@ $products = getProducts($pdo);
                 .catch(() => {});
         });
 
-        // Handle ?category= URL param (from home page category buttons)
+        // Handle ?category= URL param
         const params = new URLSearchParams(window.location.search);
         const cat = params.get('category');
         if (cat) filterByCategory(cat);

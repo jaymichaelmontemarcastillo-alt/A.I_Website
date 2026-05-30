@@ -241,7 +241,7 @@ $isSearchPage = ($currentPage === 'shop.php');
                 <a href="<?= $baseDir ?>index.php" class="nav-link <?= $currentPage == 'index.php'      ? 'active' : '' ?>"><i class="fas fa-home"></i> Home</a>
                 <a href="<?= $baseDir ?>shop.php?category=gift%20bundles" class="nav-link"><i class="fas fa-gift"></i> Gift Bundles</a>
                 <a href="<?= $baseDir ?>shop.php?category=custom%20merchandise" class="nav-link"><i class="fas fa-box"></i> Custom Merchandise</a>
-                <a href="<?= $baseDir ?>shop.php" class="nav-link <?= $currentPage == 'shop.php'        ? 'active' : '' ?>"><i class="fas fa-store"></i> All Products</a>
+
                 <a href="#about-us" class="nav-link"><i class="fas fa-info-circle"></i> About Us</a>
                 <a href="https://forms.gle/ujiUSwKGQLKgTa5D6" target="_blank" class="nav-link"><i class="fas fa-envelope"></i> Inquire Here</a>
             </nav>
@@ -258,14 +258,14 @@ $isSearchPage = ($currentPage === 'shop.php');
 
             <!-- Right Icon Links with Counter Badges -->
             <div class="header-icons">
-                <a href="<?= $baseDir ?>wishlist.php" class="icon-link" aria-label="Wishlist">
+                <!--  <a href="<?= $baseDir ?>wishlist.php" class="icon-link" aria-label="Wishlist">
                     <i class="far fa-heart"></i>
                     <span class="counter-badge" id="wishlistBadge"></span>
                 </a>
                 <a href="<?= $baseDir ?>cart.php" class="icon-link" aria-label="Shopping Cart">
                     <i class="fas fa-shopping-cart"></i>
                     <span class="counter-badge" id="cartBadge"></span>
-                </a>
+                </a>-->
             </div>
         </div>
 

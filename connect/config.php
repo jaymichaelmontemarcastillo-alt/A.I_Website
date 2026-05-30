@@ -37,16 +37,69 @@ function getDBConnection()
 // ===============================
 // GET PRODUCTS
 // ===============================
-function getProducts($pdo, $category = null)
+/**
+ * Get all products from database
+ * @param PDO $pdo Database connection
+ * @return array Array of products
+ */
+/**
+ * Get all active products with category information
+ * @param PDO $pdo Database connection
+ * @return array Array of products with category name
+ */
+function getProducts($pdo)
 {
-    if ($category) {
-        $stmt = $pdo->prepare("SELECT * FROM products WHERE LOWER(category) = LOWER(?) ORDER BY name");
-        $stmt->execute([$category]);
-    } else {
-        $stmt = $pdo->query("SELECT * FROM products ORDER BY category, name");
-    }
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.name as category_name 
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.status = 'active'
+            ORDER BY p.created_at DESC
+        ");
+        $stmt->execute();
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    return $stmt->fetchAll();
+        // Add category field for backward compatibility
+        foreach ($products as &$product) {
+            $product['category'] = $product['category_name'] ?? 'Uncategorized';
+        }
+
+        return $products;
+    } catch (PDOException $e) {
+        error_log("Error in getProducts: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get products by category name
+ * @param PDO $pdo Database connection
+ * @param string $categoryName Category name
+ * @return array Array of products
+ */
+function getProductsByCategory($pdo, $categoryName)
+{
+    try {
+        $stmt = $pdo->prepare("
+            SELECT p.*, c.name as category_name 
+            FROM products p
+            LEFT JOIN categories c ON p.category_id = c.id
+            WHERE p.status = 'active' AND LOWER(c.name) = LOWER(?)
+            ORDER BY p.created_at DESC
+        ");
+        $stmt->execute([$categoryName]);
+        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        foreach ($products as &$product) {
+            $product['category'] = $product['category_name'] ?? 'Uncategorized';
+        }
+
+        return $products;
+    } catch (PDOException $e) {
+        error_log("Error in getProductsByCategory: " . $e->getMessage());
+        return [];
+    }
 }
 
 // ===============================

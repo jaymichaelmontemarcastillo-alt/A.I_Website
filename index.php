@@ -236,56 +236,88 @@ include 'includes/header.php';
     </section>
 
     <!-- ================= PROCESS SECTION (3 STEPS) ================= -->
-    <section class="process-section">
-        <div class="section-container">
-            <h2>How it works</h2>
-            <p class="process-subtitle">3 simple steps to create your perfect gift</p>
-
-            <div class="steps-grid">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <h3>Tell us what you need</h3>
-                    <p>Share your budget, quantity, and vision through our inquiry form</p>
+    <section class="steps-section-alt" id="how-it-works">
+        <div class="section-title">
+            <h2>How It Works</h2>
+            <p>Fast, clear steps to get your custom gift packages started and delivered on time.</p>
+        </div>
+        <div class="steps-list">
+            <div class="step-card">
+                <div class="step-top">
+                    <span class="step-icon"><i class="fa-solid fa-comments"></i></span>
+                    <h3>Step 1</h3>
                 </div>
-                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <h3>We curate and customize</h3>
-                    <p>We'll recommend products and create your perfect set</p>
-                </div>
-                <div class="step-arrow"><i class="fas fa-arrow-right"></i></div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <h3>Receive your finished package</h3>
-                    <p>Ready to gift, distribute, or share with confidence</p>
-                </div>
+                <p>Share your gifting needs with us.</p>
             </div>
-
-            <div style="text-align: center; margin-top: 40px;">
-                <a href="https://forms.gle/ujiUSwKGQLKgTa5D6" target="_blank" style="text-decoration:none;">
-                    <button class="btn-primary">
-                        Start Your Inquiry <i class="fa-solid fa-arrow-right"></i>
-                    </button>
-                </a>
+            <div class="step-card">
+                <div class="step-top">
+                    <span class="step-icon"><i class="fa-solid fa-lightbulb"></i></span>
+                    <h3>Step 2</h3>
+                </div>
+                <p>Review our curated and customized recommendations.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-top">
+                    <span class="step-icon"><i class="fa-solid fa-box-open"></i></span>
+                    <h3>Step 3</h3>
+                </div>
+                <p>Receive your finished package ready for gifting or distribution.</p>
+            </div>
+            <div class="step-card cta-step">
+                <div class="step-top">
+                    <span class="step-icon"><i class="fa-solid fa-arrow-right-long"></i></span>
+                    <h3>Step 4</h3>
+                </div>
+                <p>Start your inquiry here and get a personalized gift plan from our team.</p>
+                <a class="btn-primary form-modal-trigger" href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Start Inquiry</a>
             </div>
         </div>
     </section>
 
-    <!-- ================= BENEFITS SECTION 1 ================= -->
-    <section class="benefits-section">
+    <!-- ================= MEMORABLE GIFTS SECTION ================= -->
+    <section class="memorable-gifts-section">
         <div class="section-container">
-            <div class="benefit-block benefit-left">
-                <div class="benefit-image">
-                    <i class="fas fa-gift"></i>
+            <div class="memorable-header">
+                <h2>Create gifts people actually remember.</h2>
+                <p>
+                    Whether for teams, clients, celebrations, or special occasions, your gifts become more than products — they become experiences that leave an impression.
+                </p>
+            </div>
+
+            <!-- Visual Gallery showing gift bundles, packaging, and items -->
+            <div class="gifts-visual-grid">
+                <!-- Gift Bundle Card -->
+                <div class="visual-card">
+                    <div class="visual-overlay">
+                        <h4>Curated Gift Bundles</h4>
+                        <p>Thoughtfully arranged sets</p>
+                    </div>
+                    <!-- Replace src with actual image path -->
+                    <img src="assets/images/gift-bundle.jpg" alt="Gift bundle with assorted items" onerror="this.parentElement.classList.add('icon-card'); this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-gift\'></i>'">
                 </div>
-                <div class="benefit-content">
-                    <h2>Create gifts people actually remember.</h2>
-                    <p>Whether for teams, clients, celebrations, or special occasions, your gifts become more than products — they become experiences that leave an impression.</p>
+
+                <!-- Packaging with Ribbons & Cards Card -->
+                <div class="visual-card">
+                    <div class="visual-overlay">
+                        <h4>Premium Packaging</h4>
+                        <p>Ribbons, cards & personal touches</p>
+                    </div>
+                    <!-- Replace src with actual image path -->
+                    <img src="assets/images/premium-packaging.jpg" alt="Gift box with ribbons and card" onerror="this.parentElement.classList.add('icon-card'); this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-box-open\'></i>'">
+                </div>
+
+                <!-- Items Card -->
+                <div class="visual-card">
+                    <div class="visual-overlay">
+                        <h4>Quality Items</h4>
+                        <p>Premium products for every occasion</p>
+                    </div>
+                    <!-- Replace src with actual image path -->
+                    <img src="assets/images/quality-items.jpg" alt="Collection of premium gift items" onerror="this.parentElement.classList.add('icon-card'); this.style.display='none'; this.parentElement.innerHTML='<i class=\'fas fa-star\'></i>'">
                 </div>
             </div>
         </div>
     </section>
-
     <!-- ================= BENEFITS SECTION 2 ================= -->
     <section class="benefits-section benefits-section-alt">
         <div class="section-container">
