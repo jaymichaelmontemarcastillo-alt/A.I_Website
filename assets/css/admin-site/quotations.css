@@ -1020,13 +1020,17 @@ body {
 /* GRID */
 .qe-grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, 1fr);
   gap: 14px 20px;
 }
 
 @media (max-width: 600px) {
   .qe-grid-2 {
     grid-template-columns: 1fr;
+  }
+
+  .qe-field[style*="grid-column"] {
+    grid-column: span 1 !important;
   }
 }
 
@@ -1036,14 +1040,10 @@ body {
   gap: 6px;
 }
 
-.qe-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.qe-label .req {
-  color: var(--action-delete);
+.qe-input,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .qe-input {

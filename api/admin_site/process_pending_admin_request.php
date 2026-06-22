@@ -7,7 +7,7 @@ $pdo = getDBConnection();
 
 /*
 |--------------------------------------------------
-| SESSION CHECK (FIXED)
+| SESSION CHECK
 |--------------------------------------------------
 */
 if (!isset($_SESSION['admin_id'])) {
@@ -18,13 +18,60 @@ if (!isset($_SESSION['admin_id'])) {
     exit;
 }
 
-$requestId = isset($_POST['request_id']) ? (int) $_POST['request_id'] : 0;
-$action = trim($_POST['action'] ?? '');
-
-if ($requestId <= 0 || !in_array($action, ['accept', 'reject'], true)) {
+/*
+|--------------------------------------------------
+| METHOD CHECK
+|--------------------------------------------------
+*/
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Invalid request details'
+        'message' => 'Invalid request method'
+    ]);
+    exit;
+}
+
+/*
+|--------------------------------------------------
+| INPUT VALIDATION (with descriptive errors)
+|--------------------------------------------------
+| Each failure case reports exactly which field was
+| bad, instead of a single generic "Invalid request
+| details" message that hides the real cause.
+*/
+$rawRequestId = $_POST['request_id'] ?? null;
+$action = trim($_POST['action'] ?? '');
+
+if ($rawRequestId === null || $rawRequestId === '') {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Missing request_id in submitted data.'
+    ]);
+    exit;
+}
+
+if (!ctype_digit((string) $rawRequestId)) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'request_id must be a positive whole number, received: ' . var_export($rawRequestId, true)
+    ]);
+    exit;
+}
+
+$requestId = (int) $rawRequestId;
+
+if ($requestId <= 0) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'request_id must be greater than zero.'
+    ]);
+    exit;
+}
+
+if (!in_array($action, ['accept', 'reject'], true)) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => "action must be 'accept' or 'reject', received: " . var_export($action, true)
     ]);
     exit;
 }
@@ -39,9 +86,9 @@ try {
     |--------------------------------------------------
     */
     $stmt = $pdo->prepare("
-        SELECT username, email, password 
-        FROM pending_admins 
-        WHERE request_id = ? 
+        SELECT username, email, password
+        FROM pending_admins
+        WHERE request_id = ?
         LIMIT 1
     ");
     $stmt->execute([$requestId]);
@@ -51,7 +98,7 @@ try {
         $pdo->rollBack();
         echo json_encode([
             'status' => 'error',
-            'message' => 'Request not found'
+            'message' => 'Request not found. It may have already been processed.'
         ]);
         exit;
     }
@@ -78,7 +125,7 @@ try {
 
         // insert admin
         $insert = $pdo->prepare("
-            INSERT INTO admins (FullName, Email, Password, Role, AccountStatus) 
+            INSERT INTO admins (FullName, Email, Password, Role, AccountStatus)
             VALUES (?, ?, ?, 'Admin', 'Active')
         ");
 

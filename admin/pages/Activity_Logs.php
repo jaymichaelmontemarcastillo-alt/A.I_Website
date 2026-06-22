@@ -25,22 +25,22 @@ include '../includes/header.php';
 
                 <!-- Stats Row -->
                 <div class="stats-row" style="display: none;">
-                    <div class="stat-card">
+                    <div class="stat-card" style="display: none;">
                         <div class="stat-label">Total Events</div>
                         <div class="stat-value" id="s-total">—</div>
                         <div class="stat-sub">all time</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" style="display: none;">
                         <div class="stat-label">Successful</div>
                         <div class="stat-value success-val" id="s-success">—</div>
                         <div class="stat-sub"><span class="stat-dot success-dot"></span>success rate</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" style="display: none;">
                         <div class="stat-label">Failed</div>
                         <div class="stat-value error-val" id="s-fail">—</div>
                         <div class="stat-sub"><span class="stat-dot error-dot"></span>error rate</div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card" style="display: none;">
                         <div class="stat-label">Unique Users</div>
                         <div class="stat-value" id="s-users">—</div>
                         <div class="stat-sub">active admins</div>
@@ -72,39 +72,39 @@ include '../includes/header.php';
                         <option value="Success">Success</option>
                         <option value="Failed">Failed</option>
                     </select>
-                    <!--
+
                     <button class="btn-export" onclick="exportCSV()">
                         <i class="fa-solid fa-download"></i> Export CSV
                     </button>
-                </div>
--->
-                    <!-- Table -->
-                    <div class="activity-table-wrapper">
-                        <div class="table-meta">
-                            <span class="table-count" id="tableCount">Loading…</span>
-                        </div>
+                </div> <!-- Fixed: Added missing closing div -->
 
-                        <div class="table-scroll">
-                            <table class="activity-table">
-                                <thead>
-                                    <tr>
-                                        <th>User</th>
-                                        <th>Action Details</th>
-                                        <th>Date &amp; Time</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="tableBody">
-                                    <!-- rows injected by JS -->
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="pagination" id="paginationBar">
-                            <span class="page-info" id="pageInfo"></span>
-                            <div class="pager" id="pager"></div>
-                        </div>
+                <!-- Table -->
+                <div class="activity-table-wrapper">
+                    <div class="table-meta">
+                        <span class="table-count" id="tableCount">Loading…</span>
                     </div>
+
+                    <div class="table-scroll">
+                        <table class="activity-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Action Details</th>
+                                    <th>Date &amp; Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- rows injected by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination" id="paginationBar">
+                        <span class="page-info" id="pageInfo"></span>
+                        <div class="pager" id="pager"></div>
+                    </div>
+                </div>
 
             </section>
         </main>

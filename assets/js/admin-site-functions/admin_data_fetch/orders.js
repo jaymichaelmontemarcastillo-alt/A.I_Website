@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
   window.currentOrders = [];
   window.currentOrderData = null;
   window.currentOrderNumber = null;
+  window.paymentMethods = null;
 
   // Initial load
   fetchOrders();
@@ -20,6 +21,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Filter handlers
   setupFilterHandlers();
+
+  // Load payment methods for dropdowns (handled by payment_methods.js)
+  // This ensures compatibility with the new payment methods system
 });
 
 /* ═════════════════════════════════════════════════════════════ */
@@ -345,6 +349,7 @@ function createTableRow(order) {
       <option value="cash" ${paymentMethod === "cash" ? "selected" : ""}><i class="fa-solid fa-money-bill-wave"></i> Cash on Delivery</option>
       <option value="gcash" ${paymentMethod === "gcash" ? "selected" : ""}><i class="fa-solid fa-mobile-alt"></i> GCash</option>
       <option value="card" ${paymentMethod === "card" ? "selected" : ""}><i class="fa-regular fa-credit-card"></i> Card</option>
+      <option value="add_new" style="font-weight: bold; color: #007bff;">+ Add Payment Method</option>
     </select>
   </td>
   <td>
@@ -399,13 +404,30 @@ function createTableRow(order) {
 
   if (methodDropdown) {
     methodDropdown.addEventListener("change", (e) => {
-      updateOrderField(
-        recordId,
-        "payment_method",
-        e.target.value,
-        methodDropdown,
-      );
+      if (e.target.value === "add_new") {
+        // Store the current value so we can restore it
+        const currentValue = e.target.dataset.previousValue || "pending";
+        e.target.value = currentValue;
+
+        // Open the add payment method modal
+        if (typeof openAddPaymentModal === "function") {
+          openAddPaymentModal();
+        }
+      } else {
+        // Store current value for reference
+        e.target.dataset.previousValue = e.target.value;
+
+        updateOrderField(
+          recordId,
+          "payment_method",
+          e.target.value,
+          methodDropdown,
+        );
+      }
     });
+
+    // Store initial value
+    methodDropdown.dataset.previousValue = methodDropdown.value;
   }
 
   return tr;

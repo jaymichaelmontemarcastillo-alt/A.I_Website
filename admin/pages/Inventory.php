@@ -383,10 +383,10 @@ include '../includes/header.php';
                             <button class="btn-add-item" onclick="matOpenAddItemModal()">
                                 <i class="fa-solid fa-plus"></i> Add New Item
                             </button>
-                            <button class="btn-primary" onclick="matOpenAuditModal()">
+                            <!--           <button class="btn-primary" onclick="matOpenAuditModal()">
                                 <i class="fa-solid fa-clipboard-list"></i> Create Audit
                             </button>
-
+-->
                         </div>
                     </div>
                 </div>
@@ -686,7 +686,65 @@ include '../includes/header.php';
                         </button>
                     </div>
                 </div>
+                <!-- Overhead & Electricity Section -->
+                <div class="audit-overhead-section" style="border: solid red 1px;">
+                    <div class="audit-section-title">
+                        <i class="fa-solid fa-bolt"></i> Electricity & Overhead Costs
+                    </div>
+                    <div class="audit-section-body">
+                        <div class="overhead-grid">
+                            <div class="overhead-field">
+                                <label><i class="fa-solid fa-building"></i> Shop Rent</label>
+                                <input type="number" id="overhead_shop_rent" class="overhead-input" step="0.01" value="0" placeholder="₱0.00" oninput="calculateOverheadTotals()">
+                            </div>
+                            <div class="overhead-field">
+                                <label><i class="fa-solid fa-users"></i> Fixed Salaries (Admin/Finance)</label>
+                                <input type="number" id="overhead_fixed_salaries" class="overhead-input" step="0.01" value="0" placeholder="₱0.00" oninput="calculateOverheadTotals()">
+                            </div>
+                            <div class="overhead-field">
+                                <label><i class="fa-solid fa-wifi"></i> Shop Utilities (Internet + Base Power)</label>
+                                <input type="number" id="overhead_shop_utilities" class="overhead-input" step="0.01" value="0" placeholder="₱0.00" oninput="calculateOverheadTotals()">
+                            </div>
+                            <div class="overhead-field">
+                                <label><i class="fa-solid fa-newspaper"></i> Subscriptions</label>
+                                <input type="number" id="overhead_subscriptions" class="overhead-input" step="0.01" value="0" placeholder="₱0.00" oninput="calculateOverheadTotals()">
+                            </div>
+                            <div class="overhead-field">
+                                <label><i class="fa-solid fa-microchip"></i> Machine Depreciation (Fixed)</label>
+                                <input type="number" id="overhead_machine_depreciation" class="overhead-input" step="0.01" value="0" placeholder="₱0.00" oninput="calculateOverheadTotals()">
+                            </div>
+                            <div class="overhead-field">
+                                <label><i class="fa-solid fa-wrench"></i> Maintenance & Repair Fund Allocation</label>
+                                <input type="number" id="overhead_maintenance_repair" class="overhead-input" step="0.01" value="0" placeholder="₱0.00" oninput="calculateOverheadTotals()">
+                            </div>
+                            <div class="overhead-field">
+                                <label><i class="fa-solid fa-chart-line"></i> Marketing & Promo Materials</label>
+                                <input type="number" id="overhead_marketing" class="overhead-input" step="0.01" value="0" placeholder="₱0.00" oninput="calculateOverheadTotals()">
+                            </div>
+                            <div class="overhead-field">
+                                <label><i class="fa-solid fa-bolt"></i> Electricity</label>
+                                <input type="number" id="overhead_electricity" class="overhead-input" step="0.01" value="0" placeholder="₱0.00" oninput="calculateOverheadTotals()">
+                            </div>
+                        </div>
 
+                        <div class="overhead-total-row">
+                            <div class="overhead-total-item">
+                                <span>TOTAL MONTHLY OVERHEAD</span>
+                                <span id="total_overhead_display">₱0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="production-hours-row">
+                            <div class="production-hours-field">
+                                <label><i class="fa-regular fa-clock"></i> Production Hours (for this project)</label>
+                                <input type="number" id="production_hours" step="0.5" value="0" placeholder="Hours" oninput="calculateOverheadTotals()">
+                            </div>
+                            <div class="overhead-per-hour-display" id="overhead_per_hour_display">
+                                <strong>₱0.00</strong> per hour
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Items Section -->
                 <div class="audit-section">
                     <div class="audit-section-title">
@@ -708,24 +766,35 @@ include '../includes/header.php';
                 </div>
 
                 <!-- Totals Section -->
+                <!-- Totals Section - Updated with Overhead -->
                 <div class="qa-totals-grid">
                     <div class="qa-total-card">
-                        <label>Total Material Cost</label>
+                        <label><i class="fa-solid fa-cubes"></i> Total Material Cost</label>
                         <div class="qa-total-value" id="qaTotalMaterialCost">₱0.00</div>
                     </div>
                     <div class="qa-total-divider"></div>
                     <div class="qa-total-card">
-                        <label>Total Reject Cost</label>
+                        <label><i class="fa-solid fa-trash-alt"></i> Total Reject Cost</label>
                         <div class="qa-total-value" id="qaTotalRejectCost">₱0.00</div>
                     </div>
                     <div class="qa-total-divider"></div>
                     <div class="qa-total-card">
-                        <label>Total Amount Due</label>
+                        <label><i class="fa-solid fa-bolt"></i> Total Overhead</label>
+                        <div class="qa-total-value" id="qaTotalOverheadCost">₱0.00</div>
+                    </div>
+                    <div class="qa-total-divider"></div>
+                    <div class="qa-total-card">
+                        <label><i class="fa-solid fa-calculator"></i> Total Cost (w/ Overhead)</label>
+                        <div class="qa-total-value" id="qaTotalCostWithOverhead">₱0.00</div>
+                    </div>
+                    <div class="qa-total-divider"></div>
+                    <div class="qa-total-card">
+                        <label><i class="fa-solid fa-receipt"></i> Total Amount Due</label>
                         <div class="qa-total-value" id="qaTotalAmountDue">₱0.00</div>
                     </div>
                     <div class="qa-total-divider"></div>
                     <div class="qa-total-card">
-                        <label>Profit</label>
+                        <label><i class="fa-solid fa-chart-line"></i> Profit</label>
                         <div class="qa-total-value profit-value" id="qaProfit">₱0.00</div>
                     </div>
                 </div>
@@ -787,6 +856,6 @@ include '../includes/header.php';
 <!-- Materials JS loaded LAST — all DOM elements guaranteed to exist -->
 <script src="../../assets/js/admin-site-functions/admin_materials.js"></script>
 <script src="../../assets/js/admin-site-functions/inventory_item_manager.js"></script>
-<script src="../../assets/js/admin-site-functions/quotation_audit_integration.js"></script>
 <script src="../../assets/js/admin-site-functions/update_inventory_materials.js"></script>
 <script src="../../assets/js/admin-site-functions/pending_audit_manager.js"></script>
+<script src="../../assets/js/admin-site-functions/overhead_audit_helper.js"></script>

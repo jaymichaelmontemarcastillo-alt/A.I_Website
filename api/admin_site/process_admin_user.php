@@ -7,7 +7,7 @@ $pdo = getDBConnection();
 
 /*
 |--------------------------------------------------------------------------
-| LOGIN CHECK (FIXED)
+| LOGIN CHECK
 |--------------------------------------------------------------------------
 */
 if (!isset($_SESSION['admin_id'])) {
@@ -30,16 +30,51 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 /*
 |--------------------------------------------------------------------------
-| INPUTS (FIXED NAMES)
+| INPUT VALIDATION (with descriptive errors)
 |--------------------------------------------------------------------------
 */
-$adminId = isset($_POST['admin_id']) ? (int) $_POST['admin_id'] : 0;
-$action   = $_POST['action'] ?? '';
+$rawAdminId = $_POST['admin_id'] ?? null;
+$action = trim($_POST['action'] ?? '');
 
-if ($adminId <= 0 || empty($action)) {
+if ($rawAdminId === null || $rawAdminId === '') {
     echo json_encode([
         'status' => 'error',
-        'message' => 'Invalid request details'
+        'message' => 'Missing admin_id in submitted data.'
+    ]);
+    exit;
+}
+
+if (!ctype_digit((string) $rawAdminId)) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'admin_id must be a positive whole number, received: ' . var_export($rawAdminId, true)
+    ]);
+    exit;
+}
+
+$adminId = (int) $rawAdminId;
+
+if ($adminId <= 0) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'admin_id must be greater than zero.'
+    ]);
+    exit;
+}
+
+if ($action === '') {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Missing action in submitted data.'
+    ]);
+    exit;
+}
+
+$allowedActions = ['change_role', 'set_status', 'delete'];
+if (!in_array($action, $allowedActions, true)) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => "Unknown action: " . var_export($action, true)
     ]);
     exit;
 }
@@ -69,8 +104,11 @@ try {
         $role = $_POST['role'] ?? '';
         $allowedRoles = ['Admin', 'Finance', 'Staff'];
 
-        if (!in_array($role, $allowedRoles)) {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid role']);
+        if (!in_array($role, $allowedRoles, true)) {
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Invalid role: " . var_export($role, true)
+            ]);
             exit;
         }
 
@@ -91,8 +129,11 @@ try {
         $status = $_POST['status'] ?? '';
         $allowedStatuses = ['Active', 'Disabled'];
 
-        if (!in_array($status, $allowedStatuses)) {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid status']);
+        if (!in_array($status, $allowedStatuses, true)) {
+            echo json_encode([
+                'status' => 'error',
+                'message' => "Invalid status: " . var_export($status, true)
+            ]);
             exit;
         }
 
@@ -117,6 +158,7 @@ try {
         exit;
     }
 
+    // Should be unreachable due to the allow-list check above, kept as a safety net
     echo json_encode(['status' => 'error', 'message' => 'Unknown action']);
 } catch (PDOException $e) {
     echo json_encode([

@@ -24,6 +24,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     return date.toLocaleString();
   }
+
   // Detect new request from other page
   if (localStorage.getItem("newAdminRequest") === "true") {
     loadPendingCount(); // refresh immediately
@@ -33,6 +34,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     localStorage.removeItem("newAdminRequest");
   }
+
   function showToast(message, type = "success") {
     if (!toastAlert) return;
     toastAlert.textContent = message;
@@ -41,6 +43,15 @@ document.addEventListener("DOMContentLoaded", function () {
     showToast.timeout = setTimeout(() => {
       toastAlert.classList.remove("visible");
     }, 3800);
+  }
+
+  // Small HTML-escaping helper so user-supplied strings (FullName, Email,
+  // username) never get interpreted as markup when inserted via innerHTML.
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return "";
+    const div = document.createElement("div");
+    div.textContent = String(str);
+    return div.innerHTML;
   }
 
   function renderAdminCard(admin) {
@@ -55,6 +66,13 @@ document.addEventListener("DOMContentLoaded", function () {
       )
       .join("");
 
+    // admin.AdminID is placed in data-admin-id (a real DOM attribute read
+    // back with .dataset), never interpolated into an onclick string. This
+    // means a missing/undefined id shows up as the literal string
+    // "undefined" in the DOM - easy to spot in devtools - instead of being
+    // silently swallowed into executable JS that fails far away from here.
+    row.dataset.adminId = admin.AdminID;
+
     row.innerHTML = `
       <td class="cell-name">
         <div class="admin-cell-content">
@@ -62,51 +80,54 @@ document.addEventListener("DOMContentLoaded", function () {
             <i class="fa-solid fa-user-gear"></i>
           </div>
           <div class="name-info">
-            <div class="admin-name">${admin.FullName}</div>
-            <div class="admin-email">${admin.Email}</div>
+            <div class="admin-name">${escapeHtml(admin.FullName)}</div>
+            <div class="admin-email">${escapeHtml(admin.Email)}</div>
           </div>
         </div>
       </td>
-      <td class="cell-email">${admin.Email}</td>
+      <td class="cell-email">${escapeHtml(admin.Email)}</td>
       <td class="cell-role">
-        <select id="role-${admin.AdminID}" class="role-select-table" data-prev="${admin.Role || "Admin"}" ${isSelf ? "disabled" : ""} onchange="updateAdminRole(${admin.AdminID}, this.value, this)">
+        <select class="role-select-table" data-prev="${admin.Role || "Admin"}" ${isSelf ? "disabled" : ""} data-action="change-role">
           ${roleOptions}
         </select>
       </td>
       <td class="cell-status">
-        <span class="badge status ${accountStatus.toLowerCase() === "active" ? "active" : "inactive"}">${accountStatus}</span>
+        <span class="badge status ${accountStatus.toLowerCase() === "active" ? "active" : "inactive"}">${escapeHtml(accountStatus)}</span>
       </td>
-     <td class="cell-actions">
-  <div class="action-group">
-    ${
-      isSelf
-        ? '<span class="self-label">Current</span>'
-        : `
-        <button class="admin-btn-sm
-          ${accountStatus.toLowerCase() === "active" ? "deactivate" : "activate"}" 
-          type="button"
-          onclick="toggleAdminStatus(${admin.AdminID}, '${accountStatus}')"
-          title="${accountStatus.toLowerCase() === "active" ? "Deactivate" : "Activate"}">
-          <i class="fa-solid ${accountStatus.toLowerCase() === "active" ? "fa-lock" : "fa-unlock"}"></i>
-        </button>
+      <td class="cell-actions">
+        <div class="action-group">
+          ${
+            isSelf
+              ? '<span class="self-label">Current</span>'
+              : `
+              <button class="admin-btn-sm
+                ${accountStatus.toLowerCase() === "active" ? "deactivate" : "activate"}"
+                type="button"
+                data-action="toggle-status"
+                data-current-status="${escapeHtml(accountStatus)}"
+                title="${accountStatus.toLowerCase() === "active" ? "Deactivate" : "Activate"}">
+                <i class="fa-solid ${accountStatus.toLowerCase() === "active" ? "fa-lock" : "fa-unlock"}"></i>
+              </button>
 
-        <button class="admin-btn-sm delete" 
-          type="button"
-          onclick='deleteAdmin(${admin.AdminID}, ${JSON.stringify(admin.FullName)}, ${JSON.stringify(admin.Email)})'
-          title="Delete">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      `
-    }
-  </div>
-</td>
+              <button class="admin-btn-sm delete"
+                type="button"
+                data-action="delete"
+                data-full-name="${escapeHtml(admin.FullName)}"
+                data-email="${escapeHtml(admin.Email)}"
+                title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            `
+          }
+        </div>
+      </td>
     `;
 
     return row;
   }
 
   function showError(message) {
-    adminListEl.innerHTML = `<div class="admin-list-error">${message}</div>`;
+    adminListEl.innerHTML = `<div class="admin-list-error">${escapeHtml(message)}</div>`;
   }
 
   function showPendingError(message) {
@@ -116,14 +137,20 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderRequestRow(request) {
+    // request.request_id is placed in a data-request-id attribute rather
+    // than interpolated directly into an onclick="...(${...})" string. If
+    // the API ever returns a row missing request_id, the buttons simply
+    // won't fire (caught defensively in the click handler below) instead
+    // of sending the literal text "undefined" to the server as request_id,
+    // which is what previously produced "Invalid request details".
     return `
-            <tr>
-                <td>${request.username}</td>
-                <td>${request.email}</td>
+            <tr data-request-id="${escapeHtml(request.request_id)}">
+                <td>${escapeHtml(request.username)}</td>
+                <td>${escapeHtml(request.email)}</td>
                 <td>${formatDateTime(request.submitted_at)}</td>
                 <td class="request-actions">
-                    <button class="btn-action accept" type="button" onclick="acceptAdminRequest(${request.request_id})">Accept</button>
-                    <button class="btn-action reject" type="button" onclick="rejectAdminRequest(${request.request_id})">Reject</button>
+                    <button class="btn-action accept" type="button" data-action="accept">Accept</button>
+                    <button class="btn-action reject" type="button" data-action="reject">Reject</button>
                 </td>
             </tr>
         `;
@@ -231,8 +258,25 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function processPendingRequest(requestId, action) {
+  async function processPendingRequest(requestId, action, buttonEl) {
     showPendingError("");
+
+    // Defensive guard: if requestId somehow isn't a valid positive integer
+    // (e.g. the row's data-request-id was empty/missing), fail loudly in
+    // the UI instead of sending a bad value to the server.
+    const idNum = Number(requestId);
+    if (!Number.isInteger(idNum) || idNum <= 0) {
+      showPendingError(
+        `Cannot ${action} this request: missing or invalid request ID (${requestId}). Try refreshing the list.`,
+      );
+      console.error(
+        "Invalid requestId passed to processPendingRequest:",
+        requestId,
+      );
+      return;
+    }
+
+    if (buttonEl) buttonEl.disabled = true;
 
     try {
       const response = await fetch(
@@ -244,7 +288,7 @@ document.addEventListener("DOMContentLoaded", function () {
             "Content-Type": "application/x-www-form-urlencoded",
             Accept: "application/json",
           },
-          body: `request_id=${encodeURIComponent(requestId)}&action=${encodeURIComponent(action)}`,
+          body: `request_id=${encodeURIComponent(idNum)}&action=${encodeURIComponent(action)}`,
         },
       );
       const data = await response.json();
@@ -260,6 +304,8 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (error) {
       showPendingError("Unable to update the request.");
       console.error("Pending action error:", error);
+    } finally {
+      if (buttonEl) buttonEl.disabled = false;
     }
   }
 
@@ -269,9 +315,19 @@ document.addEventListener("DOMContentLoaded", function () {
     payload = {},
     element = null,
   ) {
+    const idNum = Number(adminId);
+    if (!Number.isInteger(idNum) || idNum <= 0) {
+      showToast(
+        `Cannot perform action: missing or invalid admin ID (${adminId}).`,
+        "error",
+      );
+      console.error("Invalid adminId passed to processAdminUser:", adminId);
+      return;
+    }
+
     try {
       const formData = new URLSearchParams({
-        admin_id: adminId,
+        admin_id: idNum,
         action,
         ...payload,
       });
@@ -312,33 +368,23 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  window.updateAdminRole = (adminId, role, selectElement) => {
-    processAdminUser(adminId, "change_role", { role }, selectElement);
-  };
-
-  window.toggleAdminStatus = (adminId, currentStatus) => {
-    const nextStatus =
-      currentStatus.toLowerCase() === "active" ? "Disabled" : "Active";
-    processAdminUser(adminId, "set_status", { status: nextStatus });
-  };
-
   let adminToDelete = null;
 
-  window.deleteAdmin = (AdminID, FullName, Email) => {
-    adminToDelete = AdminID;
+  function openDeleteModal(adminId, fullName, email) {
+    adminToDelete = adminId;
 
     const modal = document.getElementById("deleteConfirmModal");
     const message = document.getElementById("deleteMessage");
 
     message.innerHTML = `
     You are about to delete:<br><br>
-    <strong>${FullName}</strong><br>
-    <span class="email">${Email}</span><br><br>
+    <strong>${escapeHtml(fullName)}</strong><br>
+    <span class="email">${escapeHtml(email)}</span><br><br>
     This admin will lose access permanently.
   `;
 
     modal.classList.add("show");
-  };
+  }
 
   window.closeDeleteModal = () => {
     adminToDelete = null;
@@ -369,10 +415,59 @@ document.addEventListener("DOMContentLoaded", function () {
       closeDeleteModal();
     });
 
-  window.acceptAdminRequest = (requestId) =>
-    processPendingRequest(requestId, "accept");
-  window.rejectAdminRequest = (requestId) =>
-    processPendingRequest(requestId, "reject");
+  // ─── Event delegation for the admin accounts table ──────────────────────
+  // Replaces the previous inline onclick="...(${value})" approach. Clicks
+  // and changes are read from real DOM attributes (data-admin-id, etc.) at
+  // the moment of interaction, so there's no window where a bad/missing
+  // value gets baked into an HTML string and silently breaks later.
+  if (adminListEl) {
+    adminListEl.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+
+      const row = btn.closest("tr[data-admin-id]");
+      if (!row) return;
+      const adminId = row.dataset.adminId;
+
+      if (btn.dataset.action === "toggle-status") {
+        const currentStatus = btn.dataset.currentStatus || "Active";
+        const nextStatus =
+          currentStatus.toLowerCase() === "active" ? "Disabled" : "Active";
+        processAdminUser(adminId, "set_status", { status: nextStatus });
+      } else if (btn.dataset.action === "delete") {
+        openDeleteModal(adminId, btn.dataset.fullName, btn.dataset.email);
+      }
+    });
+
+    adminListEl.addEventListener("change", (e) => {
+      const select = e.target.closest('select[data-action="change-role"]');
+      if (!select) return;
+
+      const row = select.closest("tr[data-admin-id]");
+      if (!row) return;
+      const adminId = row.dataset.adminId;
+
+      processAdminUser(adminId, "change_role", { role: select.value }, select);
+    });
+  }
+
+  // ─── Event delegation for the pending requests modal ────────────────────
+  if (pendingRequestsList) {
+    pendingRequestsList.addEventListener("click", (e) => {
+      const btn = e.target.closest("button[data-action]");
+      if (!btn) return;
+
+      const row = btn.closest("tr[data-request-id]");
+      if (!row) return;
+      const requestId = row.dataset.requestId;
+
+      if (btn.dataset.action === "accept") {
+        processPendingRequest(requestId, "accept", btn);
+      } else if (btn.dataset.action === "reject") {
+        processPendingRequest(requestId, "reject", btn);
+      }
+    });
+  }
 
   window.closePendingRequestsModal = () => {
     if (pendingRequestsModal) {

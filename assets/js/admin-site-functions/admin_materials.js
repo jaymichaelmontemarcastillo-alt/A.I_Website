@@ -1011,9 +1011,33 @@ const matAddNewItem = async () => {
 ══════════════════════════════════════════════════════════════ */
 const matInitAuditModal = () => {
   if (!document.getElementById("auditModal")) {
-    const modalHtml = `<div id="auditModal"><div class="audit-modal-container"><div class="audit-modal-header"><h2><i class="fa-solid fa-clipboard-list"></i> Create Audit</h2><button class="audit-modal-close" onclick="matCloseAuditModal()">&times;</button></div><div class="audit-modal-body"><div class="audit-section"><h3 class="audit-section-title">Item Information</h3><input type="text" id="auditItemName" placeholder="Enter item/product name..."></div><div class="audit-section"><h3 class="audit-section-title">Material Costs</h3><div id="materialCostsContainer"></div><button type="button" class="add-row-btn" onclick="matAddMaterialRow()"><i class="fa-solid fa-plus"></i> Add Material</button></div><div class="audit-section"><h3 class="audit-section-title">Reject Costs</h3><div class="reject-note"><i class="fa-solid fa-info-circle"></i> Remove materials from the list if there are no reject materials</div><div id="rejectCostsContainer"></div><button type="button" class="add-row-btn" onclick="matAddRejectRow()"><i class="fa-solid fa-plus"></i> Add Reject Material</button></div><div class="audit-section"><h3 class="audit-section-title">Items</h3><div id="itemsContainer"></div><button type="button" class="add-row-btn" onclick="matAddItemRow()"><i class="fa-solid fa-plus"></i> Add Item</button></div><div class="totals-grid"><div class="total-card"><label>Total Material Cost</label><div class="total-value" id="totalMaterialCost">₱0.00</div></div><div class="total-card"><label>Total Reject Cost</label><div class="total-value" id="totalRejectCost">₱0.00</div></div><div class="total-card"><label>Total Amount Due</label><div class="total-value" id="totalAmountDue">₱0.00</div></div><div class="total-card"><label>Profit <input type="checkbox" id="manualProfitCheck" title="Enable manual profit entry" style="margin-left:8px;"></label><div class="total-value profit-value" id="profitDisplay" style="cursor:pointer;">₱0.00</div><input type="number" id="manualProfitInput" placeholder="Enter profit amount" step="0.01" style="display:none;width:100%;margin-top:5px;padding:8px;border:1px solid #ddd;border-radius:4px;"></div></div><div class="auto-compute-row"><label for="autoComputeCheck">Auto-compute totals</label><input type="checkbox" id="autoComputeCheck" checked></div><div class="signatures-grid"><div class="signature-field"><label>Created By</label><input type="text" id="createdBy" placeholder="Enter name..."></div><div class="signature-field"><label>Audited By</label><input type="text" id="auditedBy" placeholder="Enter name..."></div><div class="signature-field"><label>Acknowledged By</label><input type="text" id="acknowledgedBy" placeholder="Enter name..."></div></div><div class="modal-actions"><button type="button" class="btn-cancel" onclick="matCloseAuditModal()">Cancel</button><button type="button" class="btn-submit" onclick="matSubmitAudit()"><i class="fa-solid fa-save"></i> Create Audit</button></div></div></div></div>`;
+    const modalHtml = `<div id="auditModal"><div class="audit-modal-container"><div class="audit-modal-header"><h2><i class="fa-solid fa-clipboard-list"></i> Create Audit</h2><button class="audit-modal-close" onclick="matCloseAuditModal()">&times;</button></div><div class="audit-modal-body"><div class="audit-section"><h3 class="audit-section-title">Item Information</h3><input type="text" id="auditItemName" placeholder="Enter item/product name..."></div><div class="audit-section"><h3 class="audit-section-title">Material Costs</h3><div id="materialCostsContainer"></div><button type="button" class="add-row-btn" onclick="matAddMaterialRow()"><i class="fa-solid fa-plus"></i> Add Material</button></div><div class="audit-section"><h3 class="audit-section-title">Reject Costs</h3><div class="reject-note"><i class="fa-solid fa-info-circle"></i> Remove materials from the list if there are no reject materials</div><div id="rejectCostsContainer"></div><button type="button" class="add-row-btn" onclick="matAddRejectRow()"><i class="fa-solid fa-plus"></i> Add Reject Material</button></div>
+
+<!-- ========= OVERHEAD SECTION ========= -->
+<div class="audit-overhead-section">
+  <div class="audit-section-title"><i class="fa-solid fa-bolt"></i> Electricity & Overhead Costs</div>
+  <div class="audit-section-body">
+    <div class="overhead-grid">
+      <div class="overhead-field"><label><i class="fa-solid fa-building"></i> Shop Rent</label><input type="number" id="overhead_shop_rent" class="overhead-input" step="0.01" value="0" placeholder="₱0.00"></div>
+      <div class="overhead-field"><label><i class="fa-solid fa-users"></i> Fixed Salaries (Admin/Finance)</label><input type="number" id="overhead_fixed_salaries" class="overhead-input" step="0.01" value="0" placeholder="₱0.00"></div>
+      <div class="overhead-field"><label><i class="fa-solid fa-wifi"></i> Shop Utilities (Internet + Base Power)</label><input type="number" id="overhead_shop_utilities" class="overhead-input" step="0.01" value="0" placeholder="₱0.00"></div>
+      <div class="overhead-field"><label><i class="fa-solid fa-newspaper"></i> Subscriptions</label><input type="number" id="overhead_subscriptions" class="overhead-input" step="0.01" value="0" placeholder="₱0.00"></div>
+      <div class="overhead-field"><label><i class="fa-solid fa-microchip"></i> Machine Depreciation (Fixed)</label><input type="number" id="overhead_machine_depreciation" class="overhead-input" step="0.01" value="0" placeholder="₱0.00"></div>
+      <div class="overhead-field"><label><i class="fa-solid fa-wrench"></i> Maintenance & Repair Fund Allocation</label><input type="number" id="overhead_maintenance_repair" class="overhead-input" step="0.01" value="0" placeholder="₱0.00"></div>
+      <div class="overhead-field"><label><i class="fa-solid fa-chart-line"></i> Marketing & Promo Materials</label><input type="number" id="overhead_marketing" class="overhead-input" step="0.01" value="0" placeholder="₱0.00"></div>
+      <div class="overhead-field"><label><i class="fa-solid fa-bolt"></i> Electricity</label><input type="number" id="overhead_electricity" class="overhead-input" step="0.01" value="0" placeholder="₱0.00"></div>
+    </div>
+    <div class="overhead-total-row"><div class="overhead-total-item"><span>TOTAL MONTHLY OVERHEAD</span><span id="total_overhead_display">₱0.00</span></div></div>
+    <div class="production-hours-row"><div class="production-hours-field"><label><i class="fa-regular fa-clock"></i> Production Hours (for this project)</label><input type="number" id="production_hours" step="0.5" value="0" placeholder="Hours"></div><div class="overhead-per-hour-display" id="overhead_per_hour_display"><strong>₱0.00</strong> per hour</div></div>
+  </div>
+</div>
+<!-- ========= END OVERHEAD SECTION ========= -->
+
+<div class="audit-section"><h3 class="audit-section-title">Items</h3><div id="itemsContainer"></div><button type="button" class="add-row-btn" onclick="matAddItemRow()"><i class="fa-solid fa-plus"></i> Add Item</button></div><div class="totals-grid"><div class="total-card"><label>Total Material Cost</label><div class="total-value" id="totalMaterialCost">₱0.00</div></div><div class="total-card"><label>Total Reject Cost</label><div class="total-value" id="totalRejectCost">₱0.00</div></div><div class="total-card"><label>Total Overhead</label><div class="total-value" id="totalOverheadCost">₱0.00</div></div><div class="total-card"><label>Total Amount Due</label><div class="total-value" id="totalAmountDue">₱0.00</div></div><div class="total-card"><label>Profit <input type="checkbox" id="manualProfitCheck" title="Enable manual profit entry" style="margin-left:8px;"></label><div class="total-value profit-value" id="profitDisplay" style="cursor:pointer;">₱0.00</div><input type="number" id="manualProfitInput" placeholder="Enter profit amount" step="0.01" style="display:none;width:100%;margin-top:5px;padding:8px;border:1px solid #ddd;border-radius:4px;"></div></div><div class="auto-compute-row"><label for="autoComputeCheck">Auto-compute totals</label><input type="checkbox" id="autoComputeCheck" checked></div><div class="signatures-grid"><div class="signature-field"><label>Created By</label><input type="text" id="createdBy" placeholder="Enter name..."></div><div class="signature-field"><label>Audited By</label><input type="text" id="auditedBy" placeholder="Enter name..."></div><div class="signature-field"><label>Acknowledged By</label><input type="text" id="acknowledgedBy" placeholder="Enter name..."></div></div><div class="modal-actions"><button type="button" class="btn-cancel" onclick="matCloseAuditModal()">Cancel</button><button type="button" class="btn-submit" onclick="matSubmitAudit()"><i class="fa-solid fa-save"></i> Create Audit</button></div></div></div></div>`;
     document.body.insertAdjacentHTML("beforeend", modalHtml);
   }
+
+  // Existing listeners
   document
     .getElementById("autoComputeCheck")
     ?.addEventListener("change", (e) => {
@@ -1046,8 +1070,11 @@ const matInitAuditModal = () => {
   document
     .getElementById("auditItemName")
     ?.addEventListener("input", () => matComputeTotals());
-};
 
+  // Initialize OverheadHelper (fields start at 0)
+  const modalContainer = document.getElementById("auditModal");
+  OverheadHelper.attachListeners(modalContainer, () => matComputeTotals());
+};
 const matLoadMaterialsForAudit = async () => {
   try {
     const data = await matFetch(MAT_API.materialsForAudit);
@@ -1173,12 +1200,12 @@ const matRemoveDynamicRow = (button) => {
   row.remove();
   matComputeTotals();
 };
-
 const matComputeTotals = () => {
   if (!auditAutoCompute) return;
   let materialTotal = 0,
     rejectTotal = 0,
     amountTotal = 0;
+
   document
     .querySelectorAll("#materialCostsContainer .material-total-cost")
     .forEach((input) => {
@@ -1194,14 +1221,24 @@ const matComputeTotals = () => {
     .forEach((input) => {
       amountTotal += parseFloat(input.value) || 0;
     });
+
+  const modalContainer = document.getElementById("auditModal");
+  const overheadTotal = OverheadHelper.getTotalOverhead(modalContainer);
+
+  // Update total overhead display
+  const totalOverheadEl = document.getElementById("totalOverheadCost");
+  if (totalOverheadEl)
+    totalOverheadEl.textContent = `₱${overheadTotal.toFixed(2)}`;
+
   const manualProfitCheck = document.getElementById("manualProfitCheck");
   if (!manualProfitCheck?.checked) {
-    const profit = amountTotal - (materialTotal + rejectTotal);
+    const profit = amountTotal - (materialTotal + rejectTotal + overheadTotal);
     const profitDisplay = document.getElementById("profitDisplay");
     if (profitDisplay) profitDisplay.textContent = `₱${profit.toFixed(2)}`;
     const manualInput = document.getElementById("manualProfitInput");
     if (manualInput) manualInput.value = profit.toFixed(2);
   }
+
   document.getElementById("totalMaterialCost").textContent =
     `₱${materialTotal.toFixed(2)}`;
   document.getElementById("totalRejectCost").textContent =
@@ -1260,6 +1297,7 @@ const matSubmitAudit = async () => {
         });
       }
     });
+
   const rejects = [];
   document
     .querySelectorAll("#rejectCostsContainer .dynamic-row")
@@ -1279,31 +1317,74 @@ const matSubmitAudit = async () => {
         });
       }
     });
+
   const items = [];
   document.querySelectorAll("#itemsContainer .dynamic-row").forEach((row) => {
     const name = row.querySelector(".item-name")?.value;
-    if (name)
+    if (name) {
       items.push({
-        name,
+        name: name,
         quantity: parseFloat(row.querySelector(".item-qty")?.value) || 0,
         unit_price:
           parseFloat(row.querySelector(".item-unit-price")?.value) || 0,
         total_amount:
           parseFloat(row.querySelector(".item-total-amount")?.value) || 0,
       });
+    }
   });
+
   const itemName = document.getElementById("auditItemName")?.value;
-  if (itemName)
+  if (itemName) {
     items.unshift({
       name: itemName,
       quantity: 1,
       unit_price: 0,
       total_amount: 0,
     });
+  }
+
   if (materials.length === 0 && items.length === 0) {
     matShowToast("Please add at least one material or item", "error");
     return;
   }
+
+  // ========== CRITICAL: Collect overhead data ==========
+  const modalContainer = document.getElementById("auditModal");
+  const overheadData = {
+    shop_rent:
+      parseFloat(modalContainer.querySelector("#overhead_shop_rent")?.value) ||
+      0,
+    fixed_salaries:
+      parseFloat(
+        modalContainer.querySelector("#overhead_fixed_salaries")?.value,
+      ) || 0,
+    shop_utilities:
+      parseFloat(
+        modalContainer.querySelector("#overhead_shop_utilities")?.value,
+      ) || 0,
+    subscriptions:
+      parseFloat(
+        modalContainer.querySelector("#overhead_subscriptions")?.value,
+      ) || 0,
+    machine_depreciation:
+      parseFloat(
+        modalContainer.querySelector("#overhead_machine_depreciation")?.value,
+      ) || 0,
+    maintenance_repair:
+      parseFloat(
+        modalContainer.querySelector("#overhead_maintenance_repair")?.value,
+      ) || 0,
+    marketing:
+      parseFloat(modalContainer.querySelector("#overhead_marketing")?.value) ||
+      0,
+    electricity:
+      parseFloat(
+        modalContainer.querySelector("#overhead_electricity")?.value,
+      ) || 0,
+  };
+  const productionHours =
+    parseFloat(modalContainer.querySelector("#production_hours")?.value) || 0;
+
   const manualProfitCheck = document.getElementById("manualProfitCheck");
   const manualProfitInput = document.getElementById("manualProfitInput");
   const profitValue = manualProfitCheck?.checked
@@ -1311,9 +1392,11 @@ const matSubmitAudit = async () => {
     : null;
 
   const payload = {
-    items,
-    materials,
-    rejects,
+    items: items,
+    materials: materials,
+    rejects: rejects,
+    overhead: overheadData, // Must match PHP's $input['overhead']
+    production_hours: productionHours, // Must match PHP's $input['production_hours']
     created_by: document.getElementById("createdBy")?.value || "",
     audited_by: document.getElementById("auditedBy")?.value || "",
     acknowledged_by: document.getElementById("acknowledgedBy")?.value || "",
@@ -1325,7 +1408,6 @@ const matSubmitAudit = async () => {
   }
 
   try {
-    // IMPORTANT: Capture the result from matFetch
     const result = await matFetch(MAT_API.createAudit, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1334,15 +1416,11 @@ const matSubmitAudit = async () => {
 
     matCloseAuditModal();
 
-    // Remove quotation info banner if exists
     const infoBanner = document.querySelector(
       "#auditModal .audit-quotation-info",
     );
-    if (infoBanner) {
-      infoBanner.remove();
-    }
+    if (infoBanner) infoBanner.remove();
 
-    // If there's a pending quotation ID, update its audited status
     if (window.currentAuditQuotationId && result.audit_id) {
       try {
         const markResponse = await fetch(
@@ -1359,7 +1437,7 @@ const matSubmitAudit = async () => {
         const markResult = await markResponse.json();
         if (markResult.success) {
           matShowToast(
-            "Audit created! Quotation has been marked as audited.",
+            "Audit created! Quotation marked as audited.",
             "success",
           );
         } else {
@@ -1370,7 +1448,7 @@ const matSubmitAudit = async () => {
         }
         window.currentAuditQuotationId = null;
       } catch (err) {
-        console.error("Error marking quotation as audited:", err);
+        console.error(err);
         matShowToast(
           "Audit created! Please manually mark quotation as audited.",
           "warning",
@@ -1385,8 +1463,6 @@ const matSubmitAudit = async () => {
 
     matReloadMaterials(true);
     matReloadLogs(true);
-
-    // Also refresh quotations if the page has quotationManager
     if (window.quotationManager) {
       window.quotationManager.fetchQuotations();
       window.quotationManager.fetchStats();
@@ -1395,7 +1471,6 @@ const matSubmitAudit = async () => {
     matShowToast(err.message || "Failed to create audit", "error");
   }
 };
-
 /* ══════════════════════════════════════════════════════════════
    AUDIT PREVIEW
 ══════════════════════════════════════════════════════════════ */
@@ -1544,24 +1619,29 @@ const matShowAuditPreviewModal = (audit) => {
             : ""
         }
         
-        <div class="audit-preview-totals">
-          <div class="total-item">
-            <span>Total Material Cost:</span>
-            <strong>₱${(parseFloat(audit.total_material_cost) || 0).toFixed(2)}</strong>
-          </div>
-          <div class="total-item">
-            <span>Total Reject Cost:</span>
-            <strong>₱${(parseFloat(audit.total_reject_cost) || 0).toFixed(2)}</strong>
-          </div>
-          <div class="total-item">
-            <span>Total Amount Due:</span>
-            <strong>₱${(parseFloat(audit.total_amount_due) || 0).toFixed(2)}</strong>
-          </div>
-          <div class="total-item profit-item">
-            <span>Profit:</span>
-            <strong class="profit">₱${(parseFloat(audit.profit) || 0).toFixed(2)}</strong>
-          </div>
-        </div>
+      <div class="audit-preview-totals">
+  <div class="total-item">
+    <span>Total Material Cost:</span>
+    <strong>₱${(parseFloat(audit.total_material_cost) || 0).toFixed(2)}</strong>
+  </div>
+  <div class="total-item">
+    <span>Total Reject Cost:</span>
+    <strong>₱${(parseFloat(audit.total_reject_cost) || 0).toFixed(2)}</strong>
+  </div>
+  <!-- ADD OVERHEAD ROW -->
+  <div class="total-item">
+    <span>Total Overhead:</span>
+    <strong>₱${(parseFloat(audit.total_overhead) || 0).toFixed(2)}</strong>
+  </div>
+  <div class="total-item">
+    <span>Total Amount Due:</span>
+    <strong>₱${(parseFloat(audit.total_amount_due) || 0).toFixed(2)}</strong>
+  </div>
+  <div class="total-item profit-item">
+    <span>Profit:</span>
+    <strong class="profit">₱${(parseFloat(audit.profit) || 0).toFixed(2)}</strong>
+  </div>
+</div>
         
         <div class="audit-preview-signatures">
           <div><i class="fa-regular fa-user"></i> Created By: ${matEsc(audit.signatures?.created_by || "—")}</div>
@@ -1993,12 +2073,13 @@ const matShowDetailedAuditModal = (audit, inventoryLogs, auditLogs) => {
                     : ""
                 }
                 
-                <div class="totals-summary">
-                    <div class="total-row">Total Material Cost: <strong>₱${(audit.total_material_cost || 0).toFixed(2)}</strong></div>
-                    <div class="total-row">Total Reject Cost: <strong>₱${(audit.total_reject_cost || 0).toFixed(2)}</strong></div>
-                    <div class="total-row">Total Amount Due: <strong>₱${(audit.total_amount_due || 0).toFixed(2)}</strong></div>
-                    <div class="total-row profit">Profit: <strong>₱${(audit.profit || 0).toFixed(2)}</strong></div>
-                </div>
+<div class="totals-summary">
+  <div class="total-row">Total Material Cost: <strong>₱${(audit.total_material_cost || 0).toFixed(2)}</strong></div>
+  <div class="total-row">Total Reject Cost: <strong>₱${(audit.total_reject_cost || 0).toFixed(2)}</strong></div>
+  <div class="total-row">Total Overhead: <strong>₱${(audit.total_overhead || 0).toFixed(2)}</strong></div>
+  <div class="total-row">Total Amount Due: <strong>₱${(audit.total_amount_due || 0).toFixed(2)}</strong></div>
+  <div class="total-row profit">Profit: <strong>₱${(audit.profit || 0).toFixed(2)}</strong></div>
+</div>
                 
                 <div class="signatures-section">
                     <div><strong>Created By:</strong> ${matEsc(signatures.created_by || "—")}</div>

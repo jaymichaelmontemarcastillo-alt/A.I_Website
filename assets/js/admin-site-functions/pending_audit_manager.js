@@ -2,6 +2,7 @@
  * Pending Audit Manager
  * Handles the pending audit modal and workflow for non-audited quotations
  * OPTIMIZED - No page scrolling, immediate modal display
+ * UPDATED - Opens audit modal directly without redirect
  */
 
 class PendingAuditManager {
@@ -487,6 +488,7 @@ class PendingAuditManager {
       .join("");
   }
 
+  // MODIFIED: Opens audit modal directly without redirect to Inventory.php
   async selectQuotation(quotationId) {
     // Update selected state in UI
     document.querySelectorAll(".pending-audit-item").forEach((item) => {
@@ -504,59 +506,81 @@ class PendingAuditManager {
     // Close the pending audit modal
     this.closeModal();
 
-    // Load quotation data and open audit modal
-    await this.openAuditModalWithQuotation(quotationId);
+    // Open audit modal directly (no redirect)
+    await this.openAuditModalDirectly(quotationId);
   }
 
-  async openAuditModalWithQuotation(quotationId) {
+  // NEW: Open audit modal directly without page redirect
+  async openAuditModalDirectly(quotationId) {
     if (typeof matShowToast === "function") {
-      matShowToast("Loading quotation data...", "info");
+      matShowToast("Loading audit form...", "info");
     }
 
-    try {
-      const response = await fetch(
-        `../../api/admin_site/get_quotation_for_audit.php?id=${quotationId}`,
-      );
-      const result = await response.json();
+    // Check if we can open audit modal
+    if (typeof window.matOpenAuditModal === "function") {
+      // Store the quotation ID for reference in the audit submission
+      window.currentAuditQuotationId = quotationId;
 
-      if (result.success) {
-        // Store current quotation ID for later update
-        window.currentAuditQuotationId = quotationId;
-        this.currentQuotationNumber = result.quotation.quote_number;
-        this.currentQuotationClient = result.quotation.client_name;
+      // Get quotation details for pre-filling
+      try {
+        const response = await fetch(
+          `../../api/admin_site/get_single_quotation.php?id=${quotationId}`,
+        );
+        const result = await response.json();
 
-        // Get the existing audit modal function from admin_materials.js
-        if (typeof window.matOpenAuditModal === "function") {
-          window.matOpenAuditModal();
+        if (result.success) {
+          window.currentAuditQuotationNumber =
+            result.data.quotation.quote_number;
+        }
+      } catch (err) {
+        console.error("Error fetching quotation details:", err);
+      }
 
-          // Wait for modal to open and pre-fill data
-          setTimeout(() => {
-            this.addQuotationInfoToAuditHeader(result.quotation);
-            this.prefillAuditModal(result.quotation, result.items);
-          }, 200);
-        } else {
-          if (typeof matShowToast === "function") {
-            matShowToast(
-              "Audit modal not available. Please create audit manually.",
-              "error",
-            );
+      // Open audit modal
+      window.matOpenAuditModal();
+
+      // Pre-fill with quotation info after modal opens
+      setTimeout(() => {
+        const auditModal = document.getElementById("auditModal");
+        if (auditModal && auditModal.style.display === "flex") {
+          const itemNameInput = document.getElementById("auditItemName");
+          if (
+            itemNameInput &&
+            !itemNameInput.value &&
+            window.currentAuditQuotationNumber
+          ) {
+            itemNameInput.value = `Audit for ${window.currentAuditQuotationNumber}`;
+          }
+          const createdByInput = document.getElementById("createdBy");
+          if (createdByInput && !createdByInput.value) {
+            createdByInput.value = "Quotation System";
           }
         }
-      } else {
-        if (typeof matShowToast === "function") {
-          matShowToast(
-            result.message || "Failed to load quotation data",
-            "error",
-          );
-        }
-      }
-    } catch (err) {
-      console.error("Error loading quotation for audit:", err);
+      }, 500);
+
       if (typeof matShowToast === "function") {
-        matShowToast("Error loading quotation data", "error");
+        matShowToast(
+          "Audit form opened. Please add materials used and complete the audit.",
+          "success",
+        );
+      }
+    } else {
+      // Fallback: show notification
+      if (typeof matShowToast === "function") {
+        matShowToast(
+          "Audit module not available. Please create audit manually from Inventory page.",
+          "error",
+        );
       }
     }
   }
+
+  // Legacy method - kept for compatibility but no longer redirects
+  async openAuditModalWithQuotation(quotationId, quoteNumber) {
+    // This now calls the direct method
+    await this.openAuditModalDirectly(quotationId);
+  }
+
   addQuotationInfoToAuditHeader(quotation) {
     // Find the audit modal header and add quotation info banner
     const auditModal = document.getElementById("auditModal");
@@ -603,6 +627,7 @@ class PendingAuditManager {
     // Insert after header
     header.insertAdjacentElement("afterend", infoBanner);
   }
+
   prefillAuditModal(quotation, items) {
     // Leave item name field empty for user to fill
     const itemNameInput = document.getElementById("auditItemName");
@@ -689,6 +714,5 @@ class PendingAuditManager {
   }
 }
 
-// Initialize the manager immediately (no DOMContentLoaded delay)
-// This ensures the modal shows as soon as possible
+// Initialize the manager immediately
 window.pendingAuditManager = new PendingAuditManager();

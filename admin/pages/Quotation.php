@@ -181,18 +181,20 @@ include '../includes/header.php';
                         <div class="qe-field">
                             <label class="qe-label">Client Name <span class="req">*</span></label>
                             <input type="text" id="qeClientName" class="qe-input" placeholder="e.g. Acme Corporation">
+
+                            <label class="qe-label">Address</label>
+                            <input id="qeAddress" class="qe-input" placeholder="Client address for delivery..."></input>
                         </div>
+
                         <div class="qe-field">
                             <label class="qe-label">Contact Person</label>
                             <input type="text" id="qeContactPerson" class="qe-input" placeholder="e.g. Juan dela Cruz">
+                            <label class="qe-label">Phone</label>
+                            <input type="text" id="qePhone" class="qe-input" placeholder="+63 900 000 0000">
                         </div>
                         <div class="qe-field">
                             <label class="qe-label">Email</label>
                             <input type="email" id="qeEmail" class="qe-input" placeholder="email@example.com">
-                        </div>
-                        <div class="qe-field">
-                            <label class="qe-label">Phone</label>
-                            <input type="text" id="qePhone" class="qe-input" placeholder="+63 900 000 0000">
                         </div>
                     </div>
                 </div>
@@ -247,10 +249,7 @@ include '../includes/header.php';
                             <span class="qe-summary-label">Grand Total</span>
                             <span class="qe-summary-value qe-grand" id="qeGrandTotal">Php 0.00</span>
                         </div>
-                        <div class="qe-field" style="grid-column: span 2;">
-                            <label class="qe-label">Address</label>
-                            <textarea id="qeAddress" class="qe-input" rows="2" placeholder="Client address for delivery..."></textarea>
-                        </div>
+
                     </div>
                 </div>
 

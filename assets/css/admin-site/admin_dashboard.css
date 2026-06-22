@@ -485,7 +485,7 @@ tbody tr:hover td {
 ══════════════════════════════════════ */
 .insights-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 16px;
   align-items: stretch;
   width: 100%;

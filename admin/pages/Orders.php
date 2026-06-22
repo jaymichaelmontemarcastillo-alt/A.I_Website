@@ -271,11 +271,76 @@ include '../includes/header.php';
         </div>
     </div>
 
+    <!-- ===================== ADD PAYMENT METHOD MODAL ===================== -->
+    <div id="addPaymentMethodModal" class="modal-overlay">
+        <div class="modal-container modal-medium">
+            <div class="modal-header">
+                <div class="modal-header-content">
+                    <i class="fa-solid fa-credit-card modal-header-icon"></i>
+                    <h2>Add New Payment Method</h2>
+                </div>
+                <button class="modal-close" onclick="closeAddPaymentModal()">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="addPaymentMethodForm" onsubmit="handleAddPaymentMethod(event)">
+                    <div class="form-group">
+                        <label for="paymentMethodName" class="form-label">Payment Method Name</label>
+                        <input
+                            type="text"
+                            id="paymentMethodName"
+                            class="form-input"
+                            placeholder="e.g., PayPal, Bank Transfer, Bitcoin"
+                            required>
+                        <p class="form-hint">Enter a descriptive name for the payment method</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethodValue" class="form-label">Method Identifier</label>
+                        <input
+                            type="text"
+                            id="paymentMethodValue"
+                            class="form-input"
+                            placeholder="e.g., paypal, bank_transfer, bitcoin"
+                            required>
+                        <p class="form-hint">Use lowercase letters and underscores (no spaces)</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="paymentMethodIcon" class="form-label">Icon Class (Font Awesome)</label>
+                        <div class="icon-input-group">
+                            <input
+                                type="text"
+                                id="paymentMethodIcon"
+                                class="form-input"
+                                placeholder="e.g., fa-solid fa-wallet"
+                                value="fa-solid fa-credit-card">
+                            <div class="icon-preview">
+                                <i id="iconPreview" class="fa-solid fa-credit-card"></i>
+                            </div>
+                        </div>
+                        <p class="form-hint">Font Awesome icon class (visit fontawesome.com for icon names)</p>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="closeAddPaymentModal()">Cancel</button>
+                        <button type="submit" class="btn-primary">
+                            <i class="fa-solid fa-plus"></i> Add Payment Method
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- TOAST CONTAINER -->
     <div id="toast-container"></div>
 
     <!-- SCRIPTS -->
     <script src="../../assets/js/admin-site-functions/admin_data_fetch/orders.js"></script>
+    <script src="../../assets/js/admin-site-functions/payment_methods.js"></script>
 </body>
 
 </html>

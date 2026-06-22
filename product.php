@@ -1,28 +1,329 @@
 <?php
-// product.php - Displays individual product details and allows adding to cart/wishlist
 session_start();
 require_once 'connect/config.php'; // Use database instead of products_list.php
 
 $pdo = getDBConnection();
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$category = isset($_GET['category']) ? trim($_GET['category']) : null;
+
+if ($id === 0) {
+    $products = getProducts($pdo, $category);
+    include 'includes/header.php';
+?>
+
+    <link rel="stylesheet" href="assets/css/customer-site/home.css">
+    <style>
+        .product-page {
+            padding: 40px 4%;
+            background: #f0f5fb;
+            min-height: 100vh;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            margin-bottom: 18px;
+        }
+
+        .section-title h2 {
+            font-size: clamp(2.2rem, 3vw, 3rem);
+            margin-bottom: 10px;
+        }
+
+        .section-title p {
+            max-width: 720px;
+            margin: 0 auto;
+            color: #546d84;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #0f3d67;
+            font-weight: 700;
+            margin-bottom: 35px;
+            font-size: 0.98rem;
+        }
+
+        .category-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            gap: 14px;
+            margin-top: 18px;
+        }
+
+        .category-buttons button {
+            padding: 12px 22px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            background: white;
+            color: #0f3d67;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+            box-shadow: 0 18px 48px rgba(15, 61, 103, 0.08);
+        }
+
+        .category-buttons button:hover,
+        .category-buttons button.active {
+            transform: translateY(-1px);
+            border-color: rgba(246, 195, 74, 0.45);
+            background: #fffbeb;
+            color: #0f3d67;
+        }
+
+        .category-buttons .reset-btn {
+            background: #0f3d67;
+            color: white;
+            border-color: #0f3d67;
+        }
+
+        .featured-section {
+            padding-top: 28px;
+        }
+
+        .featured-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            align-items: stretch;
+            margin-top: 30px;
+        }
+
+        .gift-card {
+            border-radius: 28px;
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+            border: 1px solid rgba(15, 61, 103, 0.08);
+            background: white;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gift-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 24px 80px rgba(15, 61, 103, 0.12);
+        }
+
+        .gift-img {
+            min-height: 220px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .gift-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.35s ease;
+        }
+
+        .gift-card:hover .gift-img img {
+            transform: scale(1.04);
+        }
+
+        .gift-info {
+            padding: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            flex: 1;
+        }
+
+        .gift-info h4 {
+            font-size: 1.1rem;
+            margin: 0;
+            color: #0f3d67;
+        }
+
+        .gift-info p {
+            color: #5c6d7d;
+            line-height: 1.75;
+            margin: 0;
+            min-height: 68px;
+        }
+
+        .gift-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .gift-bottom .price {
+            color: #f59e0b;
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .gift-card .badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(246, 195, 74, 0.95);
+            color: #0f3d67;
+            font-size: 0.82rem;
+            padding: 8px 12px;
+            z-index: 2;
+            border-radius: 200px;
+        }
+
+        .gift-card h4,
+        .gift-card p {
+            cursor: pointer;
+        }
+
+        @media (max-width: 920px) {
+            .category-buttons {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .category-buttons {
+                justify-content: center;
+            }
+
+            .back-link {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+
+    <main class="product-page">
+        <section class="category-section-prod-page">
+            <div class="section-title">
+                <h2>Custom Merchandise</h2>
+                <p>Explore our shop's curated products and discover the perfect gift for every occasion.</p>
+            </div>
+
+            <div class="category-buttons">
+                <button onclick="filterByCategory('birthday')">Birthday</button>
+                <button onclick="filterByCategory('anniversary')">Anniversary</button>
+                <button onclick="filterByCategory('holiday')">Holiday</button>
+                <button onclick="filterByCategory('thank you')">Thank You</button>
+                <button onclick="filterByCategory('baby shower')">Baby Shower</button>
+                <button onclick="filterByCategory('wedding')">Wedding</button>
+                <button onclick="filterByCategory('graduation')">Graduation</button>
+                <button onclick="filterByCategory('valentine')">Valentine</button>
+                <button onclick="filterByCategory('corporate')">Corporate</button>
+                <button onclick="resetFilters()" class="reset-btn">Show All</button>
+            </div>
+        </section>
+
+        <section class="featured-section">
+            <div class="featured-grid" id="productsGrid">
+                <?php foreach ($products as $product): ?>
+                    <div class="gift-card"
+                        data-name="<?= strtolower($product['name']); ?>"
+                        data-category="<?= strtolower($product['category_name'] ?? $product['category'] ?? ''); ?>"
+                        data-description="<?= strtolower($product['description']); ?>"
+                        data-id="<?= $product['id']; ?>">
+
+                        <div class="gift-img" onclick="viewProduct(<?= $product['id']; ?>)">
+                            <span class="badge"><?= htmlspecialchars($product['category_name'] ?? $product['category'] ?? 'Uncategorized'); ?></span>
+                            <img src="<?= htmlspecialchars($product['image']); ?>" alt="<?= htmlspecialchars($product['name']); ?>">
+                        </div>
+
+                        <div class="gift-info">
+                            <h4 onclick="viewProduct(<?= $product['id']; ?>)"><?= htmlspecialchars($product['name']); ?></h4>
+                            <p onclick="viewProduct(<?= $product['id']; ?>)"><?= htmlspecialchars($product['description']); ?></p>
+
+                            <div class="gift-bottom">
+                                <span class="price">₱<?= number_format($product['price']); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </section>
+    </main>
+
+    <div id="toast" class="toast">
+        <i class="fa-solid fa-check-circle"></i>
+        <span id="toastMessage">No products found in this category.</span>
+    </div>
+
+    <script>
+        const products = <?= json_encode(array_values($products)); ?>;
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = toast.querySelector('i');
+
+            toastMessage.textContent = message;
+
+            if (isError) {
+                toast.style.backgroundColor = '#ff4444';
+                toastIcon.className = 'fa-solid fa-exclamation-circle';
+            } else {
+                toast.style.backgroundColor = '#4CAF50';
+                toastIcon.className = 'fa-solid fa-check-circle';
+            }
+
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function viewProduct(productId) {
+            window.location.href = 'product.php?id=' + productId;
+        }
+
+        function filterByCategory(category) {
+            const cards = document.querySelectorAll('.gift-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const cardCategory = card.getAttribute('data-category');
+                if (cardCategory.includes(category.toLowerCase())) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            if (visibleCount === 0) {
+                showToast('No products found in this category', true);
+            }
+        }
+
+        function resetFilters() {
+            const cards = document.querySelectorAll('.gift-card');
+            cards.forEach(card => {
+                card.style.display = 'block';
+            });
+        }
+    </script>
+
+<?php
+    include 'includes/footer.php';
+    exit;
+}
 
 // Get product from database
-$stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?");
-$stmt->execute([$id]);
-$product = $stmt->fetch();
+$product = getProduct($pdo, $id);
 
 if (!$product) {
     // Product not found
     include 'includes/header.php';
 ?>
     <main class="product-page">
-        <div class="error-container" style="text-align: center; padding: clamp(40px, 10vw, 100px) 20px;">
-            <i class="fa-solid fa-exclamation-circle" style="font-size: clamp(60px, 15vw, 80px); color: #ff6b6b; margin-bottom: 20px;"></i>
-            <h2 style="font-size: clamp(20px, 5vw, 28px);">Product Not Found</h2>
-            <p style="color: #666; margin-bottom: 30px; font-size: clamp(14px, 3vw, 16px);">The product you're looking for doesn't exist or has been removed.</p>
-            <a href="shop.php" class="back-link" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px; background: var(--primary-blue); color: white; text-decoration: none; border-radius: 6px; font-size: clamp(13px, 2.5vw, 15px); min-height: 44px; justify-content: center;">
+        <div class="error-container" style="text-align: center; padding: 100px 20px;">
+            <i class="fa-solid fa-exclamation-circle" style="font-size: 80px; color: #ff6b6b; margin-bottom: 20px;"></i>
+            <h2>Product Not Found</h2>
+            <p style="color: #666; margin-bottom: 30px;">The product you're looking for doesn't exist or has been removed.</p>
+            <a href="product.php" class="back-link" style="display: inline-block; padding: 12px 30px; background: #0f3d67; color: white; text-decoration: none; border-radius: 5px;">
                 <i class="fa-solid fa-arrow-left"></i>
-                Back to Shop
+                Back to Custom Merchandise
             </a>
         </div>
     </main>
@@ -32,25 +333,18 @@ if (!$product) {
 }
 
 include 'includes/header.php';
-
 ?>
 
 <link rel="stylesheet" href="assets/css/customer-site/product.css">
 <style>
-    :root {
-        --primary-blue: #0f3d67;
-        --text-dark: #333;
-        --text-light: #666;
-    }
-
     /* Additional styles for product page */
     .toast {
         position: fixed;
-        bottom: 20px;
-        right: 20px;
+        bottom: 30px;
+        right: 30px;
         background-color: #4CAF50;
         color: white;
-        padding: 12px 20px;
+        padding: 15px 25px;
         border-radius: 8px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         display: none;
@@ -58,11 +352,10 @@ include 'includes/header.php';
         gap: 10px;
         z-index: 1000;
         animation: slideIn 0.3s ease;
-        font-size: clamp(12px, 2vw, 14px);
     }
 
     .toast i {
-        font-size: 18px;
+        font-size: 20px;
     }
 
     .toast.show {
@@ -87,7 +380,7 @@ include 'includes/header.php';
 
     .error-container {
         text-align: center;
-        padding: clamp(40px, 10vw, 100px) 20px;
+        padding: 100px 20px;
     }
 
     .fa-spinner {
@@ -105,100 +398,49 @@ include 'includes/header.php';
     }
 
     .quantity-wrapper {
-        margin: clamp(15px, 3vw, 20px) 0;
+        margin: 20px 0;
     }
 
     .quantity-wrapper label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+        display: block;
         margin-bottom: 8px;
-        color: var(--text-light);
+        color: #555;
         font-weight: 500;
-        font-size: clamp(13px, 2.5vw, 14px);
     }
 
     .quantity-wrapper input {
         width: 100px;
         padding: 10px;
         border: 2px solid #e0e0e0;
-        border-radius: 6px;
+        border-radius: 5px;
         font-size: 16px;
-        transition: all 0.3s;
     }
 
     .quantity-wrapper input:focus {
         outline: none;
-        border-color: var(--primary-blue);
+        border-color: #0f3d67;
     }
 
-    .btn-cart {
+    .inquiry-section {
+        margin-top: 30px;
+    }
+
+    .inquiry-section .btn-primary {
         width: 100%;
-        padding: clamp(12px, 2.5vw, 15px);
-        background: var(--primary-blue);
-        color: white;
-        border: none;
-        border-radius: 6px;
-        font-size: clamp(13px, 2.5vw, 16px);
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         gap: 10px;
-        transition: all 0.3s;
-        margin-bottom: 12px;
-        min-height: 44px;
-        touch-action: manipulation;
-    }
-
-    .btn-cart:active {
-        opacity: 0.9;
-        transform: scale(0.98);
-    }
-
-    .btn-cart:disabled {
-        background: #cccccc;
-        cursor: not-allowed;
-        opacity: 0.6;
-    }
-
-    .btn-wishlist {
-        width: 100%;
-        padding: clamp(12px, 2.5vw, 15px);
-        background: white;
-        color: #ff4444;
-        border: 2px solid #ff4444;
-        border-radius: 6px;
-        font-size: clamp(13px, 2.5vw, 16px);
-        font-weight: 600;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        transition: all 0.3s;
-        min-height: 44px;
-        touch-action: manipulation;
-    }
-
-    .btn-wishlist:active {
-        background: #fff0f0;
-        transform: scale(0.98);
-    }
-
-    .btn-wishlist.in-wishlist {
-        background: #ff4444;
-        color: white;
+        padding: 15px;
+        text-decoration: none;
     }
 
     .stock {
-        margin: clamp(12px, 2vw, 15px) 0;
-        padding: clamp(10px, 2vw, 12px);
+        margin: 15px 0;
+        padding: 10px;
         background: #f0f8ff;
-        border-radius: 6px;
-        color: var(--primary-blue);
-        font-size: clamp(12px, 2.5vw, 14px);
+        border-radius: 5px;
+        color: #0f3d67;
     }
 
     .stock.low-stock {
@@ -212,29 +454,18 @@ include 'includes/header.php';
     }
 
     .product-category {
-        margin-top: clamp(20px, 3vw, 30px);
-        padding-top: clamp(15px, 2vw, 20px);
+        margin-top: 30px;
+        padding-top: 20px;
         border-top: 1px solid #eee;
-        font-size: clamp(12px, 2.5vw, 14px);
     }
 
     .product-category a {
-        color: var(--primary-blue);
+        color: #0f3d67;
         text-decoration: none;
-        font-weight: 500;
     }
 
-    .product-category a:active {
-        opacity: 0.8;
-    }
-
-    @media (max-width: 768px) {
-        .toast {
-            bottom: 15px;
-            right: 15px;
-            left: 15px;
-            max-width: calc(100% - 30px);
-        }
+    .product-category a:hover {
+        text-decoration: underline;
     }
 </style>
 
@@ -246,9 +477,9 @@ include 'includes/header.php';
 
 <main class="product-page">
 
-    <a href="shop.php" class="back-link">
+    <a href="product.php" class="back-link">
         <i class="fa-solid fa-arrow-left"></i>
-        Back to Products
+        Back to Custom Merchandise
     </a>
 
     <div class="product-container">
@@ -261,9 +492,9 @@ include 'includes/header.php';
         <!-- RIGHT: DETAILS -->
         <div class="product-details">
 
-            <span class="badge"><?= htmlspecialchars($product['category']); ?></span>
+            <span class="badge"><?= htmlspecialchars($product['category_name'] ?? $product['category'] ?? 'Uncategorized'); ?></span>
 
-            <h1><?= htmlspecialchars($product['name']); ?></h1>
+            <h1>Custom Merchandise: <?= htmlspecialchars($product['name']); ?></h1>
 
             <p class="description">
                 <?= htmlspecialchars($product['description']); ?>
@@ -274,16 +505,18 @@ include 'includes/header.php';
             </div>
 
             <?php
+            $stockValue = isset($product['stock']) ? (int)$product['stock'] : 0;
             $stockStatus = '';
             $stockClass = '';
-            if ($product['stock'] <= 0) {
+
+            if ($stockValue <= 0) {
                 $stockStatus = 'Out of Stock';
                 $stockClass = 'out-of-stock';
-            } elseif ($product['stock'] < 5) {
-                $stockStatus = 'Low Stock - Only ' . $product['stock'] . ' left!';
+            } elseif ($stockValue < 5) {
+                $stockStatus = 'Low Stock - Only ' . $stockValue . ' left!';
                 $stockClass = 'low-stock';
             } else {
-                $stockStatus = $product['stock'] . ' in stock';
+                $stockStatus = $stockValue . ' in stock';
                 $stockClass = '';
             }
             ?>
@@ -293,41 +526,11 @@ include 'includes/header.php';
                 <?= $stockStatus ?>
             </div>
 
-            <!-- Add to Cart Form -->
-            <div class="add-to-cart-section">
-                <div class="quantity-wrapper">
-                    <label>
-                        <i class="fa-solid fa-layer-group"></i>
-                        Quantity
-                    </label>
-
-                    <input type="number"
-                        id="quantity"
-                        name="quantity"
-                        value="1"
-                        min="1"
-                        max="<?= $product['stock'] ?>"
-                        <?= $product['stock'] <= 0 ? 'disabled' : '' ?>>
-                </div>
-
-                <button type="button"
-                    id="addToCartBtn"
-                    class="btn-cart"
-                    onclick="addToCart(<?= $product['id'] ?>)"
-                    <?= $product['stock'] <= 0 ? 'disabled' : '' ?>>
-
-                    <i class="fa-solid fa-cart-shopping"></i>
-                    <span id="btnText">Add to Cart</span>
-                </button>
-
-                <button type="button"
-                    id="addToWishlistBtn"
-                    class="btn-wishlist"
-                    onclick="addToWishlist(<?= $product['id'] ?>)">
-
-                    <i class="fa-regular fa-heart" id="wishlistIcon"></i>
-                    <span id="wishlistBtnText">Add to Wishlist</span>
-                </button>
+            <div class="inquiry-section">
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform?embedded=true" class="btn-primary form-modal-trigger" target="_blank" rel="noopener noreferrer">
+                    <i class="fa-solid fa-envelope"></i>
+                    Inquire about this item
+                </a>
             </div>
 
             <!-- Product Category Link -->
@@ -335,8 +538,8 @@ include 'includes/header.php';
                 <p>
                     <i class="fa-solid fa-tag"></i>
                     Category:
-                    <a href="shop.php?category=<?= urlencode(strtolower($product['category'])) ?>">
-                        <?= htmlspecialchars($product['category']) ?>
+                    <a href="product.php?category=<?= urlencode(strtolower($product['category_name'] ?? $product['category'] ?? '')) ?>">
+                        <?= htmlspecialchars($product['category_name'] ?? $product['category'] ?? 'Uncategorized') ?>
                     </a>
                 </p>
             </div>
@@ -346,7 +549,7 @@ include 'includes/header.php';
 </main>
 
 <script>
-    // ==================== TOAST NOTIFICATION ====================
+    // Toast function
     function showToast(message, isError = false) {
         const toast = document.getElementById('toast');
         const toastMessage = document.getElementById('toastMessage');
@@ -369,158 +572,7 @@ include 'includes/header.php';
         }, 3000);
     }
 
-    // ==================== ADD TO CART ====================
-    function addToCart(productId) {
-        const button = document.getElementById('addToCartBtn');
-        const btnText = document.getElementById('btnText');
-        const quantity = document.getElementById('quantity').value;
-
-        // Validate quantity
-        if (quantity < 1) {
-            showToast('Please enter a valid quantity', true);
-            return;
-        }
-
-        const maxStock = <?= $product['stock'] ?>;
-        if (quantity > maxStock) {
-            showToast('Only ' + maxStock + ' items available in stock', true);
-            return;
-        }
-
-        // Show loading state
-        const originalText = btnText.textContent;
-        btnText.textContent = 'Adding...';
-        button.innerHTML = '<i class="fa-solid fa-spinner"></i> Adding...';
-        button.disabled = true;
-
-        // Prepare cart data
-        const cartData = {
-            id: productId,
-            name: '<?= addslashes($product['name']) ?>',
-            price: <?= $product['price'] ?>,
-            category: '<?= addslashes($product['category']) ?>',
-            image: '<?= addslashes($product['image']) ?>',
-            quantity: parseInt(quantity)
-        };
-
-        // Send to server
-        fetch('api/add_to_cart.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(cartData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('✓ Added to cart!');
-
-                    // ✅ Dispatch event with cart count to update badges on ALL pages
-                    document.dispatchEvent(new CustomEvent('cartUpdated', {
-                        detail: {
-                            count: data.count || 0
-                        }
-                    }));
-                } else {
-                    showToast('Error: ' + (data.error || 'Failed to add to cart'), true);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to add to cart', true);
-            })
-            .finally(() => {
-                // Restore button
-                btnText.textContent = originalText;
-                button.innerHTML = '<i class="fa-solid fa-cart-shopping"></i> ' + originalText;
-                button.disabled = false;
-            });
-    }
-
-    // ==================== ADD TO WISHLIST ====================
-    function addToWishlist(productId) {
-        const button = document.getElementById('addToWishlistBtn');
-        const btnText = document.getElementById('wishlistBtnText');
-        const icon = document.getElementById('wishlistIcon');
-
-        // Show loading state
-        const originalText = btnText.textContent;
-        btnText.textContent = 'Adding...';
-        button.innerHTML = '<i class="fa-solid fa-spinner"></i> Adding...';
-        button.disabled = true;
-
-        // Prepare wishlist data
-        const wishlistData = {
-            id: productId,
-            name: '<?= addslashes($product['name']) ?>',
-            price: <?= $product['price'] ?>,
-            category: '<?= addslashes($product['category']) ?>',
-            image: '<?= addslashes($product['image']) ?>',
-            description: '<?= addslashes($product['description']) ?>'
-        };
-
-        // Send to server
-        fetch('api/add_to_wishlist.php', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(wishlistData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('❤️ Added to wishlist!');
-
-                    // Update button to show it's in wishlist
-                    button.classList.add('in-wishlist');
-                    button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
-
-                    // ✅ Dispatch event with wishlist count to update badges on ALL pages
-                    document.dispatchEvent(new CustomEvent('wishlistUpdated', {
-                        detail: {
-                            count: data.wishlist_count || 0
-                        }
-                    }));
-                } else {
-                    if (data.already_exists) {
-                        showToast('Product already in wishlist', true);
-                        button.classList.add('in-wishlist');
-                        button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
-                    } else {
-                        showToast('Error: ' + (data.error || 'Failed to add to wishlist'), true);
-                        button.innerHTML = '<i class="fa-regular fa-heart"></i> ' + originalText;
-                    }
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Failed to add to wishlist', true);
-                button.innerHTML = '<i class="fa-regular fa-heart"></i> ' + originalText;
-            })
-            .finally(() => {
-                button.disabled = false;
-            });
-    }
-
-    // ==================== PAGE LOAD ====================
-    document.addEventListener('DOMContentLoaded', function() {
-        const productId = <?= $product['id'] ?>;
-
-        // Check wishlist status
-        fetch('api/check_wishlist.php?id=' + productId)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success && data.in_wishlist) {
-                    const button = document.getElementById('addToWishlistBtn');
-                    button.classList.add('in-wishlist');
-                    button.innerHTML = '<i class="fa-solid fa-heart"></i> In Wishlist';
-                }
-            })
-            .catch(error => console.error('Error checking wishlist:', error));
-    });
+    // Cart and wishlist functionality has been removed from the product page.
 </script>
 
 <?php include 'includes/footer.php'; ?>
-<?php include 'includes/mobile_nav_bottom.php'; ?>
