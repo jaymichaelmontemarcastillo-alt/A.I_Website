@@ -102,26 +102,22 @@ include '../includes/header.php';
                                        box-sizing:border-box; outline:none;">
                         </div>
 
-                        <!-- Type -->
+                        <!-- Type - Datalist Input -->
                         <div style="margin-bottom:16px;">
                             <label for="matNewType" style="display:block; font-size:0.78rem; font-weight:600;
                                       margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                                 Type <span style="color:#ef4444;">*</span>
                             </label>
-                            <select id="matNewType"
+                            <input type="text" id="matNewType" list="matTypeOptions"
+                                placeholder="Type or select existing..."
                                 style="display:block; width:100%; padding:10px 12px;
                                        border:1px solid #d1d5db; border-radius:8px;
                                        font-size:0.9rem; background:#f9fafb; color:#111;
                                        box-sizing:border-box; outline:none;">
-                                <option value="">Select Type</option>
-                                <option value="Paper">Paper</option>
-                                <option value="Ink">Ink</option>
-                                <option value="Binding">Binding</option>
-                                <option value="Lamination">Lamination</option>
-                                <option value="Cutting">Cutting</option>
-                                <option value="Packaging">Packaging</option>
-                                <option value="Other">Other</option>
-                            </select>
+                            <datalist id="matTypeOptions"></datalist>
+                            <span style="font-size:0.7rem; color:#6b7280; margin-top:4px; display:block;">
+                                <i class="fa-solid fa-info-circle"></i> Start typing to filter existing types, or enter a new type
+                            </span>
                         </div>
 
                         <!-- Shop Stock -->
@@ -351,12 +347,6 @@ include '../includes/header.php';
                     </div>
                 </div>
             </div>
-            <!--
-            <div class="alerts-box" id="matAlertsBox" style="display:none;">
-                <h3><i class="fa-solid fa-triangle-exclamation"></i> Stock Alerts</h3>
-                <div id="matAlertsContainer"></div>
-            </div>
--->
 
             <!-- Materials Table -->
             <div class="table-container">
@@ -383,10 +373,6 @@ include '../includes/header.php';
                             <button class="btn-add-item" onclick="matOpenAddItemModal()">
                                 <i class="fa-solid fa-plus"></i> Add New Item
                             </button>
-                            <!--           <button class="btn-primary" onclick="matOpenAuditModal()">
-                                <i class="fa-solid fa-clipboard-list"></i> Create Audit
-                            </button>
--->
                         </div>
                     </div>
                 </div>
@@ -468,9 +454,10 @@ include '../includes/header.php';
             </div>
 
         </section>
+
         <!-- ═══════════════════════════════════════════════════════════════
-     EDIT ITEM MODAL (Update price, type, stock, etc.)
-     ═══════════════════════════════════════════════════════════════ -->
+             EDIT ITEM MODAL (Update price, type, stock, etc.)
+             ═══════════════════════════════════════════════════════════════ -->
         <div id="matEditItemModal"
             style="display:none;
             position:fixed;
@@ -522,26 +509,21 @@ include '../includes/header.php';
                            box-sizing:border-box; outline:none;">
                     </div>
 
-                    <!-- Type -->
+                    <!-- Type - Datalist Input -->
                     <div style="margin-bottom:16px;">
                         <label for="matEditType" style="display:block; font-size:0.78rem; font-weight:600;
                           margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                             Type <span style="color:#ef4444;">*</span>
                         </label>
-                        <select id="matEditType"
+                        <input type="text" id="matEditType" list="matTypeOptions"
+                            placeholder="Type or select existing..."
                             style="display:block; width:100%; padding:10px 12px;
                            border:1px solid #d1d5db; border-radius:8px;
                            font-size:0.9rem; background:#f9fafb; color:#111;
                            box-sizing:border-box; outline:none;">
-                            <option value="">Select Type</option>
-                            <option value="Paper">Paper</option>
-                            <option value="Ink">Ink</option>
-                            <option value="Binding">Binding</option>
-                            <option value="Lamination">Lamination</option>
-                            <option value="Cutting">Cutting</option>
-                            <option value="Packaging">Packaging</option>
-                            <option value="Other">Other</option>
-                        </select>
+                        <span style="font-size:0.7rem; color:#6b7280; margin-top:4px; display:block;">
+                            <i class="fa-solid fa-info-circle"></i> Start typing to filter existing types, or enter a new type
+                        </span>
                     </div>
 
                     <!-- Shop Stock -->
@@ -614,10 +596,10 @@ include '../includes/header.php';
             </div>
         </div>
     </main>
+
     <!-- ═══════════════════════════════════════════════════════════════
-     QUOTATION AUDIT MODAL (Created from quotation selection)
-     ═══════════════════════════════════════════════════════════════ -->
-    <!-- QUOTATION AUDIT MODAL (Updated with proper overflow) -->
+         QUOTATION AUDIT MODAL (Created from quotation selection)
+         ═══════════════════════════════════════════════════════════════ -->
     <div id="quotationAuditModal" class="quotation-audit-modal" style="display:none;">
         <div class="quotation-audit-container">
             <div class="quotation-audit-header">
@@ -686,8 +668,9 @@ include '../includes/header.php';
                         </button>
                     </div>
                 </div>
+
                 <!-- Overhead & Electricity Section -->
-                <div class="audit-overhead-section" style="border: solid red 1px;">
+                <div class="audit-overhead-section">
                     <div class="audit-section-title">
                         <i class="fa-solid fa-bolt"></i> Electricity & Overhead Costs
                     </div>
@@ -745,6 +728,7 @@ include '../includes/header.php';
                         </div>
                     </div>
                 </div>
+
                 <!-- Items Section -->
                 <div class="audit-section">
                     <div class="audit-section-title">
@@ -766,7 +750,6 @@ include '../includes/header.php';
                 </div>
 
                 <!-- Totals Section -->
-                <!-- Totals Section - Updated with Overhead -->
                 <div class="qa-totals-grid">
                     <div class="qa-total-card">
                         <label><i class="fa-solid fa-cubes"></i> Total Material Cost</label>
@@ -827,6 +810,7 @@ include '../includes/header.php';
             </div>
         </div>
     </div>
+
     <!-- PENDING AUDIT QUOTATIONS MODAL -->
     <div id="pendingAuditModal" class="pending-audit-modal" style="display:none;">
         <div class="pending-audit-container">

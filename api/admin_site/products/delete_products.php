@@ -1,61 +1,66 @@
 <?php
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 header('Content-Type: application/json');
 session_start();
+
+error_log("=== DELETE PRODUCT REQUEST ===");
+error_log("Raw input: " . file_get_contents('php://input'));
+
 require_once __DIR__ . '/../../../connect/config.php';
 
-function logActivity(PDO $pdo, string $action, string $details, string $status, $referenceId = null): void
-{
-    $userId = $_SESSION['AdminID'] ?? null;
-    $userName = $_SESSION['FullName'] ?? 'System/Unknown';
-    $stmt = $pdo->prepare(
-        "INSERT INTO activity_logs (UserID, UserName, ActionType, ActionDetails, ReferenceID, Status)
-         VALUES (?, ?, ?, ?, ?, ?)"
-    );
-    $stmt->execute([$userId, $userName, $action, $details, $referenceId, $status]);
-}
-
 try {
+    if (!function_exists('getDBConnection')) {
+        throw new Exception('Database connection function not found');
+    }
+
     $pdo = getDBConnection();
-
-    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        throw new Exception('Invalid request method');
+    if (!$pdo) {
+        throw new Exception('Failed to connect to database');
     }
 
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (!$data) {
-        $data = $_POST;
-    }
+    $input = json_decode(file_get_contents('php://input'), true);
+    error_log("Parsed input: " . print_r($input, true));
 
-    $id = (int)($data['id'] ?? 0);
+    $id = (int)($input['id'] ?? 0);
+
     if ($id <= 0) {
         throw new Exception('Invalid product ID');
     }
 
-    // Get product info before deletion
-    $stmt = $pdo->prepare("SELECT name, image FROM products WHERE id = ?");
+    // Check if product exists
+    $stmt = $pdo->prepare("SELECT id FROM products WHERE id = ?");
     $stmt->execute([$id]);
-    $product = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$product) {
+    if (!$stmt->fetch()) {
         throw new Exception('Product not found');
     }
 
-    // Delete image if not default
-    if ($product['image'] && strpos($product['image'], 'default') === false && file_exists('../../../' . $product['image'])) {
-        @unlink('../../../' . $product['image']);
-    }
+    $pdo->beginTransaction();
 
-    // Delete the product
-    $deleteStmt = $pdo->prepare("DELETE FROM products WHERE id = ?");
-    $deleteStmt->execute([$id]);
+    // Delete product_materials first
+    $pdo->prepare("DELETE FROM product_materials WHERE product_id = ?")->execute([$id]);
 
-    logActivity($pdo, 'Delete Product', "Deleted product \"{$product['name']}\" (ID: $id)", 'Success', $id);
+    // Delete product
+    $pdo->prepare("DELETE FROM products WHERE id = ?")->execute([$id]);
 
-    echo json_encode(['success' => true, 'message' => 'Product deleted successfully!']);
+    $pdo->commit();
+
+    error_log("Product deleted: $id");
+    echo json_encode([
+        'success' => true,
+        'message' => 'Product deleted successfully'
+    ]);
 } catch (Exception $e) {
-    if (isset($pdo)) {
-        logActivity($pdo, 'Delete Product', "Failed to delete product (ID: {$id}): " . $e->getMessage(), 'Failed', $id ?? null);
+    error_log("ERROR in delete_product: " . $e->getMessage());
+    error_log("Stack trace: " . $e->getTraceAsString());
+
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
     }
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
-} catch (PDOException $e) {
-    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
 }

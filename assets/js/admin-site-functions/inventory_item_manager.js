@@ -11,6 +11,7 @@
   const API = {
     addItem: "../../api/admin_site/inventory/add_inventory_item.php",
     updateItem: "../../api/admin_site/inventory/update_material_item.php",
+    getTypes: "../../api/admin_site/inventory/get_types.php",
   };
 
   // DOM Elements cache
@@ -20,6 +21,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     cacheElements();
     attachEventListeners();
+    loadTypesForDatalist();
   });
 
   // Cache DOM elements
@@ -52,6 +54,23 @@
       editCancelBtn: document.getElementById("matEditItemCancelBtn"),
       editConfirmBtn: document.getElementById("matEditItemConfirmBtn"),
     };
+  }
+
+  // Load types for datalist
+  function loadTypesForDatalist() {
+    fetch(API.getTypes)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success && data.types) {
+          const datalist = document.getElementById("matTypeOptions");
+          if (datalist) {
+            datalist.innerHTML = data.types
+              .map((type) => `<option value="${escapeHtml(type)}">`)
+              .join("");
+          }
+        }
+      })
+      .catch((err) => console.error("Failed to load types:", err));
   }
 
   // Attach all event listeners
@@ -128,6 +147,9 @@
     if (elements.addUnitCost) elements.addUnitCost.value = "0";
     if (elements.addError) elements.addError.innerHTML = "";
 
+    // Reload types for datalist
+    loadTypesForDatalist();
+
     updateAddTotalPreview();
 
     if (elements.addModal) {
@@ -170,7 +192,7 @@
 
     if (!type) {
       if (elements.addError)
-        elements.addError.innerHTML = "Please select a type.";
+        elements.addError.innerHTML = "Please enter a type.";
       return;
     }
 
@@ -224,6 +246,8 @@
         if (typeof matReloadLogs === "function") {
           matReloadLogs(true);
         }
+        // Reload types
+        loadTypesForDatalist();
       } else {
         if (elements.addError) elements.addError.innerHTML = result.message;
       }
@@ -252,6 +276,9 @@
     unitCost,
   ) {
     console.log("Opening Edit Item Modal for:", name);
+
+    // Reload types for datalist
+    loadTypesForDatalist();
 
     if (elements.editId) elements.editId.value = id;
     if (elements.editName) elements.editName.value = name || "";
@@ -310,7 +337,7 @@
 
     if (!type) {
       if (elements.editError)
-        elements.editError.innerHTML = "Please select a type.";
+        elements.editError.innerHTML = "Please enter a type.";
       return;
     }
 
@@ -365,6 +392,8 @@
         if (typeof matReloadLogs === "function") {
           matReloadLogs(true);
         }
+        // Reload types
+        loadTypesForDatalist();
       } else {
         if (elements.editError) elements.editError.innerHTML = result.message;
       }

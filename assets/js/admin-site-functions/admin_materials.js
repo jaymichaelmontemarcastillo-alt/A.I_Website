@@ -27,7 +27,8 @@ const MAT_API = {
   listAudits: "../../api/admin_site/inventory/list_audits.php",
   import: "../../api/admin_site/inventory/import_materials.php",
   export: "../../api/admin_site/inventory/export_materials.php",
-  addItem: "../../api/admin_site/add_inventory_item.php", // NEW: Add item endpoint
+  addItem: "../../api/admin_site/add_inventory_item.php",
+  getTypes: "../../api/admin_site/inventory/get_types.php", // NEW: Get types endpoint
 };
 
 /* ── State ─────────────────────────────────────────────────── */
@@ -49,6 +50,9 @@ let materialSelectors = [];
 let rejectSelectors = [];
 let auditMaterialsList = [];
 let auditAutoCompute = true;
+
+// Store type options for datalist
+let matTypeOptions = [];
 
 /* ══════════════════════════════════════════════════════════════
    ENHANCED MATERIAL SELECTOR CLASS
@@ -286,7 +290,6 @@ class MaterialSelector {
 /* ══════════════════════════════════════════════════════════════
    BOOT
 ══════════════════════════════════════════════════════════════ */
-// Update the existing DOMContentLoaded event at the end of the file
 document.addEventListener("DOMContentLoaded", () => {
   console.log("🚀 Materials inventory page loaded");
   matInitModal();
@@ -294,6 +297,7 @@ document.addEventListener("DOMContentLoaded", () => {
   matInitAddItemModal();
   matLoadMaterials();
   matLoadLogs();
+  matLoadTypes(); // NEW: Load types for datalist
   setTimeout(matAddAuditListButton, 500);
 
   // NEW: Check for pending audit from quotation
@@ -378,7 +382,6 @@ const matRenderAlerts = (materials = []) => {
       ),
     );
 };
-// Replace the matRenderMaterialRows function in admin_materials.js (around line 200-230)
 
 const matRenderMaterialRows = (materials = []) => {
   const tbody = document.getElementById("materialsTableBody");
@@ -780,7 +783,6 @@ const matFetch = async (url, options = {}) => {
       throw new Error(`Failed to parse JSON response: ${parseErr.message}`);
     }
     if (!data.success) throw new Error(data.message || "Unknown server error");
-    // Return the data object so the caller can access properties like .audit_id
     return data;
   } catch (err) {
     console.error("❌ matFetch Error:", err.message);
@@ -879,14 +881,18 @@ const matInitAddItemModal = () => {
 window.matOpenAddItemModal = () => {
   // Clear form fields
   const nameInput = document.getElementById("matNewMaterialName");
-  const typeSelect = document.getElementById("matNewType");
+  const typeInput = document.getElementById("matNewType");
   const shopStockInput = document.getElementById("matNewShopStock");
   const phStockInput = document.getElementById("matNewPhStock");
   const unitCostInput = document.getElementById("matNewUnitCost");
   const errorDiv = document.getElementById("matAddItemError");
 
   if (nameInput) nameInput.value = "";
-  if (typeSelect) typeSelect.value = "";
+  if (typeInput) {
+    typeInput.value = "";
+    // Populate datalist with latest types
+    populateTypeDatalist(matTypeOptions);
+  }
   if (shopStockInput) shopStockInput.value = "0";
   if (phStockInput) phStockInput.value = "0";
   if (unitCostInput) unitCostInput.value = "0";
@@ -945,7 +951,7 @@ const matAddNewItem = async () => {
   }
 
   if (!type) {
-    if (errorDiv) errorDiv.innerHTML = "Please select a type.";
+    if (errorDiv) errorDiv.innerHTML = "Please enter a type.";
     return;
   }
 
@@ -992,6 +998,8 @@ const matAddNewItem = async () => {
       matShowToast("Item added successfully!", "success");
       matReloadMaterials(true);
       matReloadLogs(true);
+      // Reload types after adding new item
+      matLoadTypes();
     } else {
       if (errorDiv) errorDiv.innerHTML = result.message;
     }
@@ -1003,6 +1011,43 @@ const matAddNewItem = async () => {
       confirmBtn.disabled = false;
       confirmBtn.innerHTML = '<i class="fa-solid fa-save"></i> Save Item';
     }
+  }
+};
+
+/* ══════════════════════════════════════════════════════════════
+   LOAD TYPES FOR DATALIST
+══════════════════════════════════════════════════════════════ */
+
+const matLoadTypes = async () => {
+  try {
+    const response = await fetch(MAT_API.getTypes);
+    const data = await response.json();
+
+    if (data.success && data.types) {
+      matTypeOptions = data.types;
+      populateTypeDatalist(matTypeOptions);
+      populateEditTypeDatalist(matTypeOptions);
+    }
+  } catch (err) {
+    console.error("Failed to load types:", err);
+  }
+};
+
+const populateTypeDatalist = (types) => {
+  const datalist = document.getElementById("matTypeOptions");
+  if (!datalist) return;
+
+  datalist.innerHTML = types
+    .map((type) => `<option value="${matEsc(type)}">`)
+    .join("");
+};
+
+const populateEditTypeDatalist = (types) => {
+  const datalist = document.getElementById("matEditTypeOptions");
+  if (datalist) {
+    datalist.innerHTML = types
+      .map((type) => `<option value="${matEsc(type)}">`)
+      .join("");
   }
 };
 
@@ -1395,8 +1440,8 @@ const matSubmitAudit = async () => {
     items: items,
     materials: materials,
     rejects: rejects,
-    overhead: overheadData, // Must match PHP's $input['overhead']
-    production_hours: productionHours, // Must match PHP's $input['production_hours']
+    overhead: overheadData,
+    production_hours: productionHours,
     created_by: document.getElementById("createdBy")?.value || "",
     audited_by: document.getElementById("auditedBy")?.value || "",
     acknowledged_by: document.getElementById("acknowledgedBy")?.value || "",
@@ -1724,10 +1769,15 @@ const matDownloadSampleCSV = () => {
       "For testing",
     ],
   ];
+
+  // FIX: Use UTF-8 without BOM
   let csvContent = sampleData.map((row) => row.join(",")).join("\n");
-  const blob = new Blob(["\uFEFF" + csvContent], {
-    type: "text/csv;charset=utf-8;",
+
+  // NO BOM - just plain UTF-8
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8",
   });
+
   const link = document.createElement("a");
   const url = URL.createObjectURL(blob);
   link.href = url;

@@ -1,0 +1,164 @@
+=== 2026-06-24 15:53:22 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 18
+    [name] => A4 Colored
+    [sku] => A4COLORED-254
+    [product_type_id] => 1
+    [price] => 0.00
+    [stock] => 0
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+=== 2026-06-24 15:53:22 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 18
+    [name] => A4 Colored
+    [sku] => A4COLORED-254
+    [product_type_id] => 1
+    [price] => 0.00
+    [stock] => 0
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=18, name=A4 Colored, type=1
+Product updated: 18
+SUCCESS: Product updated
+Parsed: id=18, name=A4 Colored, type=1
+Product updated: 18
+SUCCESS: Product updated
+=== 2026-06-24 15:53:35 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 18
+    [name] => A4 Colored
+    [sku] => A4COLORED-254
+    [product_type_id] => 1
+    [price] => 100.00
+    [stock] => 100
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+=== 2026-06-24 15:53:35 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 18
+    [name] => A4 Colored
+    [sku] => A4COLORED-254
+    [product_type_id] => 1
+    [price] => 100.00
+    [stock] => 100
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=18, name=A4 Colored, type=1
+Parsed: id=18, name=A4 Colored, type=1
+Product updated: 18
+SUCCESS: Product updated
+Product updated: 18
+SUCCESS: Product updated
+=== 2026-06-24 15:55:38 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 129
+    [name] => A.I Logo
+    [sku] => A4COLORED-254
+    [product_type_id] => 8
+    [price] => 299.00
+    [stock] => 149
+    [unit] => set
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+POST: Array
+(
+    [id] => 129
+    [name] => A.I Logo
+    [sku] => A4COLORED-254
+    [product_type_id] => 8
+    [price] => 299.00
+    [stock] => 149
+    [unit] => set
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=129, name=A.I Logo, type=8
+Parsed: id=129, name=A.I Logo, type=8
+Product updated: 129
+SUCCESS: Product updated
+Product updated: 129
+SUCCESS: Product updated
+=== 2026-06-24 16:46:26 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 19
+    [name] => Short Colored
+    [sku] => SHORTCOLOR-677
+    [product_type_id] => 1
+    [price] => 110.00
+    [stock] => 106
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=19, name=Short Colored, type=1
+Product updated: 19
+Parsed: id=19, name=Short Colored, type=1
+Product updated: 19
+SUCCESS: Product updated
+SUCCESS: Product updated
+=== 2026-06-24 16:48:44 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 133
+    [name] => A.I Logo
+    [sku] => A4COLORED-254
+    [product_type_id] => 8
+    [price] => 100.00
+    [stock] => 97
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => [{"material_id":1130,"quantity":1},{"material_id":1125,"quantity":1}]
+)
+
+Parsed: id=133, name=A.I Logo, type=8
+=== 2026-06-24 16:48:44 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 133
+    [name] => A.I Logo
+    [sku] => A4COLORED-254
+    [product_type_id] => 8
+    [price] => 100.00
+    [stock] => 97
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => [{"material_id":1130,"quantity":1},{"material_id":1125,"quantity":1}]
+)
+
+Parsed: id=133, name=A.I Logo, type=8
+Product updated: 133
+SUCCESS: Product updated
+Product updated: 133
+SUCCESS: Product updated

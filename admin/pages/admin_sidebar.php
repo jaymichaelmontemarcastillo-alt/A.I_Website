@@ -33,13 +33,13 @@ $current_page = $current_page ?? '';
         <?php endif; ?>
 
 
-        <!-- CATEGORIES (ADMIN ONLY) -->
+        <!-- CATEGORIES (ADMIN ONLY) 
         <?php if ($role === 'admin'): ?>
             <a href="Categories.php" class="nav-item <?= ($current_page == 'Categories') ? 'active' : '' ?>">
                 <i class="fa-solid fa-tags"></i> <span>Categories</span>
             </a>
         <?php endif; ?>
-
+-->
 
         <!-- ORDERS (ALL ROLES) -->
         <?php if (in_array($role, ['admin', 'finance', 'staff'])): ?>

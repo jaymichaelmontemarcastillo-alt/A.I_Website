@@ -1,521 +1,974 @@
-// ============================================================
-// ADMIN PRODUCTS JS - Complete CRUD with search and filters
-// ============================================================
+/**
+ * admin_products.js - WITH FULL DEBUGGING
+ */
 
-let currentPage = 1;
-let totalPages = 1;
-let currentDeleteId = null;
-let currentDeleteName = "";
+document.addEventListener("DOMContentLoaded", function () {
+  // ==========================================
+  // API PATH - TRY THESE OPTIONS
+  // ==========================================
+  // Option 1: Relative from admin page
+  const API = "../../api/admin_site/products";
+  // Option 2: Absolute from root
+  // const API = "/api/admin_site/products";
+  // Option 3: Full URL (for testing)
+  // const API = "http://localhost/api/admin_site/products";
 
-// API Endpoints
-const API = {
-  getProducts: "../../api/admin_site/products/get_products.php",
-  addProduct: "../../api/admin_site/products/add_product.php",
-  updateProduct: "../../api/admin_site/products/update_product.php",
-  deleteProduct: "../../api/admin_site/products/delete_product.php",
-};
+  console.log("=== ADMIN PRODUCTS DEBUG ===");
+  console.log("API Path:", API);
+  console.log("Current URL:", window.location.href);
+  console.log("Pathname:", window.location.pathname);
 
-// Load products with filters
-async function loadProducts() {
-  const search = document.getElementById("searchInput")?.value || "";
-  const categoryId = document.getElementById("categoryFilter")?.value || "";
-  const productTypeId = document.getElementById("typeFilter")?.value || "";
-  const stockStatus = document.getElementById("stockStatusFilter")?.value || "";
+  // ==========================================
+  // DOM REFS
+  // ==========================================
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
 
-  const params = new URLSearchParams({
-    page: currentPage,
-    limit: 12,
-    search: search,
-    category_id: categoryId,
-    product_type_id: productTypeId,
-    stock_status: stockStatus,
-  });
+  const tableBody = $("#tableBody");
+  const paginationWrap = $("#paginationWrap");
+  const totalCount = $("#totalCount");
+  const searchField = $("#searchField");
+  const typeFilter = $("#typeFilter");
+  const stockFilter = $("#stockFilter");
+  const addBtn = $("#addBtn");
+  const exportBtn = $("#exportBtn");
+  const importBtn = $("#importBtn");
 
-  const grid = document.getElementById("productsGrid");
-  if (grid) {
-    grid.innerHTML =
-      '<div class="loading-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading products...</p></div>';
+  // Product Modal
+  const productModal = $("#productModal");
+  const modalTitle = $("#modalTitle");
+  const productForm = $("#productForm");
+  const editId = $("#editId");
+  const productName = $("#productName");
+  const productSku = $("#productSku");
+  const productType = $("#productType");
+  const productPrice = $("#productPrice");
+  const productStock = $("#productStock");
+  const productUnit = $("#productUnit");
+  const productMaterialType = $("#productMaterialType");
+  const productDesc = $("#productDesc");
+  const submitBtn = $("#submitBtn");
+  const modalCloseBtn = $("#modalCloseBtn");
+  const modalCancelBtn = $("#modalCancelBtn");
+
+  const matContainer = $("#matContainer");
+  const matEmpty = $("#matEmpty");
+  const addMatBtn = $("#addMatBtn");
+
+  // Delete Modal
+  const deleteModal = $("#deleteModal");
+  const deleteMsg = $("#deleteMsg");
+  const deleteConfirmBtn = $("#deleteConfirmBtn");
+  const deleteCancelBtn = $("#deleteCancelBtn");
+  const deleteCloseBtn = $("#deleteCloseBtn");
+
+  // Import Modal
+  const importModal = $("#importModal");
+  const importForm = $("#importForm");
+  const excelFile = $("#excelFile");
+  const importSubmitBtn = $("#importSubmitBtn");
+  const importCloseBtn = $("#importCloseBtn");
+  const importCancelBtn = $("#importCancelBtn");
+  const importProgress = $("#importProgress");
+  const progressFill = $("#progressFill");
+  const progressStatus = $("#progressStatus");
+  const importResult = $("#importResult");
+
+  // ==========================================
+  // STATE
+  // ==========================================
+  let currentPage = 1;
+  const LIMIT = 12;
+  let deleteId = null;
+  let materialsList = [];
+  let isLoading = false;
+
+  // ==========================================
+  // UTILITY
+  // ==========================================
+  function escape(text) {
+    if (!text) return "";
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
   }
 
-  try {
-    const response = await fetch(`${API.getProducts}?${params}`);
-    const data = await response.json();
+  function toast(message, type = "info") {
+    const existing = document.querySelector(".toast");
+    if (existing) existing.remove();
 
-    if (data.success) {
-      renderProducts(data.data);
-      updatePagination(data.pagination);
+    const el = document.createElement("div");
+    el.className = `toast toast-${type}`;
+    const icons = {
+      success: "fa-check-circle",
+      error: "fa-circle-exclamation",
+      info: "fa-info-circle",
+    };
+    el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${message}</span>`;
+    document.body.appendChild(el);
 
-      const resultCount = document.getElementById("resultCount");
-      if (resultCount) {
-        resultCount.textContent = `${data.pagination.total} product${data.pagination.total !== 1 ? "s" : ""}`;
-      }
-    } else {
-      throw new Error(data.message);
-    }
-  } catch (error) {
-    console.error("Error loading products:", error);
-    if (grid) {
-      grid.innerHTML = `<div class="error-state"><i class="fa-solid fa-circle-exclamation"></i><p>Error: ${error.message}</p><button onclick="loadProducts()" style="margin-top:10px;padding:8px 16px;background:#3b82f6;color:white;border:none;border-radius:6px;cursor:pointer;">Retry</button></div>`;
-    }
-  }
-}
+    requestAnimationFrame(() => {
+      el.classList.add("show");
+    });
 
-// Render products grid
-function renderProducts(products) {
-  const grid = document.getElementById("productsGrid");
-  if (!grid) return;
+    setTimeout(() => {
+      el.classList.remove("show");
+      setTimeout(() => el.remove(), 400);
+    }, 4000);
 
-  if (!products || products.length === 0) {
-    grid.innerHTML =
-      '<div class="empty-state"><i class="fa-regular fa-box-open"></i><h3>No Products Found</h3><p>Click "Add Product" to create your first product.</p></div>';
-    return;
+    el.addEventListener("click", () => {
+      el.classList.remove("show");
+      setTimeout(() => el.remove(), 400);
+    });
   }
 
-  grid.innerHTML = products
-    .map((product) => {
-      const stockStatus =
-        product.stock_status ||
-        (product.stock > 10
-          ? "in_stock"
-          : product.stock > 0
-            ? "low_stock"
-            : "out_of_stock");
-      const stockText =
-        product.stock > 10
-          ? "In Stock"
-          : product.stock > 0
-            ? "Low Stock"
-            : "Out of Stock";
-      const imagePath = product.image
-        ? `../../${product.image}`
-        : "../../assets/images/admin-site/default.png";
-      const categoryName = product.category_name || product.category || "";
-      const productTypeName =
-        product.product_type_name || product.product_type || "";
+  // ==========================================
+  // MODAL HELPERS
+  // ==========================================
+  function openModal(modal) {
+    modal.classList.add("show");
+    modal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  }
 
-      return `
-            <div class="product-card" data-id="${product.id}">
-                <div class="product-image-wrapper">
-                    <img src="${imagePath}" class="product-image" alt="${escapeHtml(product.name)}" onerror="this.src='../../assets/images/admin-site/default.png'">
-                    <div class="product-status ${stockStatus}">${stockText}</div>
-                </div>
-                <div class="product-info">
-                    <h3 class="product-name">${escapeHtml(product.name)}</h3>
-                    ${categoryName ? `<span class="product-category">${escapeHtml(categoryName)}</span>` : ""}
-                    ${productTypeName ? `<span class="product-category" style="color:#6b7280;">${escapeHtml(productTypeName)}</span>` : ""}
-                    <div class="product-price">₱${parseFloat(product.price || 0).toFixed(2)}</div>
-                    <div class="product-stock">
-                        <i class="fa-solid fa-boxes"></i> Stock: <strong>${product.stock || 0}</strong>
+  function closeModal(modal) {
+    modal.classList.remove("show");
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+
+  // ==========================================
+  // TEST CONNECTION FIRST
+  // ==========================================
+  function testConnection() {
+    console.log("🔍 Testing API connection...");
+    console.log("📡 URL:", `${API}/get_products.php?limit=1`);
+
+    fetch(`${API}/get_products.php?limit=1`)
+      .then((response) => {
+        console.log("📥 Response status:", response.status);
+        console.log("📥 Response statusText:", response.statusText);
+        console.log("📥 Response headers:", [...response.headers.entries()]);
+        return response.text(); // Get raw text first
+      })
+      .then((text) => {
+        console.log("📄 Raw response:", text);
+        try {
+          const data = JSON.parse(text);
+          console.log("✅ Parsed JSON:", data);
+          if (data.success) {
+            console.log("✅ Connection successful!");
+            toast("Connected to API successfully", "success");
+          } else {
+            console.error("❌ API returned error:", data.message);
+            toast("API Error: " + data.message, "error");
+          }
+        } catch (e) {
+          console.error("❌ Failed to parse JSON:", e);
+          console.error("Raw response was:", text);
+          toast("Invalid JSON response from server", "error");
+        }
+      })
+      .catch((error) => {
+        console.error("❌ NETWORK ERROR:", error);
+        console.error("Error details:", {
+          message: error.message,
+          stack: error.stack,
+          type: error.constructor.name,
+        });
+        toast("Network error: " + error.message, "error");
+      });
+  }
+
+  // ==========================================
+  // FETCH PRODUCTS
+  // ==========================================
+  function fetchProducts(page = 1) {
+    if (isLoading) return;
+    isLoading = true;
+
+    const search = searchField ? searchField.value.trim() : "";
+    const type = typeFilter ? typeFilter.value : "";
+    const stock = stockFilter ? stockFilter.value : "";
+
+    let url = `${API}/get_products.php?page=${page}&limit=${LIMIT}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (type) url += `&product_type_id=${type}`;
+    if (stock) url += `&stock_status=${encodeURIComponent(stock)}`;
+
+    console.log("📡 Fetching products from:", url);
+
+    tableBody.innerHTML = `
+            <tr class="tbl-loading">
+                <td colspan="6">
+                    <div class="spinner">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Loading products...
                     </div>
-                    ${product.sku ? `<div class="product-sku" style="font-size:11px;color:#9ca3af;">SKU: ${escapeHtml(product.sku)}</div>` : ""}
-                    <div class="product-actions">
-                        <button class="btn-icon btn-edit" onclick="editProduct(${product.id})">
-                            <i class="fa-solid fa-pen"></i> Edit
-                        </button>
-                        <button class="btn-icon btn-delete" onclick="confirmDelete(${product.id}, '${escapeHtml(product.name)}')">
-                            <i class="fa-solid fa-trash"></i> Delete
-                        </button>
+                </td>
+            </tr>
+        `;
+
+    fetch(url)
+      .then((res) => {
+        console.log("📥 Products response status:", res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        isLoading = false;
+        console.log("📄 Products data:", data);
+        if (data.success) {
+          renderTable(data.data);
+          renderPagination(data.pagination);
+          updateCount(data.pagination);
+          currentPage = page;
+        } else {
+          console.error("❌ API error:", data.message);
+          tableBody.innerHTML = `
+                        <tr><td colspan="6">
+                            <div class="error-state">
+                                <i class="fa-solid fa-circle-exclamation"></i>
+                                ${data.message || "Failed to load products"}
+                            </div>
+                        </td></tr>
+                    `;
+        }
+      })
+      .catch((err) => {
+        isLoading = false;
+        console.error("❌ FETCH ERROR:", err);
+        console.error("Error details:", {
+          message: err.message,
+          stack: err.stack,
+        });
+        tableBody.innerHTML = `
+                    <tr><td colspan="6">
+                        <div class="error-state">
+                            <i class="fa-solid fa-circle-exclamation"></i>
+                            Network error: ${err.message}
+                            <br><small>Check console for details</small>
+                        </div>
+                    </td></tr>
+                `;
+        toast("Network error: " + err.message, "error");
+      });
+  }
+
+  // ==========================================
+  // RENDER TABLE
+  // ==========================================
+  function renderTable(products) {
+    if (!products || products.length === 0) {
+      tableBody.innerHTML = `
+                <tr class="tbl-empty">
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="fa-regular fa-box-open"></i>
+                            <p>No products found</p>
+                            <span class="sub">Try adjusting your filters or add a new product</span>
+                        </div>
+                    </td>
+                </tr>
+            `;
+      return;
+    }
+
+    let html = "";
+    const statusMap = {
+      in_stock:
+        '<span class="badge-status in-stock"><i class="fa-solid fa-check"></i> In Stock</span>',
+      low_stock:
+        '<span class="badge-status low-stock"><i class="fa-solid fa-triangle-exclamation"></i> Low Stock</span>',
+      out_of_stock:
+        '<span class="badge-status out-of-stock"><i class="fa-solid fa-xmark"></i> Out of Stock</span>',
+    };
+
+    products.forEach((p) => {
+      const status = p.stock_status || "in_stock";
+      html += `
+                <tr data-id="${p.id}">
+                    <td><strong>${escape(p.name)}</strong></td>
+                    <td><span class="badge-type">${escape(p.product_type_name || "N/A")}</span></td>
+                    <td class="tbl-price">₱${parseFloat(p.price).toFixed(2)}</td>
+                    <td class="tbl-stock">${p.stock || 0}</td>
+                    <td>${statusMap[status] || statusMap.in_stock}</td>
+                    <td>
+                        <div class="tbl-actions">
+                            <button class="btn-action edit" data-id="${p.id}">
+                                <i class="fa-solid fa-pen"></i> Edit
+                            </button>
+                            <button class="btn-action delete" data-id="${p.id}">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+    });
+
+    tableBody.innerHTML = html;
+
+    $$(".btn-action.edit").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        openEditModal(parseInt(btn.dataset.id)),
+      );
+    });
+    $$(".btn-action.delete").forEach((btn) => {
+      btn.addEventListener("click", () =>
+        openDeleteModal(parseInt(btn.dataset.id)),
+      );
+    });
+  }
+
+  // ==========================================
+  // PAGINATION
+  // ==========================================
+  function renderPagination(pagination) {
+    if (!pagination || pagination.pages <= 1) {
+      paginationWrap.innerHTML = "";
+      return;
+    }
+
+    const current = pagination.page;
+    const total = pagination.pages;
+
+    let html = "";
+    html += `<button class="btn-page" data-page="${current - 1}" ${current <= 1 ? "disabled" : ""}>
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>`;
+
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, current + 2);
+
+    if (start > 1) {
+      html += `<button class="btn-page" data-page="1">1</button>`;
+      if (start > 2) html += `<span class="pg-dots">…</span>`;
+    }
+
+    for (let i = start; i <= end; i++) {
+      html += `<button class="btn-page ${i === current ? "active" : ""}" data-page="${i}">${i}</button>`;
+    }
+
+    if (end < total) {
+      if (end < total - 1) html += `<span class="pg-dots">…</span>`;
+      html += `<button class="btn-page" data-page="${total}">${total}</button>`;
+    }
+
+    html += `<button class="btn-page" data-page="${current + 1}" ${current >= total ? "disabled" : ""}>
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>`;
+
+    paginationWrap.innerHTML = html;
+
+    $$(".btn-page").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        if (this.disabled) return;
+        const page = parseInt(this.dataset.page);
+        if (page > 0 && page <= total) {
+          fetchProducts(page);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+    });
+  }
+
+  function updateCount(pagination) {
+    if (totalCount) {
+      totalCount.textContent = pagination
+        ? `${pagination.total} product${pagination.total !== 1 ? "s" : ""}`
+        : "Loading...";
+    }
+  }
+
+  // ==========================================
+  // LOAD FILTERS
+  // ==========================================
+  function loadFilters() {
+    console.log("📡 Loading filters from:", `${API}/get_products.php?limit=0`);
+
+    fetch(`${API}/get_products.php?limit=0`)
+      .then((res) => {
+        console.log("📥 Filters response status:", res.status);
+        return res.json();
+      })
+      .then((data) => {
+        console.log("📄 Filters data:", data);
+        if (data.success && data.filters) {
+          // Type filter (main)
+          typeFilter.innerHTML = '<option value="">All Types</option>';
+          data.filters.product_types.forEach((t) => {
+            const opt = document.createElement("option");
+            opt.value = t.id;
+            opt.textContent = t.name;
+            typeFilter.appendChild(opt);
+          });
+
+          // Type dropdown (modal)
+          productType.innerHTML = '<option value="">— Select type —</option>';
+          data.filters.product_types.forEach((t) => {
+            const opt = document.createElement("option");
+            opt.value = t.id;
+            opt.textContent = t.name;
+            productType.appendChild(opt);
+          });
+
+          console.log("✅ Filters loaded successfully");
+        } else {
+          console.error("❌ Failed to load filters:", data.message);
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Filter load error:", err);
+      });
+
+    // Load materials
+    console.log("📡 Loading materials from:", `${API}/get_materials.php`);
+    fetch(`${API}/get_materials.php`)
+      .then((res) => {
+        console.log("📥 Materials response status:", res.status);
+        return res.json();
+      })
+      .then((data) => {
+        console.log("📄 Materials data:", data);
+        if (data.success) {
+          materialsList = data.data;
+          console.log("✅ Materials loaded:", materialsList.length);
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Materials load error:", err);
+      });
+  }
+
+  // ==========================================
+  // MODAL: ADD PRODUCT
+  // ==========================================
+  function openAddModal() {
+    modalTitle.innerHTML = '<i class="fa-solid fa-box"></i> Add Product';
+    submitBtn.innerHTML =
+      '<i class="fa-solid fa-floppy-disk"></i> Save Product';
+    productForm.reset();
+    editId.value = "";
+    matContainer.innerHTML = "";
+    matEmpty.style.display = "block";
+    openModal(productModal);
+  }
+
+  // ==========================================
+  // MODAL: EDIT PRODUCT
+  // ==========================================
+  function openEditModal(id) {
+    console.log("📡 Loading product for edit:", id);
+    modalTitle.innerHTML = '<i class="fa-solid fa-pen"></i> Edit Product';
+    submitBtn.innerHTML =
+      '<i class="fa-solid fa-floppy-disk"></i> Update Product';
+
+    fetch(`${API}/get_product.php?id=${id}`)
+      .then((res) => {
+        console.log("📥 Get product response status:", res.status);
+        return res.json();
+      })
+      .then((data) => {
+        console.log("📄 Product data:", data);
+        if (data.success) {
+          const p = data.data;
+          editId.value = p.id;
+          productName.value = p.name || "";
+          productSku.value = p.sku || "";
+          productType.value = p.product_type_id || "";
+          productPrice.value = p.price || "";
+          productStock.value = p.stock || 0;
+          productUnit.value = p.unit || "piece";
+          productMaterialType.value = p.material_type || "assembled_product";
+          productDesc.value = p.description || "";
+
+          if (p.materials && p.materials.length > 0) {
+            renderMaterials(p.materials);
+          } else {
+            matContainer.innerHTML = "";
+            matEmpty.style.display = "block";
+          }
+
+          openModal(productModal);
+        } else {
+          toast("Error loading product: " + data.message, "error");
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Load product error:", err);
+        toast("Network error loading product: " + err.message, "error");
+      });
+  }
+
+  // ==========================================
+  // CLOSE PRODUCT MODAL
+  // ==========================================
+  function closeProductModal() {
+    closeModal(productModal);
+    productForm.reset();
+    editId.value = "";
+  }
+
+  // ==========================================
+  // MATERIALS
+  // ==========================================
+  function renderMaterials(materials) {
+    if (!materials || materials.length === 0) {
+      matContainer.innerHTML = "";
+      matEmpty.style.display = "block";
+      return;
+    }
+
+    matEmpty.style.display = "none";
+    let html = "";
+    materials.forEach((mat, idx) => {
+      html += createMatRow(mat, idx);
+    });
+    matContainer.innerHTML = html;
+  }
+
+  function createMatRow(mat, idx) {
+    const matId = mat.material_id || mat.id || "";
+    const qty = mat.quantity || 1;
+
+    return `
+            <div class="mat-row" data-idx="${idx}">
+                <div class="mat-fields">
+                    <div class="form-group">
+                        <select class="mat-select" name="material_ids[]">
+                            <option value="">— Select material —</option>
+                            ${materialsList
+                              .map(
+                                (m) => `
+                                <option value="${m.id}" ${m.id == matId ? "selected" : ""}>
+                                    ${escape(m.material_name)} (${escape(m.type || "N/A")})
+                                </option>
+                            `,
+                              )
+                              .join("")}
+                        </select>
                     </div>
+                    <div class="form-group">
+                        <input type="number" class="mat-qty" name="material_quantities[]" 
+                               value="${qty}" min="0.01" step="0.01" placeholder="Qty">
+                    </div>
+                    <button type="button" class="mat-remove" title="Remove">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
             </div>
         `;
-    })
-    .join("");
-}
-
-// Update pagination
-function updatePagination(pagination) {
-  const container = document.getElementById("paginationContainer");
-  if (!container) return;
-
-  totalPages = pagination.pages || 1;
-  currentPage = pagination.page || 1;
-
-  if (totalPages <= 1) {
-    container.innerHTML = "";
-    return;
   }
 
-  let html = '<div class="pagination">';
-  html += `<button class="page-btn" ${currentPage <= 1 ? "disabled" : ""} onclick="goToPage(${currentPage - 1})">‹ Prev</button>`;
+  function addMatRow() {
+    matEmpty.style.display = "none";
+    const idx = matContainer.children.length;
+    const row = document.createElement("div");
+    row.className = "mat-row";
+    row.dataset.idx = idx;
+    row.innerHTML = createMatRow({}, idx);
+    matContainer.appendChild(row);
 
-  const startPage = Math.max(1, currentPage - 2);
-  const endPage = Math.min(totalPages, startPage + 4);
-
-  if (startPage > 1) {
-    html += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
-    if (startPage > 2) html += '<span class="page-dots">...</span>';
-  }
-
-  for (let i = startPage; i <= endPage; i++) {
-    html += `<button class="page-btn ${i === currentPage ? "active" : ""}" onclick="goToPage(${i})">${i}</button>`;
-  }
-
-  if (endPage < totalPages) {
-    if (endPage < totalPages - 1) html += '<span class="page-dots">...</span>';
-    html += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
-  }
-
-  html += `<button class="page-btn" ${currentPage >= totalPages ? "disabled" : ""} onclick="goToPage(${currentPage + 1})">Next ›</button>`;
-  html += "</div>";
-  container.innerHTML = html;
-}
-
-// Go to page
-function goToPage(page) {
-  if (page < 1 || page > totalPages) return;
-  currentPage = page;
-  loadProducts();
-}
-
-// Open add product modal
-function openAddModal() {
-  const modal = document.getElementById("productModal");
-  const title = document.getElementById("modalTitle");
-  const form = document.getElementById("productForm");
-
-  if (title) title.innerHTML = '<i class="fa-solid fa-box"></i> Add Product';
-  if (form) form.reset();
-
-  document.getElementById("productId").value = "";
-  document.getElementById("previewImg").src =
-    "../../assets/images/admin-site/default.png";
-  document.getElementById("productCategoryId").value = "";
-  document.getElementById("productTypeId").value = "";
-  document.getElementById("materialType").value = "assembled_product";
-  document.getElementById("unit").value = "piece";
-
-  if (modal) {
-    modal.style.display = "flex";
-    document.body.style.overflow = "hidden";
-  }
-}
-
-// Edit product
-async function editProduct(id) {
-  try {
-    const response = await fetch(`${API.getProducts}?page=1&limit=1000`);
-    const data = await response.json();
-
-    if (data.success) {
-      const product = data.data.find((p) => p.id === id);
-      if (product) {
-        document.getElementById("productId").value = product.id;
-        document.getElementById("productName").value = product.name;
-        document.getElementById("productSku").value = product.sku || "";
-        document.getElementById("productCategoryId").value =
-          product.category_id || "";
-        document.getElementById("productTypeId").value =
-          product.product_type_id || "";
-        document.getElementById("materialType").value =
-          product.material_type || "assembled_product";
-        document.getElementById("unit").value = product.unit || "piece";
-        document.getElementById("productPrice").value = product.price;
-        document.getElementById("productStock").value = product.stock;
-        document.getElementById("productDescription").value =
-          product.description || "";
-
-        const imagePath = product.image
-          ? `../../${product.image}`
-          : "../../assets/images/admin-site/default.png";
-        document.getElementById("previewImg").src = imagePath;
-
-        const title = document.getElementById("modalTitle");
-        if (title)
-          title.innerHTML = '<i class="fa-solid fa-pen"></i> Edit Product';
-
-        const modal = document.getElementById("productModal");
-        if (modal) {
-          modal.style.display = "flex";
-          document.body.style.overflow = "hidden";
-        }
-      } else {
-        alert("Product not found");
+    row.querySelector(".mat-remove").addEventListener("click", function () {
+      row.remove();
+      if (matContainer.children.length === 0) {
+        matEmpty.style.display = "block";
       }
-    } else {
-      throw new Error(data.message);
-    }
-  } catch (error) {
-    console.error("Error loading product:", error);
-    alert("Failed to load product details: " + error.message);
-  }
-}
-
-// Confirm delete
-function confirmDelete(id, name) {
-  currentDeleteId = id;
-  currentDeleteName = name;
-
-  const messageEl = document.getElementById("deleteMessage");
-  if (messageEl) {
-    messageEl.innerHTML = `Are you sure you want to delete <strong>${escapeHtml(name)}</strong>?`;
-  }
-
-  const modal = document.getElementById("deleteModal");
-  if (modal) {
-    modal.style.display = "flex";
-    document.body.style.overflow = "hidden";
-  }
-}
-
-// Delete product
-async function deleteProduct() {
-  if (!currentDeleteId) return;
-
-  try {
-    const response = await fetch(API.deleteProduct, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: currentDeleteId }),
     });
+  }
 
-    const data = await response.json();
+  // ==========================================
+  // SAVE PRODUCT
+  // ==========================================
+  function saveProduct(e) {
+    e.preventDefault();
 
-    if (data.success) {
-      closeDeleteModal();
-      loadProducts();
-      showToast("Product deleted successfully!", "success");
-    } else {
-      throw new Error(data.message);
+    const name = productName.value.trim();
+    const type = productType.value;
+    const price = productPrice.value;
+    const stock = productStock.value;
+
+    if (!name) {
+      toast("Product name is required", "error");
+      productName.focus();
+      return;
     }
-  } catch (error) {
-    console.error("Error deleting product:", error);
-    alert("Failed to delete product: " + error.message);
-  }
-}
+    if (!type) {
+      toast("Please select a product type", "error");
+      productType.focus();
+      return;
+    }
+    if (price === "" || parseFloat(price) < 0) {
+      toast("Please enter a valid price", "error");
+      productPrice.focus();
+      return;
+    }
+    if (stock === "" || parseInt(stock) < 0) {
+      toast("Please enter a valid stock quantity", "error");
+      productStock.focus();
+      return;
+    }
 
-// Save product
-async function saveProduct(event) {
-  event.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
-  const formData = new FormData();
-  const id = document.getElementById("productId").value;
+    const formData = new FormData();
+    if (editId.value) formData.append("id", editId.value);
+    formData.append("name", name);
+    formData.append("sku", productSku.value.trim());
+    formData.append("product_type_id", type);
+    formData.append("price", price);
+    formData.append("stock", stock);
+    formData.append("unit", productUnit.value);
+    formData.append("material_type", productMaterialType.value);
+    formData.append("description", productDesc.value.trim());
 
-  if (id) formData.append("id", id);
-  formData.append("name", document.getElementById("productName").value.trim());
-  formData.append("sku", document.getElementById("productSku").value.trim());
-  formData.append(
-    "category_id",
-    document.getElementById("productCategoryId").value,
-  );
-  formData.append(
-    "product_type_id",
-    document.getElementById("productTypeId").value,
-  );
-  formData.append(
-    "material_type",
-    document.getElementById("materialType").value,
-  );
-  formData.append("unit", document.getElementById("unit").value.trim());
-  formData.append("price", document.getElementById("productPrice").value);
-  formData.append("stock", document.getElementById("productStock").value);
-  formData.append(
-    "description",
-    document.getElementById("productDescription").value.trim(),
-  );
+    const selects = $$(".mat-select");
+    const qtys = $$(".mat-qty");
+    const materials = [];
+    selects.forEach((sel, i) => {
+      if (sel.value) {
+        materials.push({
+          material_id: parseInt(sel.value),
+          quantity: parseFloat(qtys[i]?.value) || 1,
+        });
+      }
+    });
+    formData.append("materials", JSON.stringify(materials));
 
-  const imageFile = document.getElementById("productImage").files[0];
-  if (imageFile) {
-    formData.append("image", imageFile);
-  }
+    const endpoint = editId.value
+      ? `${API}/update_products.php`
+      : `${API}/add_products.php`;
 
-  // Validation
-  const name = document.getElementById("productName").value.trim();
-  if (!name || name.length < 3) {
-    alert("Product name must be at least 3 characters");
-    return;
-  }
+    console.log("📡 Saving product to:", endpoint);
+    console.log("📤 Form data:", Object.fromEntries(formData));
 
-  const price = parseFloat(document.getElementById("productPrice").value);
-  if (isNaN(price) || price < 0) {
-    alert("Please enter a valid price");
-    return;
-  }
-
-  const stock = parseInt(document.getElementById("productStock").value);
-  if (isNaN(stock) || stock < 0) {
-    alert("Please enter a valid stock quantity");
-    return;
-  }
-
-  const url = id ? API.updateProduct : API.addProduct;
-
-  try {
-    const response = await fetch(url, {
+    fetch(endpoint, {
       method: "POST",
       body: formData,
-    });
+    })
+      .then((res) => {
+        console.log("📥 Save response status:", res.status);
+        return res.text().then((text) => ({ res, text }));
+      })
+      .then(({ res, text }) => {
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.error("❌ Non-JSON save response:", text);
+          throw new Error(
+            `Server returned HTTP ${res.status} (non-JSON response). Check that ${endpoint} exists and has no PHP errors.`,
+          );
+        }
+        console.log("📄 Save response:", data);
+        if (data.success) {
+          toast(data.message || "Product saved successfully", "success");
+          closeProductModal();
+          fetchProducts(currentPage);
+        } else {
+          toast("Error: " + data.message, "error");
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Save error:", err);
+        toast("Network error saving product: " + err.message, "error");
+      })
+      .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML =
+          '<i class="fa-solid fa-floppy-disk"></i> ' +
+          (editId.value ? "Update Product" : "Save Product");
+      });
+  }
 
-    const data = await response.json();
+  // ==========================================
+  // DELETE
+  // ==========================================
+  function openDeleteModal(id) {
+    deleteId = id;
+    const row = document.querySelector(`tr[data-id="${id}"]`);
+    const name = row
+      ? row.querySelector("td:first-child").textContent.trim()
+      : "this product";
+    deleteMsg.textContent = `Are you sure you want to delete "${name}"?`;
+    openModal(deleteModal);
+  }
 
-    if (data.success) {
-      closeModal();
-      loadProducts();
-      showToast(data.message, "success");
-    } else {
-      throw new Error(data.message);
+  function closeDeleteModal() {
+    closeModal(deleteModal);
+    deleteId = null;
+  }
+
+  function confirmDelete() {
+    if (!deleteId) return;
+
+    deleteConfirmBtn.disabled = true;
+    deleteConfirmBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+
+    const payload = { id: deleteId };
+    console.log("📡 Deleting product:", payload);
+    console.log("📡 URL:", `${API}/delete_products.php`);
+
+    fetch(`${API}/delete_products.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+      .then((res) => {
+        console.log("📥 Delete response status:", res.status);
+        return res.text().then((text) => ({ res, text }));
+      })
+      .then(({ res, text }) => {
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          console.error("❌ Non-JSON delete response:", text);
+          throw new Error(
+            `Server returned HTTP ${res.status} (non-JSON response). Check that delete_products.php exists and has no PHP errors.`,
+          );
+        }
+        console.log("📄 Delete response:", data);
+        if (data.success) {
+          toast("Product deleted successfully", "success");
+          closeDeleteModal();
+          fetchProducts(currentPage);
+        } else {
+          toast("Error: " + data.message, "error");
+          closeDeleteModal();
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Delete error:", err);
+        toast("Network error deleting product: " + err.message, "error");
+        closeDeleteModal();
+      })
+      .finally(() => {
+        deleteConfirmBtn.disabled = false;
+        deleteConfirmBtn.innerHTML =
+          '<i class="fa-solid fa-trash"></i> Delete Product';
+      });
+  }
+
+  // ==========================================
+  // EXPORT
+  // ==========================================
+  function exportProducts() {
+    exportBtn.disabled = true;
+    exportBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
+
+    const iframe = document.createElement("iframe");
+    iframe.style.display = "none";
+    iframe.src = `${API}/export_products.php`;
+    document.body.appendChild(iframe);
+
+    setTimeout(() => {
+      exportBtn.disabled = false;
+      exportBtn.innerHTML = '<i class="fa-solid fa-file-export"></i> Export';
+      document.body.removeChild(iframe);
+      toast("Export started! Download should begin shortly.", "success");
+    }, 3000);
+  }
+
+  // ==========================================
+  // IMPORT
+  // ==========================================
+  function openImportModal() {
+    importForm.reset();
+    importProgress.style.display = "none";
+    importResult.style.display = "none";
+    importSubmitBtn.disabled = false;
+    importSubmitBtn.innerHTML =
+      '<i class="fa-solid fa-upload"></i> Import Products';
+    openModal(importModal);
+  }
+
+  function closeImportModal() {
+    closeModal(importModal);
+  }
+
+  function handleImport(e) {
+    e.preventDefault();
+
+    const file = excelFile.files[0];
+    if (!file) {
+      toast("Please select an Excel file", "error");
+      return;
     }
-  } catch (error) {
-    console.error("Error saving product:", error);
-    alert("Failed to save product: " + error.message);
-  }
-}
 
-// Close modal
-function closeModal() {
-  const modal = document.getElementById("productModal");
-  if (modal) {
-    modal.style.display = "none";
-    document.body.style.overflow = "";
-  }
-}
+    const ext = file.name.split(".").pop().toLowerCase();
+    if (!["xlsx", "xls"].includes(ext)) {
+      toast("Please upload a valid Excel file (.xlsx or .xls)", "error");
+      return;
+    }
 
-// Close delete modal
-function closeDeleteModal() {
-  const modal = document.getElementById("deleteModal");
-  if (modal) {
-    modal.style.display = "none";
-    document.body.style.overflow = "";
-  }
-  currentDeleteId = null;
-}
+    importProgress.style.display = "block";
+    importResult.style.display = "none";
+    importSubmitBtn.disabled = true;
+    importSubmitBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Importing...';
 
-// Show toast notification
-function showToast(message, type = "success") {
-  const existingToast = document.querySelector(".toast-notification");
-  if (existingToast) existingToast.remove();
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 10;
+      if (progress > 90) progress = 90;
+      progressFill.style.width = progress + "%";
+    }, 200);
 
-  const toast = document.createElement("div");
-  toast.className = `toast-notification toast-${type}`;
-  toast.innerHTML = `<i class="fa-solid ${type === "success" ? "fa-circle-check" : "fa-circle-exclamation"}"></i><span>${escapeHtml(message)}</span>`;
-  document.body.appendChild(toast);
+    const formData = new FormData();
+    formData.append("excel_file", file);
 
-  setTimeout(() => {
-    toast.style.animation = "slideOut 0.3s ease";
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
+    fetch(`${API}/import_products.php`, {
+      method: "POST",
+      body: formData,
+    })
+      .then((res) => {
+        console.log("📥 Import response status:", res.status);
+        return res.json();
+      })
+      .then((data) => {
+        clearInterval(interval);
+        progressFill.style.width = "100%";
 
-// Image preview
-function initImagePreview() {
-  const previewBox = document.getElementById("imagePreviewBox");
-  const imageInput = document.getElementById("productImage");
+        setTimeout(() => {
+          if (data.success) {
+            progressStatus.textContent = "✅ Import completed!";
+            importResult.style.display = "block";
 
-  if (previewBox) {
-    previewBox.addEventListener("click", () => {
-      if (imageInput) imageInput.click();
-    });
-  }
+            let html = `
+                        <div class="import-result">
+                            <p class="success"><i class="fa-solid fa-check-circle"></i> ${data.message}</p>
+                            <div class="summary">
+                                <div class="stat">
+                                    <div class="num">${data.details.imported}</div>
+                                    <div class="lbl">New Products</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="num">${data.details.updated}</div>
+                                    <div class="lbl">Updated Products</div>
+                                </div>
+                                <div class="stat">
+                                    <div class="num">${data.details.errors.length}</div>
+                                    <div class="lbl">Errors</div>
+                                </div>
+                            </div>
+                    `;
 
-  if (imageInput) {
-    imageInput.addEventListener("change", (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          const previewImg = document.getElementById("previewImg");
-          if (previewImg) previewImg.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
-}
+            if (data.details.errors.length > 0) {
+              html += `
+                            <div class="errors">
+                                <p><strong>Errors:</strong></p>
+                                <ul>
+                                    ${data.details.errors.map((err) => `<li>${err}</li>`).join("")}
+                                </ul>
+                            </div>
+                        `;
+            }
 
-// Escape HTML
-function escapeHtml(text) {
-  if (!text) return "";
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
-}
+            html += "</div>";
+            importResult.innerHTML = html;
 
-// Event listeners
-document.addEventListener("DOMContentLoaded", () => {
-  loadProducts();
-  initImagePreview();
-
-  const addBtn = document.getElementById("addProductBtn");
-  if (addBtn) addBtn.addEventListener("click", openAddModal);
-
-  const closeBtn = document.getElementById("closeModalBtn");
-  if (closeBtn) closeBtn.addEventListener("click", closeModal);
-
-  const cancelBtn = document.getElementById("cancelModalBtn");
-  if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
-
-  const closeDeleteBtn = document.getElementById("closeDeleteBtn");
-  if (closeDeleteBtn)
-    closeDeleteBtn.addEventListener("click", closeDeleteModal);
-
-  const cancelDeleteBtn = document.getElementById("cancelDeleteBtn");
-  if (cancelDeleteBtn)
-    cancelDeleteBtn.addEventListener("click", closeDeleteModal);
-
-  const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
-  if (confirmDeleteBtn)
-    confirmDeleteBtn.addEventListener("click", deleteProduct);
-
-  const form = document.getElementById("productForm");
-  if (form) form.addEventListener("submit", saveProduct);
-
-  // Filters
-  const searchInput = document.getElementById("searchInput");
-  if (searchInput) {
-    let timeout;
-    searchInput.addEventListener("input", () => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        currentPage = 1;
-        loadProducts();
-      }, 300);
-    });
+            setTimeout(() => {
+              closeImportModal();
+              fetchProducts(currentPage);
+              toast("Import completed successfully!", "success");
+            }, 1500);
+          } else {
+            progressStatus.textContent = "❌ " + data.message;
+            importResult.style.display = "block";
+            importResult.innerHTML = `
+                        <div class="import-result">
+                            <p class="error"><i class="fa-solid fa-circle-exclamation"></i> ${data.message}</p>
+                        </div>
+                    `;
+            importSubmitBtn.disabled = false;
+            importSubmitBtn.innerHTML =
+              '<i class="fa-solid fa-upload"></i> Import Products';
+          }
+        }, 500);
+      })
+      .catch((err) => {
+        clearInterval(interval);
+        console.error("❌ Import error:", err);
+        progressStatus.textContent = "❌ Network error during import";
+        importResult.style.display = "block";
+        importResult.innerHTML = `
+                <div class="import-result">
+                    <p class="error"><i class="fa-solid fa-circle-exclamation"></i> Network error: ${err.message}</p>
+                </div>
+            `;
+        importSubmitBtn.disabled = false;
+        importSubmitBtn.innerHTML =
+          '<i class="fa-solid fa-upload"></i> Import Products';
+      });
   }
 
-  const categoryFilter = document.getElementById("categoryFilter");
-  if (categoryFilter) {
-    categoryFilter.addEventListener("change", () => {
-      currentPage = 1;
-      loadProducts();
-    });
-  }
+  // ==========================================
+  // EVENT LISTENERS
+  // ==========================================
 
-  const typeFilter = document.getElementById("typeFilter");
-  if (typeFilter) {
-    typeFilter.addEventListener("change", () => {
-      currentPage = 1;
-      loadProducts();
-    });
-  }
+  let searchTimeout;
+  searchField.addEventListener("input", function () {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => fetchProducts(1), 400);
+  });
 
-  const stockStatusFilter = document.getElementById("stockStatusFilter");
-  if (stockStatusFilter) {
-    stockStatusFilter.addEventListener("change", () => {
-      currentPage = 1;
-      loadProducts();
-    });
-  }
+  typeFilter.addEventListener("change", () => fetchProducts(1));
+  stockFilter.addEventListener("change", () => fetchProducts(1));
 
-  // Close modal on backdrop click
-  const modal = document.getElementById("productModal");
-  if (modal) {
-    modal.addEventListener("click", (e) => {
-      if (e.target === modal) closeModal();
-    });
-  }
+  addBtn.addEventListener("click", openAddModal);
 
-  const deleteModal = document.getElementById("deleteModal");
-  if (deleteModal) {
-    deleteModal.addEventListener("click", (e) => {
-      if (e.target === deleteModal) closeDeleteModal();
-    });
-  }
+  modalCloseBtn.addEventListener("click", closeProductModal);
+  modalCancelBtn.addEventListener("click", closeProductModal);
+  productModal.addEventListener("click", function (e) {
+    if (e.target === this) closeProductModal();
+  });
+  productForm.addEventListener("submit", saveProduct);
 
-  // Escape key
-  document.addEventListener("keydown", (e) => {
+  addMatBtn.addEventListener("click", addMatRow);
+
+  deleteCloseBtn.addEventListener("click", closeDeleteModal);
+  deleteCancelBtn.addEventListener("click", closeDeleteModal);
+  deleteModal.addEventListener("click", function (e) {
+    if (e.target === this) closeDeleteModal();
+  });
+  deleteConfirmBtn.addEventListener("click", confirmDelete);
+
+  importBtn.addEventListener("click", openImportModal);
+  importCloseBtn.addEventListener("click", closeImportModal);
+  importCancelBtn.addEventListener("click", closeImportModal);
+  importModal.addEventListener("click", function (e) {
+    if (e.target === this) closeImportModal();
+  });
+  importForm.addEventListener("submit", handleImport);
+
+  exportBtn.addEventListener("click", exportProducts);
+
+  document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
-      closeModal();
-      closeDeleteModal();
+      if (deleteModal.classList.contains("show")) closeDeleteModal();
+      if (productModal.classList.contains("show")) closeProductModal();
+      if (importModal.classList.contains("show")) closeImportModal();
     }
   });
+
+  // ==========================================
+  // INIT
+  // ==========================================
+  console.log("🚀 Initializing...");
+
+  // Test connection first
+  testConnection();
+
+  // Then load data
+  setTimeout(() => {
+    loadFilters();
+    fetchProducts(1);
+  }, 500);
 });
