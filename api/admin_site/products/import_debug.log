@@ -1,0 +1,126 @@
+=== IMPORT START: 2026-06-26 16:16:04 ===
+FILES: Array
+(
+    [excel_file] => Array
+        (
+            [name] => products_export_2026-06-26 (1).xlsx
+            [full_path] => products_export_2026-06-26 (1).xlsx
+            [type] => application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            [tmp_name] => C:\xampp\tmp\php314F.tmp
+            [error] => 0
+            [size] => 109
+        )
+
+)
+
+=== IMPORT START: 2026-06-26 16:16:04 ===
+FILES: Array
+(
+    [excel_file] => Array
+        (
+            [name] => products_export_2026-06-26 (1).xlsx
+            [full_path] => products_export_2026-06-26 (1).xlsx
+            [type] => application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            [tmp_name] => C:\xampp\tmp\php3160.tmp
+            [error] => 0
+            [size] => 109
+        )
+
+)
+
+File: products_export_2026-06-26 (1).xlsx, Extension: xlsx, Size: 109 bytes
+ERROR: Failed to load Excel file: Unable to identify a reader for this file
+Stack trace: #0 {main}
+File: products_export_2026-06-26 (1).xlsx, Extension: xlsx, Size: 109 bytes
+ERROR: Failed to load Excel file: Unable to identify a reader for this file
+Stack trace: #0 {main}
+=== IMPORT START: 2026-06-26 16:17:30 ===
+FILES: Array
+(
+    [excel_file] => Array
+        (
+            [name] => Website-Inventory (5).xlsx
+            [full_path] => Website-Inventory (5).xlsx
+            [type] => application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            [tmp_name] => C:\xampp\tmp\php7E73.tmp
+            [error] => 0
+            [size] => 25276
+        )
+
+)
+
+=== IMPORT START: 2026-06-26 16:17:30 ===
+FILES: Array
+(
+    [excel_file] => Array
+        (
+            [name] => Website-Inventory (5).xlsx
+            [full_path] => Website-Inventory (5).xlsx
+            [type] => application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            [tmp_name] => C:\xampp\tmp\php7E83.tmp
+            [error] => 0
+            [size] => 25276
+        )
+
+)
+
+File: Website-Inventory (5).xlsx, Extension: xlsx, Size: 25276 bytes
+MIME Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Successfully loaded as XLSX
+Total rows found: 233
+Headers found: Array
+(
+    [0] => Type
+    [1] => Materials
+    [2] => Shop
+    [3] => PH
+    [4] => Total On Hand
+    [5] => Cost per pack
+    [6] => Quantity per pack
+    [7] => Unit Cost
+)
+
+First data row: Array
+(
+    [0] => Accessories
+    [1] => ID Case Case
+    [2] => 40
+    [3] => 0
+    [4] => 40
+    [5] => 20
+    [6] => 1
+    [7] => 20
+)
+
+ERROR: Could not find "Product" or "Product Name" column. Found headers: Type, Materials, Shop, PH, Total On Hand, Cost per pack, Quantity per pack, Unit Cost
+Stack trace: #0 {main}
+File: Website-Inventory (5).xlsx, Extension: xlsx, Size: 25276 bytes
+MIME Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+Successfully loaded as XLSX
+Total rows found: 233
+Headers found: Array
+(
+    [0] => Type
+    [1] => Materials
+    [2] => Shop
+    [3] => PH
+    [4] => Total On Hand
+    [5] => Cost per pack
+    [6] => Quantity per pack
+    [7] => Unit Cost
+)
+
+First data row: Array
+(
+    [0] => Accessories
+    [1] => ID Case Case
+    [2] => 40
+    [3] => 0
+    [4] => 40
+    [5] => 20
+    [6] => 1
+    [7] => 20
+)
+
+ERROR: Could not find "Product" or "Product Name" column. Found headers: Type, Materials, Shop, PH, Total On Hand, Cost per pack, Quantity per pack, Unit Cost
+Stack trace: #0 {main}

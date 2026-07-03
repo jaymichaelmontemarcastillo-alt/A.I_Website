@@ -147,9 +147,10 @@ try {
     foreach ($materials as $mat) {
         $materialId = isset($mat['id']) ? (int)$mat['id'] : 0;
         $quantity = isset($mat['quantity']) ? (int)$mat['quantity'] : 0;
-        $materialName = isset($mat['name']) ? $mat['name'] : 'Unknown';
+        $materialName = isset($mat['name']) ? trim($mat['name']) : '';
 
-        if ($quantity <= 0 || $materialId <= 0) continue;
+        if ($quantity <= 0 || $materialName === '') continue;
+        if ($materialId <= 0) continue;
 
         $checkStmt = $pdo->prepare("SELECT total_stock FROM materials WHERE id = :id FOR UPDATE");
         $checkStmt->execute([':id' => $materialId]);

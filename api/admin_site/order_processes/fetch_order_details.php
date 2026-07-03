@@ -46,6 +46,7 @@ try {
                 q.expires_at,
                 o.id AS order_id,
                 o.order_number,
+                o.receiver_name,
                 o.payment_method,
                 o.payment_status,
                 o.order_status,
@@ -80,6 +81,7 @@ try {
                 q.expires_at,
                 o.id AS order_id,
                 o.order_number,
+                o.receiver_name,
                 o.payment_method,
                 o.payment_status,
                 o.order_status,
@@ -115,6 +117,7 @@ try {
                     NULL AS expires_at,
                     o.id AS order_id,
                     o.order_number,
+                    o.receiver_name,
                     o.payment_method,
                     o.payment_status,
                     o.order_status,
@@ -199,6 +202,7 @@ try {
         'order' => [
             // Identification
             'quotation_id' => $order['quotation_id'],
+            'order_id' => $order['order_id'],
             'quote_number' => $order['quote_number'] ?? $order['order_number'],
             'order_number' => $order['order_number'],
 
@@ -207,6 +211,7 @@ try {
             'contact_person' => $order['contact_person'] ?? $order['client_name'] ?? 'N/A',
             'customer_email' => $order['email'] ?? 'N/A',
             'customer_phone' => $order['phone'] ?? 'N/A',
+            'receiver_name' => $order['receiver_name'] ?? null,
             'address' => $order['address'] ?? 'N/A',
 
             // Quotation Information

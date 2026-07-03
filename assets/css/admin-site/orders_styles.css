@@ -516,6 +516,31 @@
   gap: 12px;
 }
 
+.receiver-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.receiver-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+}
+
+.receiver-controls .form-input {
+  flex: 1;
+}
+
+.receiver-controls .btn-primary {
+  white-space: nowrap;
+}
+
 .info-item {
   display: flex;
   flex-direction: column;

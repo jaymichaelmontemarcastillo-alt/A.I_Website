@@ -1359,22 +1359,9 @@ class QuotationManager {
     document.body.style.overflow = "";
   }
   proceedToInventoryAudit(quotationId, quotationNumber) {
-    // Store in sessionStorage before redirect
-    sessionStorage.setItem("pending_audit_quotation_id", quotationId);
-    sessionStorage.setItem("pending_audit_quotation_number", quotationNumber);
-    sessionStorage.setItem("pending_audit_timestamp", Date.now().toString());
-
-    console.log("Stored pending audit:", { quotationId, quotationNumber });
-
     this.closeAuditPromptModal();
     this.closeEditModal();
-    this.showNotification(
-      "Redirecting to Inventory page to create audit...",
-      "info",
-    );
-
-    // Redirect to inventory page
-    window.location.href = "Inventory.php";
+    openQuotationAuditModal(quotationId, quotationNumber);
   }
   // ── CREATE AUDIT FROM MODAL ──────────────────────────────────────────
   createAuditFromModal() {
@@ -1387,21 +1374,13 @@ class QuotationManager {
       return;
     }
 
-    // Store in sessionStorage before redirect
-    sessionStorage.setItem("pending_audit_quotation_id", quotationId);
-    sessionStorage.setItem("pending_audit_quotation_number", quoteNumber);
-    sessionStorage.setItem("pending_audit_timestamp", Date.now().toString());
-
     this.showNotification(
-      "Redirecting to Inventory page to create audit...",
+      "Opening audit form for the selected quotation...",
       "info",
     );
 
-    // Close the edit modal
     this.closeEditModal();
-
-    // Redirect to inventory page
-    window.location.href = "Inventory.php";
+    openQuotationAuditModal(quotationId, quoteNumber);
   }
   // ── PDF GENERATION ────────────────────────────────────────────────────────
   async generatePDF(id) {

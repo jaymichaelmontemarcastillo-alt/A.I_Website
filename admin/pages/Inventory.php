@@ -626,6 +626,26 @@ include '../includes/header.php';
                     </div>
                 </div>
 
+                <!-- Items Section -->
+                <div class="audit-section">
+                    <div class="audit-section-title">
+                        <i class="fa-solid fa-list-ul"></i> Items
+                    </div>
+                    <div class="audit-section-body">
+                        <div class="qa-table-header">
+                            <span style="flex:2;">Item Name</span>
+                            <span style="flex:0.8; text-align: center;">Quantity</span>
+                            <span style="flex:1; text-align: center;">Unit Price</span>
+                            <span style="flex:1; text-align: center;">Total Amount</span>
+                            <span style="flex:0.3; text-align: center;"></span>
+                        </div>
+                        <div id="qaItemsContainer" class="qa-dynamic-container"></div>
+                        <button type="button" class="qa-add-row-btn" onclick="quotationAuditIntegration.addItemRow()">
+                            <i class="fa-solid fa-plus"></i> Add Item
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Material Costs Section -->
                 <div class="audit-section">
                     <div class="audit-section-title">
@@ -640,7 +660,7 @@ include '../includes/header.php';
                             <span style="flex:0.3; text-align: center;"></span>
                         </div>
                         <div id="qaMaterialCostsContainer" class="qa-dynamic-container"></div>
-                        <button type="button" class="qa-add-row-btn" onclick="quotationAuditIntegration.addMaterialRowWithManualEntry()">
+                        <button type="button" class="qa-add-row-btn" onclick="quotationAuditIntegration.addMaterialRow()">
                             <i class="fa-solid fa-plus"></i> Add Material
                         </button>
                     </div>
@@ -653,7 +673,7 @@ include '../includes/header.php';
                     </div>
                     <div class="audit-section-body">
                         <div class="reject-note">
-                            <i class="fa-solid fa-info-circle"></i> Remove materials from the list if there are no reject materials
+                            <i class="fa-solid fa-info-circle"></i> Type a custom reject item or choose from the list and edit the unit cost and total directly.
                         </div>
                         <div class="qa-table-header">
                             <span style="flex:2;">Material</span>
@@ -712,7 +732,7 @@ include '../includes/header.php';
 
                         <div class="overhead-total-row">
                             <div class="overhead-total-item">
-                                <span>TOTAL MONTHLY OVERHEAD</span>
+                                <span>Total Monthly Overhead</span>
                                 <span id="total_overhead_display">₱0.00</span>
                             </div>
                         </div>
@@ -726,26 +746,6 @@ include '../includes/header.php';
                                 <strong>₱0.00</strong> per hour
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Items Section -->
-                <div class="audit-section">
-                    <div class="audit-section-title">
-                        <i class="fa-solid fa-list-ul"></i> Items
-                    </div>
-                    <div class="audit-section-body">
-                        <div class="qa-table-header">
-                            <span style="flex:2;">Item Name</span>
-                            <span style="flex:0.8; text-align: center;">Quantity</span>
-                            <span style="flex:1; text-align: center;">Unit Price</span>
-                            <span style="flex:1; text-align: center;">Total Amount</span>
-                            <span style="flex:0.3; text-align: center;"></span>
-                        </div>
-                        <div id="qaItemsContainer" class="qa-dynamic-container"></div>
-                        <button type="button" class="qa-add-row-btn" onclick="quotationAuditIntegration.addItemRow()">
-                            <i class="fa-solid fa-plus"></i> Add Item
-                        </button>
                     </div>
                 </div>
 

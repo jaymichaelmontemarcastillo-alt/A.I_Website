@@ -504,59 +504,86 @@ class QuotationAuditIntegration {
     row.className = "qa-dynamic-row";
     row.id = rowId;
 
+    const materialName = this.escapeHtml(
+      materialData?.name || materialData?.material_name || "",
+    );
+    const quantity =
+      materialData?.suggested_quantity || materialData?.quantity || 1;
+    const unitCost = materialData?.unit_cost || 0;
+    const totalCost = materialData?.total_cost || quantity * unitCost;
+
     row.innerHTML = `
-            <div class="searchable-select" data-row="${rowId}" style="flex:2;"></div>
-            <input type="number" class="material-qty qty-input" placeholder="QTY" step="1" min="0" value="${materialData?.suggested_quantity || 1}" style="flex:0.8; padding:8px; text-align:center;">
-            <input type="number" class="material-cost cost-input" placeholder="Cost/Unit" step="0.01" value="${materialData?.unit_cost || 0}" style="flex:1; padding:8px; text-align:right;" readonly>
-            <input type="number" class="material-total total-input" placeholder="Total" step="0.01" value="0" style="flex:1; padding:8px; text-align:right; background:#f8fafc;" readonly>
-            <button class="qa-remove-row" style="flex:0.3;"><i class="fa-solid fa-trash"></i></button>
+            <div class="qa-material-name-field">
+                <label class="qa-inline-label"><i class="fa-solid fa-cubes"></i> Material</label>
+                <input type="text" class="material-name-input qa-input-full" list="qa-material-suggestions-${rowId}" placeholder="Type or choose material..." value="${materialName}">
+                <datalist id="qa-material-suggestions-${rowId}"></datalist>
+            </div>
+            <input type="number" class="material-qty qty-input" placeholder="QTY" step="1" min="0" value="${quantity}">
+            <input type="number" class="material-cost cost-input" placeholder="Cost/Unit" step="0.0001" value="${parseFloat(unitCost).toFixed(4)}">
+            <input type="number" class="material-total total-input" placeholder="Total" step="0.01" value="${parseFloat(totalCost).toFixed(2)}">
+            <button class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
             ${materialData ? '<span class="qa-prefill-badge">from quotation</span>' : ""}
         `;
 
     container.appendChild(row);
 
-    const options = this.materialsList.map((m) => ({
-      value: m.id,
-      label: m.material_name,
-      cost: m.unit_cost,
-      type: m.type,
-    }));
-
-    const selectorContainer = row.querySelector(".searchable-select");
-    const selector = new SearchableSelect(
-      selectorContainer,
-      options,
-      (value, cost, name) => {
-        const costInput = row.querySelector(".material-cost");
-        if (costInput) {
-          costInput.value = parseFloat(cost).toFixed(4);
-        }
-        row.dataset.materialId = value;
-        this.updateMaterialTotal(row);
-      },
-      materialData?.material_id || null,
-    );
-
-    this.materialSelectors.push({ rowId, selector });
+    const nameInput = row.querySelector(".material-name-input");
+    const datalist = row.querySelector("datalist");
+    if (datalist) {
+      datalist.innerHTML = this.materialsList
+        .map(
+          (m) =>
+            `<option value="${this.escapeHtml(m.material_name)}" data-id="${m.id}" data-cost="${parseFloat(m.unit_cost || 0).toFixed(4)}"></option>`,
+        )
+        .join("");
+    }
 
     const qtyEl = row.querySelector(".material-qty");
     const costEl = row.querySelector(".material-cost");
+    const totalEl = row.querySelector(".material-total");
     const removeBtn = row.querySelector(".qa-remove-row");
 
     const updateTotal = () => {
+      row.dataset.totalMode = "auto";
       const qty = parseFloat(qtyEl.value) || 0;
       const cost = parseFloat(costEl.value) || 0;
-      const totalInput = row.querySelector(".material-total");
-      if (totalInput) totalInput.value = (qty * cost).toFixed(2);
+      if (totalEl) totalEl.value = (qty * cost).toFixed(2);
       this.recalculateTotals();
     };
 
+    const setManualTotal = () => {
+      row.dataset.totalMode = "manual";
+      this.recalculateTotals();
+    };
+
+    const syncFromMaterialName = () => {
+      const name = nameInput.value.trim();
+      const match = this.materialsList.find(
+        (m) => m.material_name.toLowerCase() === name.toLowerCase(),
+      );
+      if (match) {
+        row.dataset.materialId = match.id;
+        if (costEl) costEl.value = parseFloat(match.unit_cost || 0).toFixed(4);
+        updateTotal();
+      } else {
+        row.dataset.materialId = "";
+      }
+    };
+
+    nameInput.addEventListener("input", syncFromMaterialName);
     qtyEl.addEventListener("input", updateTotal);
+    costEl.addEventListener("input", updateTotal);
+    totalEl.addEventListener("input", setManualTotal);
     removeBtn.addEventListener("click", () => this.removeDynamicRow(removeBtn));
 
-    if (materialData && materialData.material_id) {
-      const cost = parseFloat(materialData.unit_cost || 0);
-      costEl.value = cost.toFixed(4);
+    if (materialData?.material_id) {
+      row.dataset.materialId = materialData.material_id;
+    }
+
+    if (materialData?.name) {
+      nameInput.value = materialData.name;
+      syncFromMaterialName();
+    } else {
       updateTotal();
     }
   }
@@ -580,59 +607,85 @@ class QuotationAuditIntegration {
     row.className = "qa-dynamic-row";
     row.id = rowId;
 
+    const rejectName = this.escapeHtml(
+      rejectData?.name || rejectData?.material_name || "",
+    );
+    const quantity = rejectData?.quantity || 1;
+    const unitCost = rejectData?.unit_cost || 0;
+    const totalCost = rejectData?.total_cost || quantity * unitCost;
+
     row.innerHTML = `
-            <div class="searchable-select" data-row="${rowId}" style="flex:2;"></div>
-            <input type="number" class="reject-qty qty-input" placeholder="QTY" step="1" min="0" value="${rejectData?.quantity || 1}" style="flex:0.8; padding:8px; text-align:center;">
-            <input type="number" class="reject-cost cost-input" placeholder="Cost/Unit" step="0.01" value="${rejectData?.unit_cost || 0}" style="flex:1; padding:8px; text-align:right;" readonly>
-            <input type="number" class="reject-total total-input" placeholder="Total" step="0.01" value="0" style="flex:1; padding:8px; text-align:right; background:#f8fafc;" readonly>
-            <button class="qa-remove-row" style="flex:0.3;"><i class="fa-solid fa-trash"></i></button>
+            <div class="qa-material-name-field">
+                <label class="qa-inline-label"><i class="fa-solid fa-trash-alt"></i> Reject</label>
+                <input type="text" class="reject-name-input qa-input-full" list="qa-reject-suggestions-${rowId}" placeholder="Type or choose reject item..." value="${rejectName}">
+                <datalist id="qa-reject-suggestions-${rowId}"></datalist>
+            </div>
+            <input type="number" class="reject-qty qty-input" placeholder="QTY" step="1" min="0" value="${quantity}">
+            <input type="number" class="reject-cost cost-input" placeholder="Cost/Unit" step="0.0001" value="${parseFloat(unitCost).toFixed(4)}">
+            <input type="number" class="reject-total total-input" placeholder="Total" step="0.01" value="${parseFloat(totalCost).toFixed(2)}">
+            <button class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
             ${rejectData ? '<span class="qa-prefill-badge">from quotation</span>' : ""}
         `;
 
     container.appendChild(row);
 
-    const options = this.materialsList.map((m) => ({
-      value: m.id,
-      label: m.material_name,
-      cost: m.unit_cost,
-      type: m.type,
-    }));
-
-    const selectorContainer = row.querySelector(".searchable-select");
-    const selector = new SearchableSelect(
-      selectorContainer,
-      options,
-      (value, cost, name) => {
-        const costInput = row.querySelector(".reject-cost");
-        if (costInput) {
-          costInput.value = parseFloat(cost).toFixed(4);
-        }
-        row.dataset.materialId = value;
-        this.updateRejectTotal(row);
-      },
-      rejectData?.material_id || null,
-    );
-
-    this.rejectSelectors.push({ rowId, selector });
+    const nameInput = row.querySelector(".reject-name-input");
+    const datalist = row.querySelector("datalist");
+    if (datalist) {
+      datalist.innerHTML = this.materialsList
+        .map(
+          (m) =>
+            `<option value="${this.escapeHtml(m.material_name)}" data-id="${m.id}" data-cost="${parseFloat(m.unit_cost || 0).toFixed(4)}"></option>`,
+        )
+        .join("");
+    }
 
     const qtyEl = row.querySelector(".reject-qty");
     const costEl = row.querySelector(".reject-cost");
+    const totalEl = row.querySelector(".reject-total");
     const removeBtn = row.querySelector(".qa-remove-row");
 
     const updateTotal = () => {
+      row.dataset.totalMode = "auto";
       const qty = parseFloat(qtyEl.value) || 0;
       const cost = parseFloat(costEl.value) || 0;
-      const totalInput = row.querySelector(".reject-total");
-      if (totalInput) totalInput.value = (qty * cost).toFixed(2);
+      if (totalEl) totalEl.value = (qty * cost).toFixed(2);
       this.recalculateTotals();
     };
 
+    const setManualTotal = () => {
+      row.dataset.totalMode = "manual";
+      this.recalculateTotals();
+    };
+
+    const syncFromMaterialName = () => {
+      const name = nameInput.value.trim();
+      const match = this.materialsList.find(
+        (m) => m.material_name.toLowerCase() === name.toLowerCase(),
+      );
+      if (match) {
+        row.dataset.materialId = match.id;
+        if (costEl) costEl.value = parseFloat(match.unit_cost || 0).toFixed(4);
+        updateTotal();
+      } else {
+        row.dataset.materialId = "";
+      }
+    };
+
+    nameInput.addEventListener("input", syncFromMaterialName);
     qtyEl.addEventListener("input", updateTotal);
+    costEl.addEventListener("input", updateTotal);
+    totalEl.addEventListener("input", setManualTotal);
     removeBtn.addEventListener("click", () => this.removeDynamicRow(removeBtn));
 
-    if (rejectData && rejectData.material_id) {
-      const cost = parseFloat(rejectData.unit_cost || 0);
-      costEl.value = cost.toFixed(4);
+    if (rejectData?.material_id) {
+      row.dataset.materialId = rejectData.material_id;
+    }
+
+    if (rejectData?.name) {
+      nameInput.value = rejectData.name;
+      syncFromMaterialName();
+    } else {
       updateTotal();
     }
   }
@@ -739,15 +792,33 @@ class QuotationAuditIntegration {
     let amountTotal = 0;
 
     document
-      .querySelectorAll("#qaMaterialCostsContainer .material-total")
-      .forEach((input) => {
-        materialTotal += parseFloat(input.value) || 0;
+      .querySelectorAll("#qaMaterialCostsContainer .qa-dynamic-row")
+      .forEach((row) => {
+        const totalInput = row.querySelector(".material-total");
+        const qtyInput = row.querySelector(".material-qty");
+        const costInput = row.querySelector(".material-cost");
+        if (row.dataset.totalMode === "manual" && totalInput) {
+          materialTotal += parseFloat(totalInput.value) || 0;
+        } else if (qtyInput && costInput) {
+          materialTotal +=
+            (parseFloat(qtyInput.value) || 0) *
+            (parseFloat(costInput.value) || 0);
+        }
       });
 
     document
-      .querySelectorAll("#qaRejectCostsContainer .reject-total")
-      .forEach((input) => {
-        rejectTotal += parseFloat(input.value) || 0;
+      .querySelectorAll("#qaRejectCostsContainer .qa-dynamic-row")
+      .forEach((row) => {
+        const totalInput = row.querySelector(".reject-total");
+        const qtyInput = row.querySelector(".reject-qty");
+        const costInput = row.querySelector(".reject-cost");
+        if (row.dataset.totalMode === "manual" && totalInput) {
+          rejectTotal += parseFloat(totalInput.value) || 0;
+        } else if (qtyInput && costInput) {
+          rejectTotal +=
+            (parseFloat(qtyInput.value) || 0) *
+            (parseFloat(costInput.value) || 0);
+        }
       });
 
     document
@@ -779,7 +850,7 @@ class QuotationAuditIntegration {
           ? parseInt(row.dataset.materialId)
           : 0;
         const materialName =
-          row.querySelector(".selected-text")?.textContent || "";
+          row.querySelector(".material-name-input")?.value?.trim() || "";
         const quantity =
           parseFloat(row.querySelector(".material-qty")?.value) || 0;
         const unitCost =
@@ -787,7 +858,7 @@ class QuotationAuditIntegration {
         const totalCost =
           parseFloat(row.querySelector(".material-total")?.value) || 0;
 
-        if (materialId > 0 && quantity > 0) {
+        if (materialName && quantity > 0) {
           materials.push({
             id: materialId,
             name: materialName,
@@ -806,7 +877,7 @@ class QuotationAuditIntegration {
           ? parseInt(row.dataset.materialId)
           : 0;
         const materialName =
-          row.querySelector(".selected-text")?.textContent || "";
+          row.querySelector(".reject-name-input")?.value?.trim() || "";
         const quantity =
           parseFloat(row.querySelector(".reject-qty")?.value) || 0;
         const unitCost =
@@ -814,7 +885,7 @@ class QuotationAuditIntegration {
         const totalCost =
           parseFloat(row.querySelector(".reject-total")?.value) || 0;
 
-        if (materialId > 0 && quantity > 0) {
+        if (materialName && quantity > 0) {
           rejects.push({
             id: materialId,
             name: materialName,
@@ -1901,6 +1972,38 @@ class QuotationAuditIntegration {
       return;
     }
 
+    // Collect overhead data
+    const overhead = {
+      shop_rent: parseFloat(
+        document.getElementById("overhead_shop_rent")?.value || 0,
+      ),
+      fixed_salaries: parseFloat(
+        document.getElementById("overhead_fixed_salaries")?.value || 0,
+      ),
+      shop_utilities: parseFloat(
+        document.getElementById("overhead_shop_utilities")?.value || 0,
+      ),
+      subscriptions: parseFloat(
+        document.getElementById("overhead_subscriptions")?.value || 0,
+      ),
+      machine_depreciation: parseFloat(
+        document.getElementById("overhead_machine_depreciation")?.value || 0,
+      ),
+      maintenance_repair: parseFloat(
+        document.getElementById("overhead_maintenance_repair")?.value || 0,
+      ),
+      marketing: parseFloat(
+        document.getElementById("overhead_marketing")?.value || 0,
+      ),
+      electricity: parseFloat(
+        document.getElementById("overhead_electricity")?.value || 0,
+      ),
+    };
+
+    const production_hours = parseFloat(
+      document.getElementById("production_hours")?.value || 0,
+    );
+
     const payload = {
       items: items,
       materials: materials,
@@ -1909,6 +2012,8 @@ class QuotationAuditIntegration {
       audited_by: document.getElementById("qaAuditedBy")?.value || "",
       acknowledged_by: document.getElementById("qaAcknowledgedBy")?.value || "",
       auto_compute: true,
+      overhead: overhead,
+      production_hours: production_hours,
     };
 
     this.showAuditLoading(true);

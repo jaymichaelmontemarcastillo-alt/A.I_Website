@@ -5,6 +5,7 @@ include '../includes/header.php';
 
 <body>
     <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
+    <link rel="stylesheet" href="../../assets/css/admin-site/admin_inventory.css">
     <div class="admin-wrapper">
         <?php
         $current_page = 'Quotation';
@@ -330,8 +331,11 @@ include '../includes/header.php';
     </div>
 
     <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
+    <link rel="stylesheet" href="../../assets/css/admin-site/admin_inventory.css">
 
 </body>
+<script src="../../assets/js/admin-site-functions/overhead_audit_helper.js"></script>
+<script src="../../assets/js/admin-site-functions/admin_materials.js"></script>
 <script src="../../assets/js/admin-site-functions/admin_data_fetch/fetch_quotations.js"></script>
 
 </html>

@@ -1,22 +1,15 @@
 /**
- * admin_products.js - WITH FULL DEBUGGING
+ * admin_products.js - WITH TYPE MANAGEMENT
  */
 
 document.addEventListener("DOMContentLoaded", function () {
   // ==========================================
-  // API PATH - TRY THESE OPTIONS
+  // API PATH
   // ==========================================
-  // Option 1: Relative from admin page
   const API = "../../api/admin_site/products";
-  // Option 2: Absolute from root
-  // const API = "/api/admin_site/products";
-  // Option 3: Full URL (for testing)
-  // const API = "http://localhost/api/admin_site/products";
 
   console.log("=== ADMIN PRODUCTS DEBUG ===");
   console.log("API Path:", API);
-  console.log("Current URL:", window.location.href);
-  console.log("Pathname:", window.location.pathname);
 
   // ==========================================
   // DOM REFS
@@ -138,49 +131,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // ==========================================
-  // TEST CONNECTION FIRST
-  // ==========================================
-  function testConnection() {
-    console.log("🔍 Testing API connection...");
-    console.log("📡 URL:", `${API}/get_products.php?limit=1`);
-
-    fetch(`${API}/get_products.php?limit=1`)
-      .then((response) => {
-        console.log("📥 Response status:", response.status);
-        console.log("📥 Response statusText:", response.statusText);
-        console.log("📥 Response headers:", [...response.headers.entries()]);
-        return response.text(); // Get raw text first
-      })
-      .then((text) => {
-        console.log("📄 Raw response:", text);
-        try {
-          const data = JSON.parse(text);
-          console.log("✅ Parsed JSON:", data);
-          if (data.success) {
-            console.log("✅ Connection successful!");
-            toast("Connected to API successfully", "success");
-          } else {
-            console.error("❌ API returned error:", data.message);
-            toast("API Error: " + data.message, "error");
-          }
-        } catch (e) {
-          console.error("❌ Failed to parse JSON:", e);
-          console.error("Raw response was:", text);
-          toast("Invalid JSON response from server", "error");
-        }
-      })
-      .catch((error) => {
-        console.error("❌ NETWORK ERROR:", error);
-        console.error("Error details:", {
-          message: error.message,
-          stack: error.stack,
-          type: error.constructor.name,
-        });
-        toast("Network error: " + error.message, "error");
-      });
-  }
-
-  // ==========================================
   // FETCH PRODUCTS
   // ==========================================
   function fetchProducts(page = 1) {
@@ -196,8 +146,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (type) url += `&product_type_id=${type}`;
     if (stock) url += `&stock_status=${encodeURIComponent(stock)}`;
 
-    console.log("📡 Fetching products from:", url);
-
     tableBody.innerHTML = `
             <tr class="tbl-loading">
                 <td colspan="6">
@@ -210,7 +158,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     fetch(url)
       .then((res) => {
-        console.log("📥 Products response status:", res.status);
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
@@ -218,14 +165,12 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .then((data) => {
         isLoading = false;
-        console.log("📄 Products data:", data);
         if (data.success) {
           renderTable(data.data);
           renderPagination(data.pagination);
           updateCount(data.pagination);
           currentPage = page;
         } else {
-          console.error("❌ API error:", data.message);
           tableBody.innerHTML = `
                         <tr><td colspan="6">
                             <div class="error-state">
@@ -238,17 +183,11 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .catch((err) => {
         isLoading = false;
-        console.error("❌ FETCH ERROR:", err);
-        console.error("Error details:", {
-          message: err.message,
-          stack: err.stack,
-        });
         tableBody.innerHTML = `
                     <tr><td colspan="6">
                         <div class="error-state">
                             <i class="fa-solid fa-circle-exclamation"></i>
                             Network error: ${err.message}
-                            <br><small>Check console for details</small>
                         </div>
                     </td></tr>
                 `;
@@ -267,7 +206,6 @@ document.addEventListener("DOMContentLoaded", function () {
                         <div class="empty-state">
                             <i class="fa-regular fa-box-open"></i>
                             <p>No products found</p>
-                            <span class="sub">Try adjusting your filters or add a new product</span>
                         </div>
                     </td>
                 </tr>
@@ -386,15 +324,9 @@ document.addEventListener("DOMContentLoaded", function () {
   // LOAD FILTERS
   // ==========================================
   function loadFilters() {
-    console.log("📡 Loading filters from:", `${API}/get_products.php?limit=0`);
-
     fetch(`${API}/get_products.php?limit=0`)
-      .then((res) => {
-        console.log("📥 Filters response status:", res.status);
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        console.log("📄 Filters data:", data);
         if (data.success && data.filters) {
           // Type filter (main)
           typeFilter.innerHTML = '<option value="">All Types</option>';
@@ -414,6 +346,9 @@ document.addEventListener("DOMContentLoaded", function () {
             productType.appendChild(opt);
           });
 
+          // After loading filters, add the type management buttons
+          addTypeManagementButtons();
+
           console.log("✅ Filters loaded successfully");
         } else {
           console.error("❌ Failed to load filters:", data.message);
@@ -424,14 +359,9 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
     // Load materials
-    console.log("📡 Loading materials from:", `${API}/get_materials.php`);
     fetch(`${API}/get_materials.php`)
-      .then((res) => {
-        console.log("📥 Materials response status:", res.status);
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        console.log("📄 Materials data:", data);
         if (data.success) {
           materialsList = data.data;
           console.log("✅ Materials loaded:", materialsList.length);
@@ -460,18 +390,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // MODAL: EDIT PRODUCT
   // ==========================================
   function openEditModal(id) {
-    console.log("📡 Loading product for edit:", id);
     modalTitle.innerHTML = '<i class="fa-solid fa-pen"></i> Edit Product';
     submitBtn.innerHTML =
       '<i class="fa-solid fa-floppy-disk"></i> Update Product';
 
     fetch(`${API}/get_product.php?id=${id}`)
-      .then((res) => {
-        console.log("📥 Get product response status:", res.status);
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
-        console.log("📄 Product data:", data);
         if (data.success) {
           const p = data.data;
           editId.value = p.id;
@@ -643,28 +568,20 @@ document.addEventListener("DOMContentLoaded", function () {
       ? `${API}/update_products.php`
       : `${API}/add_products.php`;
 
-    console.log("📡 Saving product to:", endpoint);
-    console.log("📤 Form data:", Object.fromEntries(formData));
-
     fetch(endpoint, {
       method: "POST",
       body: formData,
     })
-      .then((res) => {
-        console.log("📥 Save response status:", res.status);
-        return res.text().then((text) => ({ res, text }));
-      })
+      .then((res) => res.text().then((text) => ({ res, text })))
       .then(({ res, text }) => {
         let data;
         try {
           data = JSON.parse(text);
         } catch (e) {
-          console.error("❌ Non-JSON save response:", text);
           throw new Error(
-            `Server returned HTTP ${res.status} (non-JSON response). Check that ${endpoint} exists and has no PHP errors.`,
+            `Server returned HTTP ${res.status} (non-JSON response)`,
           );
         }
-        console.log("📄 Save response:", data);
         if (data.success) {
           toast(data.message || "Product saved successfully", "success");
           closeProductModal();
@@ -711,29 +628,22 @@ document.addEventListener("DOMContentLoaded", function () {
       '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
 
     const payload = { id: deleteId };
-    console.log("📡 Deleting product:", payload);
-    console.log("📡 URL:", `${API}/delete_products.php`);
 
     fetch(`${API}/delete_products.php`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     })
-      .then((res) => {
-        console.log("📥 Delete response status:", res.status);
-        return res.text().then((text) => ({ res, text }));
-      })
+      .then((res) => res.text().then((text) => ({ res, text })))
       .then(({ res, text }) => {
         let data;
         try {
           data = JSON.parse(text);
         } catch (e) {
-          console.error("❌ Non-JSON delete response:", text);
           throw new Error(
-            `Server returned HTTP ${res.status} (non-JSON response). Check that delete_products.php exists and has no PHP errors.`,
+            `Server returned HTTP ${res.status} (non-JSON response)`,
           );
         }
-        console.log("📄 Delete response:", data);
         if (data.success) {
           toast("Product deleted successfully", "success");
           closeDeleteModal();
@@ -828,10 +738,7 @@ document.addEventListener("DOMContentLoaded", function () {
       method: "POST",
       body: formData,
     })
-      .then((res) => {
-        console.log("📥 Import response status:", res.status);
-        return res.json();
-      })
+      .then((res) => res.json())
       .then((data) => {
         clearInterval(interval);
         progressFill.style.width = "100%";
@@ -842,33 +749,33 @@ document.addEventListener("DOMContentLoaded", function () {
             importResult.style.display = "block";
 
             let html = `
-                        <div class="import-result">
-                            <p class="success"><i class="fa-solid fa-check-circle"></i> ${data.message}</p>
-                            <div class="summary">
-                                <div class="stat">
-                                    <div class="num">${data.details.imported}</div>
-                                    <div class="lbl">New Products</div>
+                            <div class="import-result">
+                                <p class="success"><i class="fa-solid fa-check-circle"></i> ${data.message}</p>
+                                <div class="summary">
+                                    <div class="stat">
+                                        <div class="num">${data.details.imported}</div>
+                                        <div class="lbl">New Products</div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="num">${data.details.updated}</div>
+                                        <div class="lbl">Updated Products</div>
+                                    </div>
+                                    <div class="stat">
+                                        <div class="num">${data.details.errors.length}</div>
+                                        <div class="lbl">Errors</div>
+                                    </div>
                                 </div>
-                                <div class="stat">
-                                    <div class="num">${data.details.updated}</div>
-                                    <div class="lbl">Updated Products</div>
-                                </div>
-                                <div class="stat">
-                                    <div class="num">${data.details.errors.length}</div>
-                                    <div class="lbl">Errors</div>
-                                </div>
-                            </div>
-                    `;
+                        `;
 
             if (data.details.errors.length > 0) {
               html += `
-                            <div class="errors">
-                                <p><strong>Errors:</strong></p>
-                                <ul>
-                                    ${data.details.errors.map((err) => `<li>${err}</li>`).join("")}
-                                </ul>
-                            </div>
-                        `;
+                                <div class="errors">
+                                    <p><strong>Errors:</strong></p>
+                                    <ul>
+                                        ${data.details.errors.map((err) => `<li>${err}</li>`).join("")}
+                                    </ul>
+                                </div>
+                            `;
             }
 
             html += "</div>";
@@ -883,10 +790,10 @@ document.addEventListener("DOMContentLoaded", function () {
             progressStatus.textContent = "❌ " + data.message;
             importResult.style.display = "block";
             importResult.innerHTML = `
-                        <div class="import-result">
-                            <p class="error"><i class="fa-solid fa-circle-exclamation"></i> ${data.message}</p>
-                        </div>
-                    `;
+                            <div class="import-result">
+                                <p class="error"><i class="fa-solid fa-circle-exclamation"></i> ${data.message}</p>
+                            </div>
+                        `;
             importSubmitBtn.disabled = false;
             importSubmitBtn.innerHTML =
               '<i class="fa-solid fa-upload"></i> Import Products';
@@ -899,15 +806,557 @@ document.addEventListener("DOMContentLoaded", function () {
         progressStatus.textContent = "❌ Network error during import";
         importResult.style.display = "block";
         importResult.innerHTML = `
-                <div class="import-result">
-                    <p class="error"><i class="fa-solid fa-circle-exclamation"></i> Network error: ${err.message}</p>
-                </div>
-            `;
+                    <div class="import-result">
+                        <p class="error"><i class="fa-solid fa-circle-exclamation"></i> Network error: ${err.message}</p>
+                    </div>
+                `;
         importSubmitBtn.disabled = false;
         importSubmitBtn.innerHTML =
           '<i class="fa-solid fa-upload"></i> Import Products';
       });
   }
+
+  // ==========================================
+  // TYPE MANAGEMENT - MODALS
+  // ==========================================
+
+  // Add type modal overlay dynamically
+  const typeModalHTML = `
+        <div id="typeModal" class="modal-overlay">
+            <div class="modal-box modal-box-sm">
+                <div class="modal-head">
+                    <h2 id="typeModalTitle"><i class="fa-solid fa-tag"></i> Add Product Type</h2>
+                    <button class="modal-close" id="typeModalCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <form id="typeForm">
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label for="typeName">Type Name <span class="req">*</span></label>
+                            <input type="text" id="typeName" name="name" required minlength="2" maxlength="100" placeholder="Enter type name">
+                        </div>
+                    </div>
+                    <div class="modal-foot">
+                        <button type="button" class="btn btn-cancel" id="typeModalCancelBtn">Cancel</button>
+                        <button type="submit" class="btn btn-save" id="typeSubmitBtn">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Type
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+
+  document.body.insertAdjacentHTML("beforeend", typeModalHTML);
+
+  const typeModal = document.getElementById("typeModal");
+  const typeModalTitle = document.getElementById("typeModalTitle");
+  const typeForm = document.getElementById("typeForm");
+  const typeName = document.getElementById("typeName");
+  const typeSubmitBtn = document.getElementById("typeSubmitBtn");
+  const typeModalCloseBtn = document.getElementById("typeModalCloseBtn");
+  const typeModalCancelBtn = document.getElementById("typeModalCancelBtn");
+
+  let deleteTypeId = null;
+  let isDeletingType = false;
+
+  // ==========================================
+  // TYPE MANAGEMENT - FUNCTIONS
+  // ==========================================
+
+  function openTypeModal(editData = null) {
+    if (editData) {
+      typeModalTitle.innerHTML =
+        '<i class="fa-solid fa-pen"></i> Edit Product Type';
+      typeName.value = editData.name;
+      typeSubmitBtn.innerHTML =
+        '<i class="fa-solid fa-floppy-disk"></i> Update Type';
+      typeForm.dataset.editId = editData.id;
+    } else {
+      typeModalTitle.innerHTML =
+        '<i class="fa-solid fa-tag"></i> Add Product Type';
+      typeName.value = "";
+      typeSubmitBtn.innerHTML =
+        '<i class="fa-solid fa-floppy-disk"></i> Save Type';
+      delete typeForm.dataset.editId;
+    }
+    openModal(typeModal);
+  }
+
+  function closeTypeModal() {
+    closeModal(typeModal);
+    typeForm.reset();
+    delete typeForm.dataset.editId;
+  }
+
+  function saveProductType(e) {
+    e.preventDefault();
+
+    const name = typeName.value.trim();
+    if (!name) {
+      toast("Please enter a type name", "error");
+      typeName.focus();
+      return;
+    }
+
+    const editId = typeForm.dataset.editId;
+    const endpoint = editId
+      ? `${API}/update_product_type.php`
+      : `${API}/add_product_type.php`;
+
+    typeSubmitBtn.disabled = true;
+    typeSubmitBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+    const formData = new FormData();
+    formData.append("name", name);
+    if (editId) formData.append("id", editId);
+
+    fetch(endpoint, {
+      method: "POST",
+      body: formData,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          toast(data.message, "success");
+          closeTypeModal();
+          loadFilters();
+          fetchProducts(currentPage);
+        } else {
+          toast("Error: " + data.message, "error");
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Save type error:", err);
+        toast("Network error: " + err.message, "error");
+      })
+      .finally(() => {
+        typeSubmitBtn.disabled = false;
+        typeSubmitBtn.innerHTML =
+          '<i class="fa-solid fa-floppy-disk"></i> ' +
+          (editId ? "Update Type" : "Save Type");
+      });
+  }
+
+  function confirmDeleteType() {
+    if (!deleteTypeId || isDeletingType) return;
+
+    isDeletingType = true;
+    deleteConfirmBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+    deleteConfirmBtn.disabled = true;
+
+    fetch(`${API}/delete_product_type.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: deleteTypeId }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          toast(data.message, "success");
+          closeDeleteModal();
+          deleteTypeId = null;
+          loadFilters();
+          fetchProducts(currentPage);
+        } else {
+          toast("Error: " + data.message, "error");
+          closeDeleteModal();
+          deleteTypeId = null;
+        }
+      })
+      .catch((err) => {
+        console.error("❌ Delete type error:", err);
+        toast("Network error: " + err.message, "error");
+        closeDeleteModal();
+        deleteTypeId = null;
+      })
+      .finally(() => {
+        isDeletingType = false;
+        deleteConfirmBtn.disabled = false;
+        deleteConfirmBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete';
+      });
+  }
+
+  // Override delete confirm to handle type deletion
+  const originalConfirmDelete = confirmDelete;
+  confirmDelete = function () {
+    if (deleteTypeId) {
+      confirmDeleteType();
+    } else {
+      originalConfirmDelete();
+    }
+  };
+
+  // Override closeDeleteModal to reset type flag
+  const originalCloseDeleteModal = closeDeleteModal;
+  closeDeleteModal = function () {
+    originalCloseDeleteModal();
+    deleteTypeId = null;
+    isDeletingType = false;
+  };
+
+  // ==========================================
+  // TYPE MANAGEMENT - UI BUTTONS
+  // ==========================================
+
+  function addTypeManagementButtons() {
+    console.log("🔧 Adding type management buttons...");
+
+    // === 1. Add button next to the filter dropdown ===
+    const filterBar = document.querySelector(".filter-bar");
+    if (!filterBar) {
+      console.warn("Filter bar not found");
+      return;
+    }
+
+    // Find the type filter wrapper
+    const typeFilterWrapper = typeFilter.parentElement;
+    if (!typeFilterWrapper) {
+      console.warn("Type filter wrapper not found");
+      return;
+    }
+
+    // Remove existing manage button if present
+    const existingBtn = typeFilterWrapper.querySelector(".manage-types-btn");
+    if (existingBtn) existingBtn.remove();
+
+    // Create a wrapper div for the filter + button
+    let filterGroup = typeFilterWrapper.querySelector(".filter-group-with-btn");
+    if (!filterGroup) {
+      filterGroup = document.createElement("div");
+      filterGroup.className = "filter-group-with-btn";
+      filterGroup.style.cssText =
+        "display:flex;align-items:center;gap:6px;flex:1;min-width:200px;";
+
+      // Move the typeFilter into the wrapper
+      const parent = typeFilter.parentElement;
+      parent.insertBefore(filterGroup, typeFilter);
+      filterGroup.appendChild(typeFilter);
+    }
+
+    // Add the manage button
+    const manageBtn = document.createElement("button");
+    manageBtn.className = "manage-types-btn";
+    manageBtn.type = "button";
+    manageBtn.innerHTML = '<i class="fa-solid fa-cog"></i>';
+    manageBtn.title = "Manage Product Types";
+    manageBtn.style.cssText = `
+            padding: 6px 8px !important;
+            font-size: 14px !important;
+            border-radius: 6px !important;
+            border: 1px solid #ccc !important;
+            background: white !important;
+            cursor: pointer !important;
+            color: #555 !important;
+            transition: all 0.2s !important;
+            line-height: 1 !important;
+            height: 38px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-width: 36px !important;
+        `;
+
+    manageBtn.addEventListener("mouseenter", function () {
+      this.style.background = "#2C3E50";
+      this.style.color = "white";
+      this.style.borderColor = "#2C3E50";
+    });
+    manageBtn.addEventListener("mouseleave", function () {
+      this.style.background = "white";
+      this.style.color = "#555";
+      this.style.borderColor = "#ccc";
+    });
+
+    manageBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      openTypeManager();
+    });
+
+    // Remove old button if exists and append new one
+    const oldBtn = filterGroup.querySelector(".manage-types-btn");
+    if (oldBtn) oldBtn.remove();
+    filterGroup.appendChild(manageBtn);
+
+    console.log("✅ Filter type button added");
+
+    // === 2. Add buttons in the modal type dropdown ===
+    const modalTypeWrapper = productType.parentElement;
+    if (!modalTypeWrapper) {
+      console.warn("Modal type wrapper not found");
+      return;
+    }
+
+    // Remove existing buttons
+    const existingModalBtns =
+      modalTypeWrapper.querySelectorAll(".type-manage-btn");
+    existingModalBtns.forEach((btn) => btn.remove());
+
+    // Create button group
+    const btnGroup = document.createElement("div");
+    btnGroup.className = "type-manage-buttons";
+    btnGroup.style.cssText =
+      "display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;";
+
+    // Add Type button
+    const addTypeBtn = document.createElement("button");
+    addTypeBtn.className = "type-manage-btn btn-success";
+    addTypeBtn.type = "button";
+    addTypeBtn.innerHTML = '<i class="fa-solid fa-plus"></i> New Type';
+    addTypeBtn.style.cssText = `
+            padding: 4px 10px !important;
+            font-size: 12px !important;
+            border: none !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            line-height: 1.5 !important;
+            background: #28a745 !important;
+            color: white !important;
+        `;
+
+    addTypeBtn.addEventListener("mouseenter", function () {
+      this.style.background = "#218838";
+    });
+    addTypeBtn.addEventListener("mouseleave", function () {
+      this.style.background = "#28a745";
+    });
+
+    addTypeBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      openTypeModal(null);
+    });
+
+    // Delete Type button
+    const deleteTypeBtn = document.createElement("button");
+    deleteTypeBtn.className = "type-manage-btn btn-danger";
+    deleteTypeBtn.type = "button";
+    deleteTypeBtn.innerHTML = '<i class="fa-solid fa-trash"></i> Delete';
+    deleteTypeBtn.style.cssText = `
+            padding: 4px 10px !important;
+            font-size: 12px !important;
+            border: none !important;
+            border-radius: 4px !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            line-height: 1.5 !important;
+            background: #dc3545 !important;
+            color: white !important;
+        `;
+
+    deleteTypeBtn.addEventListener("mouseenter", function () {
+      this.style.background = "#c82333";
+    });
+    deleteTypeBtn.addEventListener("mouseleave", function () {
+      this.style.background = "#dc3545";
+    });
+
+    deleteTypeBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const selectedValue = productType.value;
+      if (!selectedValue) {
+        toast("Please select a type to delete", "error");
+        return;
+      }
+      deleteTypeId = parseInt(selectedValue);
+      const typeName =
+        productType.options[productType.selectedIndex]?.textContent ||
+        "this type";
+      deleteMsg.textContent = `Are you sure you want to delete "${typeName}"? This action cannot be undone.`;
+      openModal(deleteModal);
+    });
+
+    btnGroup.appendChild(addTypeBtn);
+    btnGroup.appendChild(deleteTypeBtn);
+    modalTypeWrapper.appendChild(btnGroup);
+
+    console.log("✅ Modal type buttons added");
+  }
+
+  // ==========================================
+  // TYPE MANAGEMENT - MANAGER MODAL
+  // ==========================================
+
+  function openTypeManager() {
+    const existingManager = document.getElementById("typeManagerModal");
+    if (existingManager) existingManager.remove();
+
+    const managerHTML = `
+            <div id="typeManagerModal" class="modal-overlay show" style="display:flex;">
+                <div class="modal-box modal-box-md">
+                    <div class="modal-head">
+                        <h2><i class="fa-solid fa-tags"></i> Manage Product Types</h2>
+                        <button class="modal-close" id="typeManagerCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="modal-body">
+                        <div style="margin-bottom:16px;">
+                            <button class="btn btn-primary" id="typeManagerAddBtn">
+                                <i class="fa-solid fa-plus"></i> Add New Type
+                            </button>
+                        </div>
+                        <div id="typeListContainer">
+                            <div class="tbl-loading">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Loading types...
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-foot">
+                        <button type="button" class="btn btn-cancel" id="typeManagerCloseBtn2">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+    document.body.insertAdjacentHTML("beforeend", managerHTML);
+    const managerModal = document.getElementById("typeManagerModal");
+
+    document
+      .getElementById("typeManagerCloseBtn")
+      .addEventListener("click", () => {
+        managerModal.remove();
+      });
+    document
+      .getElementById("typeManagerCloseBtn2")
+      .addEventListener("click", () => {
+        managerModal.remove();
+      });
+    managerModal.addEventListener("click", (e) => {
+      if (e.target === managerModal) managerModal.remove();
+    });
+
+    document
+      .getElementById("typeManagerAddBtn")
+      .addEventListener("click", () => {
+        managerModal.remove();
+        openTypeModal(null);
+      });
+
+    loadTypesForManager();
+  }
+
+  function loadTypesForManager() {
+    const container = document.getElementById("typeListContainer");
+
+    fetch(`${API}/get_product_types.php`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          let html = `
+                        <table class="tbl">
+                            <thead>
+                                <tr>
+                                    <th>Type Name</th>
+                                    <th>Products</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+          if (data.data.length === 0) {
+            html += `
+                            <tr>
+                                <td colspan="4" style="text-align:center;padding:40px;">
+                                    <i class="fa-regular fa-tag" style="font-size:24px;color:#aaa;"></i>
+                                    <p style="margin-top:8px;">No product types found</p>
+                                </td>
+                            </tr>
+                        `;
+          } else {
+            // Get product counts for each type
+            const typePromises = data.data.map((type) => {
+              return fetch(
+                `${API}/get_products.php?product_type_id=${type.id}&limit=0`,
+              )
+                .then((res) => res.json())
+                .then((data) => ({
+                  ...type,
+                  count: data.pagination?.total || 0,
+                }));
+            });
+
+            Promise.all(typePromises).then((typesWithCount) => {
+              typesWithCount.forEach((type) => {
+                html += `
+                                    <tr>
+                                        <td><strong>${escape(type.name)}</strong></td>
+                                        <td>${type.count}</td>
+                                        <td><span class="badge-status ${type.status === "active" ? "in-stock" : "out-of-stock"}">${type.status || "active"}</span></td>
+                                        <td>
+                                            <div class="tbl-actions" style="gap:4px;">
+                                                <button class="btn-action edit" onclick="window.editTypeFromManager(${type.id}, '${escape(type.name)}')">
+                                                    <i class="fa-solid fa-pen"></i>
+                                                </button>
+                                                <button class="btn-action delete" onclick="window.deleteTypeFromManager(${type.id})" ${type.count > 0 ? 'disabled title="Has products"' : ""}>
+                                                    <i class="fa-solid fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `;
+              });
+
+              container.innerHTML = html;
+            });
+          }
+        } else {
+          container.innerHTML = `<div class="error-state">${data.message}</div>`;
+        }
+      })
+      .catch((err) => {
+        container.innerHTML = `<div class="error-state">Network error: ${err.message}</div>`;
+      });
+  }
+
+  // Global functions for type manager
+  window.editTypeFromManager = function (id, name) {
+    document.getElementById("typeManagerModal")?.remove();
+    openTypeModal({ id, name });
+  };
+
+  window.deleteTypeFromManager = function (id) {
+    document.getElementById("typeManagerModal")?.remove();
+    deleteTypeId = id;
+    // Check if type has products
+    fetch(`${API}/get_products.php?product_type_id=${id}&limit=0`)
+      .then((res) => res.json())
+      .then((data) => {
+        const count = data.pagination?.total || 0;
+        if (count > 0) {
+          toast(
+            `Cannot delete: This type has ${count} product(s) associated with it`,
+            "error",
+          );
+          deleteTypeId = null;
+          return;
+        }
+        const typeName =
+          document.querySelector(`#typeFilter option[value="${id}"]`)
+            ?.textContent || "this type";
+        deleteMsg.textContent = `Are you sure you want to delete "${typeName}"?`;
+        openModal(deleteModal);
+      })
+      .catch((err) => {
+        toast("Error checking product count: " + err.message, "error");
+        deleteTypeId = null;
+      });
+  };
+
+  // ==========================================
+  // TYPE MODAL EVENT LISTENERS
+  // ==========================================
+
+  typeModalCloseBtn.addEventListener("click", closeTypeModal);
+  typeModalCancelBtn.addEventListener("click", closeTypeModal);
+  typeModal.addEventListener("click", function (e) {
+    if (e.target === this) closeTypeModal();
+  });
+  typeForm.addEventListener("submit", saveProductType);
 
   // ==========================================
   // EVENT LISTENERS
@@ -961,14 +1410,8 @@ document.addEventListener("DOMContentLoaded", function () {
   // ==========================================
   // INIT
   // ==========================================
+
   console.log("🚀 Initializing...");
-
-  // Test connection first
-  testConnection();
-
-  // Then load data
-  setTimeout(() => {
-    loadFilters();
-    fetchProducts(1);
-  }, 500);
+  loadFilters();
+  fetchProducts(1);
 });

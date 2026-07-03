@@ -53,9 +53,9 @@
 }
 
 .stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -4366,33 +4366,33 @@ body.dark-mode .audit-loading-overlay {
 
 /* ── Section card ──────────────────────────────────────────── */
 .audit-section {
-  background: var(--qa-bg);
-  border: 1px solid var(--qa-border);
-  border-radius: var(--qa-radius-lg);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   margin-bottom: 12px;
   overflow: visible; /* allow dropdowns */
-  box-shadow: var(--qa-shadow);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 .audit-overhead-section {
-  background: var(--qa-bg);
-  border: 1px solid var(--qa-border);
-  border-radius: var(--qa-radius-lg);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   margin-bottom: 12px;
   overflow: visible; /* allow dropdowns */
-  box-shadow: var(--qa-shadow);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
 }
 .audit-section-title {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 11px 16px;
-  background: var(--qa-bg);
-  border-bottom: 1px solid var(--qa-border);
+  background: linear-gradient(90deg, #f8fafc 0%, #f3f7ff 100%);
+  border-bottom: 1px solid #e5e7eb;
   font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--qa-muted);
+  font-weight: 700;
+  color: #475569;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin: 0;
 }
 
@@ -4517,12 +4517,12 @@ body.dark-mode .audit-loading-overlay {
 .qa-dynamic-row {
   display: flex;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   align-items: center;
-  padding: 8px 12px;
-  background: var(--qa-bg);
-  border: 1px solid var(--qa-border);
-  border-radius: var(--qa-radius);
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
   transition:
     border-color var(--qa-trans),
     box-shadow var(--qa-trans);
@@ -4614,13 +4614,13 @@ body.dark-mode .audit-loading-overlay {
   align-items: center;
   gap: 6px;
   margin-top: 8px;
-  padding: 7px 14px;
-  background: transparent;
-  border: 1px dashed var(--qa-border);
-  border-radius: var(--qa-radius);
+  padding: 8px 14px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
   font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--qa-muted);
+  font-weight: 600;
+  color: #475569;
   cursor: pointer;
   transition:
     background var(--qa-trans),
@@ -4659,6 +4659,33 @@ body.dark-mode .audit-loading-overlay {
   flex-shrink: 0;
 }
 
+/* ── Material / reject rows ─────────────────────────────── */
+.qa-material-name-field {
+  display: flex;
+  flex: 2;
+  flex-direction: column;
+  gap: 4px;
+}
+.qa-inline-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.qa-inline-label i {
+  color: #2563eb;
+  font-size: 0.625rem;
+}
+.qa-dynamic-row .qa-input-full {
+  padding: 8px 10px;
+  font-size: 0.8125rem;
+  border-radius: 8px;
+}
+
 /* ── Overhead grid ─────────────────────────────────────────── */
 .overhead-grid {
   display: grid;
@@ -4671,6 +4698,10 @@ body.dark-mode .audit-loading-overlay {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
 }
 
 .overhead-field label {
@@ -4717,9 +4748,9 @@ body.dark-mode .audit-loading-overlay {
   justify-content: flex-end;
   align-items: center;
   padding: 12px 16px;
-  background: var(--qa-success-bg);
-  border: 1px solid rgba(5, 150, 105, 0.15);
-  border-radius: var(--qa-radius);
+  background: linear-gradient(90deg, #ecfdf5 0%, #f8fffb 100%);
+  border: 1px solid rgba(5, 150, 105, 0.16);
+  border-radius: 10px;
   margin: 12px 0;
 }
 
@@ -4755,7 +4786,7 @@ body.dark-mode .audit-loading-overlay {
   gap: 20px;
   flex-wrap: wrap;
   padding-top: 14px;
-  border-top: 1px solid var(--qa-border);
+  border-top: 1px solid #e5e7eb;
   margin-top: 4px;
 }
 

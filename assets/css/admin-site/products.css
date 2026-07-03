@@ -1226,3 +1226,88 @@ body {
     padding: 12px;
   }
 }
+/* Type management buttons */
+.filter-group-with-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-group-with-btn .filter-select {
+  flex: 1;
+}
+
+.manage-types-btn {
+  padding: 6px 8px !important;
+  font-size: 14px !important;
+  border-radius: 6px !important;
+  border: 1px solid #ccc !important;
+  background: white !important;
+  cursor: pointer !important;
+  color: #555 !important;
+  transition: all 0.2s !important;
+  line-height: 1 !important;
+  height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.manage-types-btn:hover {
+  background: #2c3e50 !important;
+  color: white !important;
+  border-color: #2c3e50 !important;
+}
+
+.type-manage-buttons {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
+.type-manage-btn {
+  padding: 4px 10px !important;
+  font-size: 12px !important;
+  border: none !important;
+  border-radius: 4px !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  line-height: 1.5 !important;
+}
+
+.type-manage-btn.btn-success {
+  background: #28a745 !important;
+  color: white !important;
+}
+
+.type-manage-btn.btn-success:hover {
+  background: #218838 !important;
+}
+
+.type-manage-btn.btn-danger {
+  background: #dc3545 !important;
+  color: white !important;
+}
+
+.type-manage-btn.btn-danger:hover {
+  background: #c82333 !important;
+}
+
+.type-manage-btn:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* Modal box sizes */
+.modal-box-sm {
+  max-width: 480px;
+  width: 95%;
+}
+
+.modal-box-md {
+  max-width: 640px;
+  width: 95%;
+}

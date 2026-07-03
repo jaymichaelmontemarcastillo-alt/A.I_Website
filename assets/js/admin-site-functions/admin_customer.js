@@ -21,22 +21,33 @@
     dom = {
       tbody: document.getElementById("customerTbody"),
       searchInput: document.getElementById("searchInput"),
+      searchClear: document.getElementById("searchClear"),
       filterPills: document.querySelectorAll(".pill"),
       statCards: document.querySelectorAll(".customer-stat-card"),
       paginationBar: document.getElementById("paginationBar"),
-      modalOverlay: document.getElementById("modalOverlay"),
+      modalOverlay: document.getElementById("customerOrderModal"),
       modalClose: document.getElementById("modalClose"),
       modalLoading: document.getElementById("modalLoading"),
-      modalContent: document.getElementById("modalContent"),
+      modalBody: document.getElementById("modalBody"),
       btnExport: document.getElementById("btnExport"),
     };
 
-    const missing = Object.entries(dom)
-      .filter(([_, el]) => {
-        if (el instanceof NodeList) return el.length === 0;
-        return !el;
-      })
-      .map(([name]) => name);
+    // Check for required elements
+    const required = [
+      "tbody",
+      "searchInput",
+      "filterPills",
+      "statCards",
+      "paginationBar",
+      "modalOverlay",
+      "modalClose",
+      "btnExport",
+    ];
+    const missing = required.filter((key) => {
+      const el = dom[key];
+      if (el instanceof NodeList) return el.length === 0;
+      return !el;
+    });
 
     if (missing.length > 0) {
       console.error("❌ Missing DOM elements:", missing);
@@ -97,25 +108,22 @@
     if (!indicator) {
       indicator = document.createElement("div");
       indicator.className = "search-results-count";
-      const tableContainer = document.querySelector(".table-container");
       const tableHeader = document.querySelector(".table-header");
       if (tableHeader) {
         tableHeader.insertAdjacentElement("afterend", indicator);
-      } else if (tableContainer) {
-        tableContainer.insertBefore(indicator, tableContainer.firstChild);
       }
     }
 
     if (count === 0) {
       indicator.innerHTML = `<i class="fa-solid fa-search"></i> No customers found for "${escapeHtml(state.search)}"`;
-      indicator.style.background = "#fef2f2";
+      indicator.style.background = "#fee2e2";
       indicator.style.color = "#dc2626";
     } else {
       indicator.innerHTML = `<i class="fa-solid fa-search"></i> Found ${count} customer${count !== 1 ? "s" : ""} for "${escapeHtml(state.search)}"`;
-      indicator.style.background = "#eff6ff";
-      indicator.style.color = "#2563eb";
+      indicator.style.background = "#dbeafe";
+      indicator.style.color = "#1a56db";
     }
-    indicator.style.display = "block";
+    indicator.style.display = "flex";
   }
 
   function hideSearchResultsCount() {
@@ -125,13 +133,20 @@
     }
   }
 
+  function updateClearButton() {
+    if (dom.searchClear) {
+      dom.searchClear.style.display =
+        dom.searchInput && dom.searchInput.value ? "flex" : "none";
+    }
+  }
+
   async function fetchCustomers() {
     if (state.isLoading) return;
     state.isLoading = true;
 
     console.log("🔄 Fetching customers...");
     console.log(
-      "Current state - Search:",
+      "State - Search:",
       state.search,
       "Filter:",
       state.filter,
@@ -154,7 +169,6 @@
     }
 
     let apiUrl;
-    // ALWAYS use search API if there's a search term, regardless of filter
     if (state.search && state.search.trim() !== "") {
       const params = new URLSearchParams({
         search: state.search,
@@ -187,7 +201,7 @@
         throw new Error(data.error || "API returned success: false");
       }
 
-      // Update stats ONLY when not searching (main API returns stats)
+      // Update stats ONLY when not searching
       if (data.stats && (!state.search || state.search === "")) {
         updateStats(data.stats);
       }
@@ -224,12 +238,9 @@
               <div style="font-size:24px;margin-bottom:12px">❌</div>
               <strong>Failed to load customers</strong><br>
               <small>${escapeHtml(error.message)}</small><br><br>
-              <button onclick="location.reload()" style="padding:8px 16px;cursor:pointer;background:#3b82f6;color:white;border:none;border-radius:4px">
+              <button onclick="location.reload()" style="padding:8px 16px;cursor:pointer;background:#1a56db;color:white;border:none;border-radius:4px">
                 Retry
               </button>
-              <div style="margin-top:16px;font-size:12px;color:#6b7280">
-                Search term: "${escapeHtml(state.search)}"
-              </div>
             </td>
           </tr>
         `;
@@ -244,8 +255,6 @@
 
     const elements = {
       statTotal: stats.total_customers,
-      statHasQuotations: stats.has_quotations,
-      statHighValue: stats.high_value,
       statDelivered: stats.delivered,
       statCancelled: stats.cancelled,
       statPending: stats.pending,
@@ -267,7 +276,7 @@
     if (!customers || customers.length === 0) {
       dom.tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align:center;padding:40px;color:#6b7280">
+          <td colspan="7" style="text-align:center;padding:40px;color:#64748b">
             <div style="font-size:32px;margin-bottom:8px">👥</div>
             <strong>No customers found</strong>
             ${state.search ? "<br><small>Try adjusting your search criteria</small>" : ""}
@@ -279,23 +288,28 @@
 
     let html = "";
     for (const c of customers) {
+      const email = c.email || "";
+      const phone = c.phone || "";
+      const dataEmail = email !== "—" ? email : "";
+      const dataPhone = phone !== "—" ? phone : "";
+
       html += `
-        <tr data-email="${escapeHtml(c.email)}" data-phone="${escapeHtml(c.phone)}">
+        <tr>
           <td>
             <div class="customer-cell">
               <div class="avatar">${escapeHtml(getInitials(c.name))}</div>
               <span>${escapeHtml(c.name || "Unknown")}</span>
             </div>
           </td>
-          <td>${escapeHtml(c.email || "—")}</td>
-          <td>${escapeHtml(c.phone || "—")}</td>
+          <td>${escapeHtml(email || "—")}</td>
+          <td>${escapeHtml(phone || "—")}</td>
           <td><strong>${c.total_orders || 0}</strong></td>
           <td title="${escapeHtml(c.address)}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             ${escapeHtml(c.address || "—")}
           </td>
           <td>${formatDate(c.last_order)}</td>
           <td>
-            <button class="btn-view" title="View Profile" data-email="${escapeHtml(c.email)}" data-phone="${escapeHtml(c.phone)}">
+            <button class="btn-view view-customer" title="View Profile" data-email="${escapeHtml(dataEmail)}" data-phone="${escapeHtml(dataPhone)}">
               <i class="fa-solid fa-eye"></i>
             </button>
           </td>
@@ -306,11 +320,12 @@
     dom.tbody.innerHTML = html;
 
     // Attach click handlers for view buttons
-    document.querySelectorAll(".btn-view").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+    dom.tbody.querySelectorAll(".view-customer").forEach((btn) => {
+      btn.addEventListener("click", function (e) {
         e.stopPropagation();
-        const email = btn.getAttribute("data-email");
-        const phone = btn.getAttribute("data-phone");
+        const email = this.getAttribute("data-email");
+        const phone = this.getAttribute("data-phone");
+        console.log("👁️ View button clicked - Email:", email, "Phone:", phone);
         openModal(email, phone);
       });
     });
@@ -331,6 +346,7 @@
     );
 
     let html = `<span class="pg-info">Showing ${start}–${end} of ${pagination.total_rows}</span>`;
+    html += `<div class="pagination-controls">`;
     html += `<button class="pg-btn" ${pagination.current_page <= 1 ? "disabled" : ""} data-page="${pagination.current_page - 1}"><i class="fa-solid fa-chevron-left"></i></button>`;
 
     const start_btn = Math.max(1, pagination.current_page - 2);
@@ -341,6 +357,7 @@
     }
 
     html += `<button class="pg-btn" ${pagination.current_page >= pagination.total_pages ? "disabled" : ""} data-page="${pagination.current_page + 1}"><i class="fa-solid fa-chevron-right"></i></button>`;
+    html += `</div>`;
 
     dom.paginationBar.innerHTML = html;
 
@@ -352,44 +369,77 @@
     });
   }
 
-  async function openModal(email, phone) {
-    console.log("🔍 Opening modal for:", email || phone);
+  function openModal(email, phone) {
+    console.log("🔍 Opening modal for - Email:", email, "Phone:", phone);
 
-    if (!dom.modalOverlay || !dom.modalLoading || !dom.modalContent) return;
+    if (!dom.modalOverlay) {
+      console.error("❌ Modal overlay not found");
+      return;
+    }
 
-    document.body.classList.add("modal-open");
+    // Show overlay
     dom.modalOverlay.classList.add("open");
-    dom.modalLoading.style.display = "block";
-    dom.modalContent.style.display = "none";
+    document.body.classList.add("customer-order-modal-open");
 
+    // Show loading, hide body
+    if (dom.modalLoading) {
+      dom.modalLoading.style.display = "block";
+      dom.modalLoading.innerHTML = `
+        <div class="customer-order-modal-loading">
+          <div class="spinner"></div>
+          <p>Loading customer profile...</p>
+        </div>
+      `;
+    }
+    if (dom.modalBody) dom.modalBody.style.display = "none";
+
+    // Build params
     const params = new URLSearchParams();
     if (email && email !== "—") params.set("email", email);
     if (phone && phone !== "—") params.set("phone", phone);
 
+    if (!params.toString()) {
+      console.warn("⚠️ No email or phone provided for modal");
+      if (dom.modalLoading) {
+        dom.modalLoading.innerHTML = `
+          <div class="customer-order-modal-loading">
+            <p style="color:#dc2626"><i class="fa-solid fa-circle-exclamation"></i> No customer identifier found</p>
+          </div>
+        `;
+      }
+      return;
+    }
+
     const apiUrl = `../../api/admin_site/customers/fetch_customer_details.php?${params}`;
     console.log("📡 Loading details from:", apiUrl);
 
-    try {
-      const response = await fetch(apiUrl);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log("✓ Customer details:", data);
-
-      if (!data.success) {
-        throw new Error(data.error || "Failed to load customer details");
-      }
-
-      populateModal(data);
-    } catch (error) {
-      console.error("❌ Modal error:", error);
-      if (dom.modalLoading) {
-        dom.modalLoading.innerHTML = `<p style="color:#dc2626"><i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(error.message)}</p>`;
-      }
-    }
+    fetch(apiUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log("✓ Customer details response:", data);
+        if (!data.success) {
+          throw new Error(data.error || "Failed to load customer details");
+        }
+        populateModal(data);
+      })
+      .catch((error) => {
+        console.error("❌ Modal error:", error);
+        if (dom.modalLoading) {
+          dom.modalLoading.style.display = "block";
+          dom.modalLoading.innerHTML = `
+            <div class="customer-order-modal-loading">
+              <p style="color:#dc2626"><i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(error.message)}</p>
+              <button onclick="location.reload()" style="margin-top:12px;padding:6px 16px;cursor:pointer;background:#1a56db;color:white;border:none;border-radius:4px">Retry</button>
+            </div>
+          `;
+        }
+        if (dom.modalBody) dom.modalBody.style.display = "none";
+      });
   }
 
   function populateModal(data) {
@@ -430,17 +480,17 @@
         quotesList.innerHTML = quotations
           .map(
             (q) => `
-            <div class="history-card">
-              <div class="history-card-top">
-                <span class="history-card-num">${escapeHtml(q.quote_number)}</span>
-                <span class="history-card-date">${formatDate(q.created_at)}</span>
+            <div class="customer-order-modal-card">
+              <div class="customer-order-modal-card-top">
+                <span class="customer-order-modal-card-number">${escapeHtml(q.quote_number)}</span>
+                <span class="customer-order-modal-card-date">${formatDate(q.created_at)}</span>
               </div>
-              ${q.items_summary ? `<div class="history-card-items"><i class="fa-solid fa-file-lines"></i> ${escapeHtml(q.items_summary)}</div>` : ""}
-              <div class="history-card-foot">
-                <span class="history-card-amount">${formatCurrency(q.total)}</span>
-                <div style="display:flex;gap:6px;">
+              ${q.items_summary ? `<div class="customer-order-modal-card-items"><i class="fa-solid fa-file-lines"></i> ${escapeHtml(q.items_summary)}</div>` : ""}
+              <div class="customer-order-modal-card-footer">
+                <span class="customer-order-modal-card-amount">${formatCurrency(q.total)}</span>
+                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                   <span class="status-badge ${escapeHtml(q.status)}">${escapeHtml(q.status || "draft")}</span>
-                  ${q.expires_at ? `<span style="font-size:11px;color:#6b7280">Expires ${formatDate(q.expires_at)}</span>` : ""}
+                  ${q.expires_at ? `<span style="font-size:11px;color:#64748b">Expires ${formatDate(q.expires_at)}</span>` : ""}
                 </div>
               </div>
             </div>
@@ -453,59 +503,45 @@
       if (quotesList) quotesList.innerHTML = "";
     }
 
-    // Show modal content
+    // Show modal body, hide loading
     if (dom.modalLoading) dom.modalLoading.style.display = "none";
-    if (dom.modalContent) dom.modalContent.style.display = "block";
-    console.log("✓ Modal populated");
+    if (dom.modalBody) dom.modalBody.style.display = "block";
+    console.log("✓ Modal populated successfully");
   }
 
   function closeModal() {
-    document.body.classList.remove("modal-open");
-    if (dom.modalOverlay) dom.modalOverlay.classList.remove("open");
-  }
-
-  function addClearSearchButton() {
-    const searchWrapper = document.querySelector(".search-bar");
-    if (!searchWrapper) return;
-
-    // Check if clear button already exists
-    if (searchWrapper.querySelector(".search-clear")) return;
-
-    const clearBtn = document.createElement("button");
-    clearBtn.className = "search-clear";
-    clearBtn.innerHTML = '<i class="fa-solid fa-times"></i>';
-    clearBtn.style.cssText =
-      "position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9ca3af;display:none;";
-    clearBtn.onclick = () => {
-      if (dom.searchInput) {
-        dom.searchInput.value = "";
-        state.search = "";
-        state.page = 1;
-        fetchCustomers();
-        clearBtn.style.display = "none";
-        hideSearchResultsCount();
-      }
-    };
-
-    // Make search wrapper relative for absolute positioning
-    searchWrapper.style.position = "relative";
-    searchWrapper.appendChild(clearBtn);
-
-    // Show/hide clear button based on input
-    if (dom.searchInput) {
-      dom.searchInput.addEventListener("input", () => {
-        clearBtn.style.display = dom.searchInput.value ? "flex" : "none";
-      });
+    if (dom.modalOverlay) {
+      dom.modalOverlay.classList.remove("open");
     }
+    document.body.classList.remove("customer-order-modal-open");
+
+    // Reset modal state for next open
+    if (dom.modalLoading) {
+      dom.modalLoading.style.display = "block";
+      dom.modalLoading.innerHTML = `
+        <div class="customer-order-modal-loading">
+          <div class="spinner"></div>
+          <p>Loading customer profile...</p>
+        </div>
+      `;
+    }
+    if (dom.modalBody) dom.modalBody.style.display = "none";
   }
 
   function attachEventListeners() {
-    if (dom.modalClose) dom.modalClose.addEventListener("click", closeModal);
+    // Modal close
+    if (dom.modalClose) {
+      dom.modalClose.addEventListener("click", closeModal);
+    }
+
+    // Click outside modal to close
     if (dom.modalOverlay) {
       dom.modalOverlay.addEventListener("click", (e) => {
         if (e.target === dom.modalOverlay) closeModal();
       });
     }
+
+    // Escape key to close
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeModal();
     });
@@ -515,12 +551,27 @@
     if (dom.searchInput) {
       dom.searchInput.addEventListener("input", () => {
         clearTimeout(searchTimer);
+        updateClearButton();
         searchTimer = setTimeout(() => {
           state.search = dom.searchInput.value.trim();
-          state.page = 1; // Reset to first page when searching
+          state.page = 1;
           console.log("🔍 Searching for:", state.search);
           fetchCustomers();
         }, 350);
+      });
+    }
+
+    // Clear search
+    if (dom.searchClear) {
+      dom.searchClear.addEventListener("click", () => {
+        if (dom.searchInput) {
+          dom.searchInput.value = "";
+          state.search = "";
+          state.page = 1;
+          updateClearButton();
+          hideSearchResultsCount();
+          fetchCustomers();
+        }
       });
     }
 
@@ -528,10 +579,11 @@
     if (dom.filterPills) {
       dom.filterPills.forEach((pill) => {
         pill.addEventListener("click", () => {
-          // Clear search when using filter pills
-          if (dom.searchInput && state.search) {
+          if (dom.searchInput) {
             dom.searchInput.value = "";
             state.search = "";
+            updateClearButton();
+            hideSearchResultsCount();
           }
           dom.filterPills.forEach((p) => p.classList.remove("active"));
           pill.classList.add("active");
@@ -547,10 +599,11 @@
     if (dom.statCards) {
       dom.statCards.forEach((card) => {
         card.addEventListener("click", () => {
-          // Clear search when using stat cards
-          if (dom.searchInput && state.search) {
+          if (dom.searchInput) {
             dom.searchInput.value = "";
             state.search = "";
+            updateClearButton();
+            hideSearchResultsCount();
           }
           const filter = card.dataset.filter;
           if (dom.filterPills) {
@@ -647,10 +700,9 @@
     }
 
     attachEventListeners();
-    addClearSearchButton();
+    updateClearButton();
     console.log("✓ Event listeners attached");
 
-    // Load customers
     fetchCustomers();
   }
 
@@ -664,6 +716,8 @@
   // Export for debugging
   window.customerApp = {
     fetchCustomers,
+    openModal,
+    closeModal,
     getState: () => ({ ...state }),
   };
 })();

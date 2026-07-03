@@ -240,6 +240,15 @@ include '../includes/header.php';
                                     <span class="payment-label">Reference #:</span>
                                     <span id="modalReference" class="payment-value">-</span>
                                 </div>
+                                <div class="payment-row receiver-row">
+                                    <label class="payment-label" for="modalReceiverName">Receiver Name</label>
+                                    <div class="receiver-controls">
+                                        <input type="text" id="modalReceiverName" class="form-input" placeholder="Enter receiver name">
+                                        <button type="button" class="btn-primary" id="saveReceiverBtn" onclick="saveReceiverName()">
+                                            <i class="fa-solid fa-floppy-disk"></i> Save
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

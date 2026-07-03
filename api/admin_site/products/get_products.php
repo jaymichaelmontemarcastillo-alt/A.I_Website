@@ -2,7 +2,7 @@
 header('Content-Type: application/json');
 session_start();
 require_once __DIR__ . '/../../../connect/config.php';
-
+// api/get_products.php
 try {
     $pdo = getDBConnection();
 

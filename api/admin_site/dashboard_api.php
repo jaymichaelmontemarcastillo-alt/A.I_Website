@@ -139,6 +139,27 @@ function getKPI(PDO $pdo): array
         WHERE status = 'converted'
     ")->fetch(PDO::FETCH_ASSOC);
 
+    // Product and material value summary
+    $productValue = $pdo->query("
+        SELECT
+            COALESCE(SUM(COALESCE(price, 0)), 0) AS total_products_value,
+            COUNT(*) AS product_count
+        FROM products
+    ")->fetch(PDO::FETCH_ASSOC);
+
+    $materialValue = $pdo->query("
+        SELECT
+            COALESCE(SUM(COALESCE(total_cost, 0)), 0) AS total_materials_value,
+            COUNT(*) AS material_count
+        FROM materials
+    ")->fetch(PDO::FETCH_ASSOC);
+
+    $inventoryValue = [
+        'total_value'      => (float)($productValue['total_products_value'] ?? 0) + (float)($materialValue['total_materials_value'] ?? 0),
+        'products_count'   => (int)($productValue['product_count'] ?? 0),
+        'materials_count'  => (int)($materialValue['material_count'] ?? 0),
+    ];
+
     // Low Stock from materials table
     $stock = $pdo->query("
         SELECT
@@ -152,6 +173,7 @@ function getKPI(PDO $pdo): array
         'revenue_change' => $revenueChange,
         'orders'         => $orders,
         'customers'      => $customers,
+        'inventory_value' => $inventoryValue,
         'stock'          => $stock,
     ];
 }

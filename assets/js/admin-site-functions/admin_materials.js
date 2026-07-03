@@ -54,6 +54,25 @@ let auditAutoCompute = true;
 // Store type options for datalist
 let matTypeOptions = [];
 
+// Shared helper for opening the audit modal from Quotation page
+window.openQuotationAuditModal = async (
+  quotationId,
+  quotationNumber = null,
+) => {
+  if (!quotationId) {
+    matShowToast("No quotation selected for audit.", "error");
+    return;
+  }
+
+  if (quotationNumber) {
+    window.currentAuditQuotationNumber = quotationNumber;
+  }
+
+  window.currentAuditQuotationId = quotationId;
+
+  await window.matOpenAuditModalForQuotation?.(quotationId, quotationNumber);
+};
+
 /* ══════════════════════════════════════════════════════════════
    ENHANCED MATERIAL SELECTOR CLASS
 ══════════════════════════════════════════════════════════════ */
@@ -1292,9 +1311,100 @@ const matComputeTotals = () => {
     `₱${amountTotal.toFixed(2)}`;
 };
 
-window.matOpenAuditModal = () => {
+const matPrefillAuditFormFromQuotation = async (quotationId) => {
+  if (!quotationId) return;
+
+  try {
+    const response = await fetch(
+      `../../api/admin_site/inventory/get_quotation_materials_for_audit.php?id=${quotationId}`,
+    );
+    const result = await response.json();
+
+    if (!result.success) {
+      matShowToast(
+        result.message || "Failed to load quotation details",
+        "error",
+      );
+      return;
+    }
+
+    const quotation = result.quotation || {};
+    const items = result.items || [];
+    const suggestedMaterials = result.suggested_materials || [];
+
+    document.getElementById("materialCostsContainer").innerHTML = "";
+    document.getElementById("rejectCostsContainer").innerHTML = "";
+    document.getElementById("itemsContainer").innerHTML = "";
+
+    materialSelectors = [];
+    rejectSelectors = [];
+
+    if (suggestedMaterials.length > 0) {
+      suggestedMaterials.forEach((material) => matAddMaterialRow(material));
+    } else {
+      matAddMaterialRow();
+    }
+
+    matAddRejectRow();
+
+    if (items.length > 0) {
+      items.forEach((item) =>
+        matAddItemRow({
+          name: item.description || "",
+          quantity: item.quantity || 1,
+          unit_price: item.unit_price || 0,
+          total_amount: item.total || 0,
+        }),
+      );
+    } else {
+      matAddItemRow();
+    }
+
+    const itemNameInput = document.getElementById("auditItemName");
+    if (itemNameInput) {
+      const itemName = items[0]?.description || quotation.quote_number || "";
+      itemNameInput.value = itemName ? itemName.replace(/<[^>]+>/g, "") : "";
+    }
+
+    const createdByInput = document.getElementById("createdBy");
+    if (createdByInput) {
+      createdByInput.value = quotation.client_name || "";
+    }
+
+    const auditedByInput = document.getElementById("auditedBy");
+    if (auditedByInput) {
+      auditedByInput.value = "";
+    }
+
+    const acknowledgedByInput = document.getElementById("acknowledgedBy");
+    if (acknowledgedByInput) {
+      acknowledgedByInput.value = "";
+    }
+
+    matComputeTotals();
+  } catch (error) {
+    console.error("Failed to load quotation for audit:", error);
+    matShowToast("Unable to load quotation details for audit.", "error");
+  }
+};
+
+window.matOpenAuditModalForQuotation = async (
+  quotationId,
+  quotationNumber = null,
+) => {
+  if (quotationId) {
+    window.currentAuditQuotationId = quotationId;
+  }
+  if (quotationNumber) {
+    window.currentAuditQuotationNumber = quotationNumber;
+  }
+
+  await window.matOpenAuditModal();
+};
+
+window.matOpenAuditModal = async () => {
   matInitAuditModal();
-  matLoadMaterialsForAudit();
+  await matLoadMaterialsForAudit();
   document.getElementById("materialCostsContainer").innerHTML = "";
   document.getElementById("rejectCostsContainer").innerHTML = "";
   document.getElementById("itemsContainer").innerHTML = "";
@@ -1310,9 +1420,15 @@ window.matOpenAuditModal = () => {
   auditAutoCompute = true;
   materialSelectors = [];
   rejectSelectors = [];
-  matAddMaterialRow();
-  matAddRejectRow();
-  matAddItemRow();
+
+  if (window.currentAuditQuotationId) {
+    await matPrefillAuditFormFromQuotation(window.currentAuditQuotationId);
+  } else {
+    matAddMaterialRow();
+    matAddRejectRow();
+    matAddItemRow();
+  }
+
   document.getElementById("auditModal").style.display = "flex";
   document.body.style.overflow = "hidden";
 };

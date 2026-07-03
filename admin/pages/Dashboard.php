@@ -15,11 +15,18 @@ $current_page = 'Dashboard';
             <?php include 'admin_page_header.php'; ?>
 
             <section class="content-body">
-                <h1 class="page-title">Dashboard</h1>
-                <p class="subtitle">Overview of your business performance</p>
+                <div class="dashboard-header">
+                    <div>
+                        <h1 class="page-title">Dashboard</h1>
+                        <p class="subtitle">Overview of your business performance</p>
+                    </div>
+                    <button class="view-reports-btn" id="openReportModalBtn">
+                        <i class="fa-regular fa-eye"></i> View All Reports
+                    </button>
+                </div>
 
                 <!-- ══════════════════════════════════════
-                     KPI CARDS — loaded immediately
+                     KPI CARDS — 4 cards only
                 ══════════════════════════════════════ -->
                 <div class="stats-grid" id="kpiGrid">
                     <div class="stat-card">
@@ -64,15 +71,15 @@ $current_page = 'Dashboard';
 
                     <div class="stat-card">
                         <div class="stat-text">
-                            <p>Low Stock</p>
-                            <h3 id="kpi-stock-low">
-                                <span class="skeleton skeleton-text" style="width:60px"></span>
+                            <p>Products & Materials Value</p>
+                            <h3 id="kpi-inventory-value">
+                                <span class="skeleton skeleton-text" style="width:110px"></span>
                             </h3>
-                            <span id="kpi-stock-out" style="font-size:.8rem;color:var(--danger)">
-                                <span class="skeleton skeleton-text" style="width:90px"></span>
+                            <span id="kpi-inventory-summary" class="positive">
+                                <span class="skeleton skeleton-text" style="width:120px"></span>
                             </span>
                         </div>
-                        <div class="stat-icon stock"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="stat-icon inventory"><i class="fa-solid fa-boxes-stacked"></i></div>
                     </div>
                 </div>
 
@@ -192,16 +199,27 @@ $current_page = 'Dashboard';
                             <p class="loading-row">Loading alerts...</p>
                         </div>
                     </div>
+                </div>
 
-
-
-                    <!-- ══════════════════════════════════════
-                     QUOTATIONS & REQUESTS
+                <!-- ══════════════════════════════════════
+                     REPORT MODAL
                 ══════════════════════════════════════ -->
-
-                    <!-- ══════════════════════════════════════
-                     RECENT ACTIVITY LOGS
-                ══════════════════════════════════════ -->
+                <div class="report-modal-overlay" id="reportModalOverlay">
+                    <div class="report-modal">
+                        <div class="report-modal-header">
+                            <h2><i class="fa-regular fa-file-lines"></i> Full Report Overview</h2>
+                            <button class="report-modal-close" id="closeReportModalBtn">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="report-modal-body" id="reportModalBody">
+                            <!-- Dynamic content -->
+                        </div>
+                        <div class="report-modal-footer">
+                            <button id="closeReportModalFooterBtn">Close</button>
+                        </div>
+                    </div>
+                </div>
 
             </section><!-- end content-body -->
         </main>

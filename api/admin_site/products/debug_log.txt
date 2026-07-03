@@ -162,3 +162,38 @@ Product updated: 133
 SUCCESS: Product updated
 Product updated: 133
 SUCCESS: Product updated
+=== 2026-07-01 11:36:09 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 348
+    [name] => Bamboo 500ml
+    [sku] => BAMBOO50-393
+    [product_type_id] => 9
+    [price] => 195.00
+    [stock] => 99
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => [{"material_id":1326,"quantity":1}]
+)
+
+POST: Array
+(
+    [id] => 348
+    [name] => Bamboo 500ml
+    [sku] => BAMBOO50-393
+    [product_type_id] => 9
+    [price] => 195.00
+    [stock] => 99
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => [{"material_id":1326,"quantity":1}]
+)
+
+Parsed: id=348, name=Bamboo 500ml, type=9
+Parsed: id=348, name=Bamboo 500ml, type=9
+Product updated: 348
+Product updated: 348
+SUCCESS: Product updated
+SUCCESS: Product updated

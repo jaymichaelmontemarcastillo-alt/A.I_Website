@@ -92,6 +92,53 @@ function closeOrderModal() {
   window.currentOrderNumber = null;
 }
 
+function saveReceiverName() {
+  const receiverInput = document.getElementById("modalReceiverName");
+  const saveBtn = document.getElementById("saveReceiverBtn");
+  if (!receiverInput || !window.currentOrderData) return;
+
+  const receiverName = receiverInput.value.trim();
+  const payload = new URLSearchParams();
+  payload.append("receiver_name", receiverName);
+  payload.append("order_id", window.currentOrderData.order_id || "");
+  payload.append("quote_number", window.currentOrderData.quote_number || "");
+  payload.append("order_number", window.currentOrderData.order_number || "");
+
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  }
+
+  fetch("../../api/admin_site/order_processes/save_receiver_name.php", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: payload.toString(),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      if (data.success) {
+        if (window.currentOrderData) {
+          window.currentOrderData.receiver_name =
+            data.receiver_name || receiverName;
+        }
+        receiverInput.value = data.receiver_name || receiverName;
+        showToast("Receiver name saved", false);
+      } else {
+        showToast(data.message || "Unable to save receiver name", true);
+      }
+    })
+    .catch((err) => {
+      console.error("Error saving receiver name:", err);
+      showToast("Unable to save receiver name", true);
+    })
+    .finally(() => {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save';
+      }
+    });
+}
+
 function populateModal(order, items) {
   // Header
   document.getElementById("modalOrderId").textContent =
@@ -106,6 +153,10 @@ function populateModal(order, items) {
     order.customer_email || "N/A";
   document.getElementById("modalCustomerPhone").textContent =
     order.customer_phone || "N/A";
+  const receiverInput = document.getElementById("modalReceiverName");
+  if (receiverInput) {
+    receiverInput.value = order.receiver_name || order.receiver || "";
+  }
   document.getElementById("modalAddress").textContent = order.address || "N/A";
 
   // Quotation Information

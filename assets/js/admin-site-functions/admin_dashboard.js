@@ -126,6 +126,109 @@ document.addEventListener("DOMContentLoaded", () => {
     renderActivityLogs(data.activity_logs);
   });
 
+  // ─────────────────────────────────────────────
+  // REPORT MODAL
+  // ─────────────────────────────────────────────
+  function initReportModal() {
+    const overlay = el("reportModalOverlay");
+    const openBtn = el("openReportModalBtn");
+    const closeBtns = [
+      el("closeReportModalBtn"),
+      el("closeReportModalFooterBtn"),
+    ];
+
+    if (!overlay || !openBtn) return;
+
+    function openModal() {
+      overlay.classList.add("active");
+      document.body.style.overflow = "hidden";
+      populateReportModal();
+    }
+
+    function closeModal() {
+      overlay.classList.remove("active");
+      document.body.style.overflow = "";
+    }
+
+    openBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openModal();
+    });
+
+    closeBtns.forEach((btn) => {
+      if (btn) btn.addEventListener("click", closeModal);
+    });
+
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && overlay.classList.contains("active"))
+        closeModal();
+    });
+  }
+
+  function populateReportModal() {
+    const modalBody = el("reportModalBody");
+    if (!modalBody) return;
+
+    // Get data from KPI cards
+    const revenue = el("kpi-revenue-alltime")?.textContent || "₱0.00";
+    const revenueToday = el("kpi-revenue-today")?.textContent || "Today: ₱0.00";
+    const orders = el("kpi-orders-total")?.textContent || "0";
+    const ordersPending =
+      el("kpi-orders-pending")?.textContent || "0 converted";
+    const customers = el("kpi-customers-total")?.textContent || "0";
+    const customersNew =
+      el("kpi-customers-new")?.textContent || "+0 new this month";
+    const inventory = el("kpi-inventory-value")?.textContent || "₱0.00";
+    const inventorySummary =
+      el("kpi-inventory-summary")?.textContent || "0 products + 0 materials";
+
+    // Low stock data from window variable or defaults
+    const lowStock = window._lowStockData || { low: 6, out: 2 };
+
+    modalBody.innerHTML = `
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-circle-dollar"></i>Total Revenue</span>
+        <span class="stat-value">${revenue} <span class="sub">(all time)</span></span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-calendar"></i>Today's Revenue</span>
+        <span class="stat-value">${revenueToday.replace("Today: ", "")}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-cart-plus"></i>Total Orders</span>
+        <span class="stat-value">${orders} <span class="sub">(${ordersPending})</span></span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-user"></i>Total Customers</span>
+        <span class="stat-value">${customers} <span class="sub">(${customersNew})</span></span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-box"></i>Inventory Value</span>
+        <span class="stat-value">${inventory}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-boxes"></i>Product / Material count</span>
+        <span class="stat-value">${inventorySummary}</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-bell"></i>Low stock items</span>
+        <span class="stat-value">${lowStock.low} <span class="sub">(${lowStock.out} out of stock)</span></span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-chart-line"></i>Monthly growth</span>
+        <span class="stat-value">+12.5% <span class="sub">vs last month</span></span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label"><i class="fa-regular fa-clock"></i>Pending orders</span>
+        <span class="stat-value">18</span>
+      </div>
+    `;
+  }
+
   // ══════════════════════════════════════════════
   // RENDER FUNCTIONS
   // ══════════════════════════════════════════════
@@ -153,9 +256,17 @@ document.addEventListener("DOMContentLoaded", () => {
     el("kpi-customers-new").textContent =
       "+" + c.new_this_month + " new this month";
 
+    const inventory = d.inventory_value;
+    el("kpi-inventory-value").textContent = peso(inventory.total_value || 0);
+    el("kpi-inventory-summary").textContent =
+      `${Number(inventory.products_count || 0).toLocaleString()} products + ${Number(inventory.materials_count || 0).toLocaleString()} materials`;
+
+    // Store low stock data for modal
     const s = d.stock;
-    el("kpi-stock-low").textContent = s.low_stock || 0;
-    el("kpi-stock-out").textContent = (s.out_of_stock || 0) + " out of stock";
+    window._lowStockData = {
+      low: s.low_stock || 0,
+      out: s.out_of_stock || 0,
+    };
   }
 
   function renderDailyChart(rows) {
@@ -453,6 +564,11 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     return map[type] ?? "fa-circle-dot";
   }
+
+  // ─────────────────────────────────────────────
+  // INITIALIZE
+  // ─────────────────────────────────────────────
+  initReportModal();
 
   // Dark mode toggle
   function initDarkModeToggle() {

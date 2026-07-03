@@ -2,7 +2,7 @@
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 header('Content-Disposition: attachment; filename="products_export_' . date('Y-m-d') . '.xlsx"');
 header('Cache-Control: max-age=0');
-
+//api/export_products.php
 session_start();
 require_once __DIR__ . '/../../../connect/config.php';
 
