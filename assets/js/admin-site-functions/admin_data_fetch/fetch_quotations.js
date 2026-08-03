@@ -108,172 +108,143 @@
     
     /* Product suggestion dropdown */
     .qe-suggestion-dropdown {
-      position: absolute;
+      position: fixed;
       background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      z-index: 100050;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 400px;
+      min-width: 280px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      border: 1px solid #e5e7eb;
+    }
+
+    .qe-suggestion-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .qe-suggestion-search-wrapper {
+      flex: 1;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .qe-suggestion-search-wrapper i {
+      position: absolute;
+      left: 12px;
+      color: #94a3b8;
+      font-size: 14px;
+    }
+
+    .qe-suggestion-search {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
       border: 1px solid #e2e8f0;
       border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 100050;
-      min-width: 250px;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
     }
-    .qe-suggestion-item {
-      padding: 8px 12px;
+
+    .qe-suggestion-search:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
+    }
+
+    .qe-suggestion-close {
+      background: none;
+      border: none;
+      font-size: 24px;
       cursor: pointer;
-      border-bottom: 1px solid #f0f0f0;
-      transition: background 0.2s;
+      color: #94a3b8;
+      padding: 0 8px;
+      line-height: 1;
+      border-radius: 6px;
+      transition: all 0.2s;
     }
-    .qe-suggestion-item:hover {
-      background: #f0fdf4;
+
+    .qe-suggestion-close:hover {
+      background: #e2e8f0;
+      color: #475569;
     }
-    .qe-suggestion-name {
-      font-weight: 600;
-      color: #111;
+
+    .qe-suggestion-list {
+      flex: 1;
+      overflow-y: auto;
+      max-height: 350px;
+    }
+
+    .qe-suggestion-loading,
+    .qe-suggestion-empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: #94a3b8;
       font-size: 13px;
     }
-    .qe-suggestion-price {
-      font-size: 11px;
-      color: #10b981;
-      margin-top: 2px;
+
+    .qe-suggestion-loading i,
+    .qe-suggestion-empty i {
+      margin-right: 8px;
     }
-    /* Product Suggestion Dropdown Styles */
-.qe-suggestion-dropdown {
-    position: fixed;
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-    z-index: 100050;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    max-height: 400px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
 
-.qe-suggestion-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 16px;
-    background: #f8fafc;
-    border-bottom: 1px solid #e2e8f0;
-}
+    .qe-suggestion-item {
+      padding: 12px 16px;
+      cursor: pointer;
+      border-bottom: 1px solid #f1f5f9;
+      transition: all 0.2s;
+    }
 
-.qe-suggestion-search-wrapper {
-    flex: 1;
-    position: relative;
-    display: flex;
-    align-items: center;
-}
+    .qe-suggestion-item:hover {
+      background: #f0fdf4;
+      padding-left: 20px;
+    }
 
-.qe-suggestion-search-wrapper i {
-    position: absolute;
-    left: 12px;
-    color: #94a3b8;
-    font-size: 14px;
-}
+    .qe-suggestion-name {
+      font-weight: 600;
+      color: #0f172a;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
 
-.qe-suggestion-search {
-    width: 100%;
-    padding: 8px 12px 8px 34px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    font-size: 13px;
-    outline: none;
-    transition: all 0.2s;
-}
+    .qe-suggestion-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 12px;
+    }
 
-.qe-suggestion-search:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
-}
+    .qe-suggestion-type {
+      color: #64748b;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
 
-.qe-suggestion-close {
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #94a3b8;
-    padding: 0 8px;
-    line-height: 1;
-    border-radius: 6px;
-    transition: all 0.2s;
-}
+    .qe-suggestion-price {
+      color: #10b981;
+      font-weight: 600;
+    }
 
-.qe-suggestion-close:hover {
-    background: #e2e8f0;
-    color: #475569;
-}
+    .qe-suggestion-stock {
+      color: #3b82f6;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
 
-.qe-suggestion-list {
-    flex: 1;
-    overflow-y: auto;
-    max-height: 350px;
-}
-
-.qe-suggestion-loading,
-.qe-suggestion-empty {
-    padding: 40px 20px;
-    text-align: center;
-    color: #94a3b8;
-    font-size: 13px;
-}
-
-.qe-suggestion-loading i,
-.qe-suggestion-empty i {
-    margin-right: 8px;
-}
-
-.qe-suggestion-item {
-    padding: 12px 16px;
-    cursor: pointer;
-    border-bottom: 1px solid #f1f5f9;
-    transition: all 0.2s;
-}
-
-.qe-suggestion-item:hover {
-    background: #f0fdf4;
-    padding-left: 20px;
-}
-
-.qe-suggestion-name {
-    font-weight: 600;
-    color: #0f172a;
-    font-size: 14px;
-    margin-bottom: 6px;
-}
-
-.qe-suggestion-details {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    font-size: 12px;
-}
-
-.qe-suggestion-type {
-    color: #64748b;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.qe-suggestion-price {
-    color: #10b981;
-    font-weight: 600;
-}
-
-.qe-suggestion-stock {
-    color: #3b82f6;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.qe-suggestion-type i,
-.qe-suggestion-stock i {
-    font-size: 11px;
-}
+    .qe-suggestion-type i,
+    .qe-suggestion-stock i {
+      font-size: 11px;
+    }
     @keyframes qmFadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes qmSlideIn { from { opacity:0; transform:translateX(30px); } to { opacity:1; transform:none; } }
     @keyframes qmSlideOut { from { opacity:1; transform:none; } to { opacity:0; transform:translateX(30px); } }
@@ -314,6 +285,7 @@ class QuotationManager {
 
     this.init();
   }
+
   debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -423,11 +395,15 @@ class QuotationManager {
   }
 
   // ── CREATE MODAL ─────────────────────────────────────────────────────────
+  // ── CREATE MODAL ─────────────────────────────────────────────────────────
   openCreateModal() {
     this._isCreateMode = true;
     this._editingId = null;
     this._currentQuotationStatus = null;
     this._rowCounter = 0;
+
+    // Save scroll position
+    this._scrollY = window.scrollY;
 
     const overlay = document.getElementById("QuotationEditModal");
     if (!overlay) {
@@ -440,21 +416,41 @@ class QuotationManager {
     if (titleEl) titleEl.textContent = "Create New Quotation";
     if (subtitleEl) subtitleEl.textContent = "New Quotation";
 
-    // Hide delivery receipt button for new quotations
     this._toggleDeliveryReceiptButton(false);
+    this._toggleAuditButton(false);
 
-    overlay.style.display = "flex";
-    document.body.style.overflow = "hidden";
-
+    // Clear form fields
     this._clearModalFields();
 
+    // Clear items table and add one empty row
     const tbody = document.getElementById("qeItemsBody");
-    if (tbody) tbody.innerHTML = "";
-    this._appendItemRow();
+    if (tbody) {
+      tbody.innerHTML = "";
+      this._rowCounter = 0;
+      this._appendItemRow();
+    }
+
     this.recalcTotals();
+
+    // Show the overlay with scroll lock
+    overlay.removeAttribute("style");
+    overlay.classList.add("active", "show");
+    overlay.style.display = "flex";
+    document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${this._scrollY}px`;
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+    document.body.classList.add("modal-open");
+
+    // Force reflow
+    void overlay.offsetHeight;
   }
 
   // ── EDIT MODAL ───────────────────────────────────────────────────────────
+  // ── EDIT MODAL ───────────────────────────────────────────────────────────
+  // ── EDIT MODAL ───────────────────────────────────────────────────────────
+  // In fetch_quotations.js - Update openEditModal method
   async openEditModal(id) {
     this._isCreateMode = false;
     this._editingId = id;
@@ -469,8 +465,15 @@ class QuotationManager {
       return;
     }
 
-    overlay.style.display = "flex";
+    // Show the overlay
+    overlay.removeAttribute("style");
+    overlay.classList.add("active", "show");
+    overlay.style.display = "flex !important";
     document.body.style.overflow = "hidden";
+    document.body.classList.add("modal-open");
+
+    // Force reflow
+    void overlay.offsetHeight;
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
@@ -492,15 +495,18 @@ class QuotationManager {
 
       this._currentQuotationStatus = result.data.quotation.status;
       const isAudited = result.data.quotation.audited == 1;
+      const hasAudit = result.data.quotation.has_audit == 1 || isAudited;
       const isConverted = result.data.quotation.status === "converted";
 
-      // Show delivery receipt button only if status is 'accepted'
+      // Store audit status for later use
+      this._hasAudit = hasAudit;
+      this._auditId = result.data.quotation.audit_id || null;
+
       this._toggleDeliveryReceiptButton(
         result.data.quotation.status === "accepted",
       );
-
-      // Show Create Audit button only if status is 'converted' AND not audited
-      this._toggleAuditButton(isConverted && !isAudited);
+      // Pass hasAudit to toggle function
+      this._toggleAuditButton(isConverted, hasAudit);
 
       this._populateEditModal(result.data.quotation, result.data.items || []);
     } catch (err) {
@@ -517,34 +523,67 @@ class QuotationManager {
       btn.style.display = show ? "inline-flex" : "none";
     }
   }
-  _toggleAuditButton(show) {
+
+  // In fetch_quotations.js - Update the _toggleAuditButton method
+  _toggleAuditButton(show, hasAudit = false) {
     const btn = document.getElementById("qeCreateAuditBtn");
     if (btn) {
-      btn.style.display = show ? "inline-flex" : "none";
+      if (show) {
+        btn.style.display = "inline-flex";
+        // Update button text based on audit status
+        if (hasAudit) {
+          btn.innerHTML = '<i class="fa-solid fa-eye"></i> View / Edit Audit';
+          btn.dataset.mode = "edit";
+        } else {
+          btn.innerHTML =
+            '<i class="fa-solid fa-clipboard-list"></i> Create Audit Now';
+          btn.dataset.mode = "create";
+        }
+      } else {
+        btn.style.display = "none";
+      }
     }
   }
+
   _showLoader(modal) {
     const loader = document.createElement("div");
     loader.className = "qe-loading";
     loader.style.cssText =
-      "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.85);z-index:10;font-size:14px;gap:8px;";
+      "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.85);z-index:10;font-size:14px;gap:8px;border-radius:16px;";
     loader.innerHTML =
       '<i class="fa-solid fa-spinner fa-spin"></i> Loading quotation...';
-    modal.style.position = "relative";
-    modal.appendChild(loader);
+    if (modal) {
+      modal.style.position = "relative";
+      modal.appendChild(loader);
+    }
     return loader;
   }
 
   closeEditModal() {
     const overlay = document.getElementById("QuotationEditModal");
-    if (overlay) overlay.style.display = "none";
+    if (overlay) {
+      overlay.classList.remove("active", "show");
+      overlay.style.display = "none";
+    }
+    // Restore scroll - remove ALL styles
     document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.width = "";
+    document.body.style.height = "";
+
+    // Restore scroll position if saved
+    if (this._scrollY !== undefined && this._scrollY > 0) {
+      window.scrollTo(0, this._scrollY);
+      this._scrollY = undefined;
+    }
+
     this._editingId = null;
     this._isCreateMode = false;
     this._currentQuotationStatus = null;
     this._rowCounter = 0;
     this._toggleDeliveryReceiptButton(false);
-    this._toggleAuditButton(false); // Add this line
+    this._toggleAuditButton(false);
   }
 
   _populateEditModal(quotation, items) {
@@ -563,12 +602,15 @@ class QuotationManager {
     this._setVal("qeNotes", quotation.notes || "");
 
     const tbody = document.getElementById("qeItemsBody");
-    if (tbody) tbody.innerHTML = "";
+    if (tbody) {
+      tbody.innerHTML = "";
+      this._rowCounter = 0;
 
-    if (items && items.length > 0) {
-      items.forEach((item) => this._appendItemRow(item));
-    } else {
-      this._appendItemRow();
+      if (items && items.length > 0) {
+        items.forEach((item) => this._appendItemRow(item));
+      } else {
+        this._appendItemRow();
+      }
     }
 
     this.recalcTotals();
@@ -614,61 +656,61 @@ class QuotationManager {
     const tr = document.createElement("tr");
     tr.setAttribute("data-row-id", rid);
     tr.innerHTML = `
-      <tr>
-        <input type="number" class="qe-item-input qe-qty" data-row="${rid}"
-          value="${this._esc(String(qty))}" min="0" step="1" placeholder="1"
-          oninput="quotationManager._rowCalc(${rid})">
-      </td>
-      <td class="qe-desc-cell" style="position: relative;">
-        <div class="qe-editor-toolbar">
-          <button type="button" class="qe-toolbar-btn" title="Bold" data-cmd="bold">
-            <b>B</b>
-          </button>
-          <button type="button" class="qe-toolbar-btn" title="Italic" data-cmd="italic">
-            <i>I</i>
-          </button>
-          <button type="button" class="qe-toolbar-btn" title="Underline" data-cmd="underline">
-            <u>U</u>
-          </button>
-          <span class="toolbar-sep">|</span>
-          <button type="button" class="qe-toolbar-btn" title="Bullet List" data-cmd="insertUnorderedList">
-            • List
-          </button>
-          <button type="button" class="qe-toolbar-btn" title="Numbered List" data-cmd="insertOrderedList">
-            1. List
-          </button>
-          <span class="toolbar-sep">|</span>
-          <button type="button" class="qe-toolbar-btn" title="Indent" data-cmd="indent">
-            → Indent
-          </button>
-          <button type="button" class="qe-toolbar-btn" title="Outdent" data-cmd="outdent">
-            ← Outdent
-          </button>
-          <span class="toolbar-sep">|</span>
-          <button type="button" class="qe-toolbar-btn" title="Clear Formatting" data-cmd="removeFormat">
-            Clear
-          </button>
-          <button type="button" class="qe-toolbar-btn" title="Search Product" data-cmd="searchProduct">
-            🔍 Product
-          </button>
-        </div>
-        <div class="qe-editor-content qe-desc" data-row="${rid}"
-          contenteditable="true" spellcheck="true"
-        >${descHtml}</div>
-      </td>
-      <td>
-        <input type="number" class="qe-item-input qe-price" data-row="${rid}"
-          value="${this._esc(String(price))}" min="0" step="0.01" placeholder="0.00"
-          oninput="quotationManager._rowCalc(${rid})">
-      </td>
-      <td>
-        <span class="qe-item-total" id="qeRowTotal_${rid}">₱ ${total}</span>
-      </td>
-      <td>
-        <button class="qe-btn-remove" onclick="quotationManager._removeRow(${rid})" title="Remove">
-          <i class="fa-solid fa-trash"></i>
-        </button>
-      </td>
+        <td>
+            <input type="number" class="qe-item-input qe-qty" data-row="${rid}"
+                value="${this._esc(String(qty))}" min="0" step="1" placeholder="1"
+                oninput="quotationManager._rowCalc(${rid})">
+        </td>
+        <td class="qe-desc-cell" style="position: relative;">
+            <div class="qe-editor-toolbar">
+                <button type="button" class="qe-toolbar-btn" title="Bold" data-cmd="bold">
+                    <b>B</b>
+                </button>
+                <button type="button" class="qe-toolbar-btn" title="Italic" data-cmd="italic">
+                    <i>I</i>
+                </button>
+                <button type="button" class="qe-toolbar-btn" title="Underline" data-cmd="underline">
+                    <u>U</u>
+                </button>
+                <span class="toolbar-sep">|</span>
+                <button type="button" class="qe-toolbar-btn" title="Bullet List" data-cmd="insertUnorderedList">
+                    • List
+                </button>
+                <button type="button" class="qe-toolbar-btn" title="Numbered List" data-cmd="insertOrderedList">
+                    1. List
+                </button>
+                <span class="toolbar-sep">|</span>
+                <button type="button" class="qe-toolbar-btn" title="Indent" data-cmd="indent">
+                    → Indent
+                </button>
+                <button type="button" class="qe-toolbar-btn" title="Outdent" data-cmd="outdent">
+                    ← Outdent
+                </button>
+                <span class="toolbar-sep">|</span>
+                <button type="button" class="qe-toolbar-btn" title="Clear Formatting" data-cmd="removeFormat">
+                    Clear
+                </button>
+                <button type="button" class="qe-toolbar-btn" title="Search Product" data-cmd="searchProduct">
+                    🔍 Product
+                </button>
+            </div>
+            <div class="qe-editor-content qe-desc" data-row="${rid}"
+                contenteditable="true" spellcheck="true"
+            >${descHtml}</div>
+        </td>
+        <td>
+            <input type="number" class="qe-item-input qe-price" data-row="${rid}"
+                value="${this._esc(String(price))}" min="0" step="0.01" placeholder="0.00"
+                oninput="quotationManager._rowCalc(${rid})">
+        </td>
+        <td>
+            <span class="qe-item-total" id="qeRowTotal_${rid}">₱ ${total}</span>
+        </td>
+        <td>
+            <button class="qe-btn-remove" onclick="quotationManager._removeRow(${rid})" title="Remove">
+                <i class="fa-solid fa-trash"></i>
+            </button>
+        </td>
     `;
 
     tbody.appendChild(tr);
@@ -706,15 +748,31 @@ class QuotationManager {
     const rect = editor.getBoundingClientRect();
     const viewportWidth = window.innerWidth;
 
-    // Determine best position (left or right)
     let leftPos;
     const dropdownWidth = 320;
 
-    // If editor is near the right edge, position dropdown to the left
     if (rect.right + dropdownWidth > viewportWidth) {
       leftPos = rect.left - dropdownWidth + rect.width;
     } else {
       leftPos = rect.right;
+    }
+
+    // Use cached products if available
+    let allMaterials = this._productsCache;
+
+    // Only fetch if cache is empty
+    if (!allMaterials || allMaterials.length === 0) {
+      try {
+        const response = await fetch(this.config.productsApiUrl);
+        const result = await this._parseJSON(response);
+        if (result.success) {
+          allMaterials = result.products;
+          this._productsCache = allMaterials;
+        }
+      } catch (error) {
+        console.error("Error loading materials:", error);
+        return;
+      }
     }
 
     // Create dropdown container
@@ -757,27 +815,12 @@ class QuotationManager {
     const listContainer = dropdown.querySelector(".qe-suggestion-list");
     const closeBtn = dropdown.querySelector(".qe-suggestion-close");
 
-    let allMaterials = [];
-
-    // Fetch materials
-    try {
-      const response = await fetch(
-        "../../api/admin_site/get_products_for_quotation.php",
-      );
-      const result = await response.json();
-
-      if (!result.success || !result.products || result.products.length === 0) {
-        listContainer.innerHTML =
-          '<div class="qe-suggestion-empty"><i class="fa-solid fa-box-open"></i> No materials available</div>';
-        return;
-      }
-
-      allMaterials = result.products;
+    // Use cached materials
+    if (allMaterials && allMaterials.length > 0) {
       this.renderMaterialList(allMaterials, listContainer, editor, rid);
-    } catch (error) {
-      console.error("Error loading materials:", error);
+    } else {
       listContainer.innerHTML =
-        '<div class="qe-suggestion-empty"><i class="fa-solid fa-exclamation-triangle"></i> Error loading materials</div>';
+        '<div class="qe-suggestion-empty"><i class="fa-solid fa-box-open"></i> No materials available</div>';
     }
 
     // Search functionality
@@ -1202,6 +1245,7 @@ class QuotationManager {
     const quoteNumEl = document.getElementById("qeQuoteNumber");
     return quoteNumEl ? quoteNumEl.textContent : "";
   }
+
   // ── SHOW AUDIT PROMPT MODAL ──────────────────────────────────────────────
   showAuditPromptModal(quotationId, quotationNumber) {
     // Remove existing modal if any
@@ -1358,30 +1402,100 @@ class QuotationManager {
     if (modal) modal.remove();
     document.body.style.overflow = "";
   }
+
   proceedToInventoryAudit(quotationId, quotationNumber) {
     this.closeAuditPromptModal();
     this.closeEditModal();
-    openQuotationAuditModal(quotationId, quotationNumber);
+
+    // Store in session storage for the Inventory page
+    sessionStorage.setItem("pending_audit_quotation_id", quotationId);
+    sessionStorage.setItem("pending_audit_quotation_number", quotationNumber);
+    sessionStorage.setItem("pending_audit_timestamp", Date.now());
+
+    this.showNotification("Redirecting to Inventory page for audit...", "info");
+
+    // Redirect to Inventory page
+    setTimeout(() => {
+      window.location.href = "../inventory/inventory.php";
+    }, 500);
   }
+
   // ── CREATE AUDIT FROM MODAL ──────────────────────────────────────────
+  // In fetch_quotations.js - Update createAuditFromModal method
   createAuditFromModal() {
     const quotationId = this._editingId;
     const quoteNumber =
       document.getElementById("qeQuoteNumber")?.textContent || "";
+    const hasAudit = this._hasAudit || false;
+    const auditId = this._auditId || null;
 
     if (!quotationId) {
       this.showNotification("No quotation selected for audit.", "error");
       return;
     }
 
-    this.showNotification(
-      "Opening audit form for the selected quotation...",
-      "info",
-    );
+    if (hasAudit && auditId) {
+      // View/Edit existing audit
+      this.showNotification("Loading existing audit...", "info");
+      this.closeEditModal();
 
-    this.closeEditModal();
-    openQuotationAuditModal(quotationId, quoteNumber);
+      // Open audit modal in edit mode with the audit ID
+      if (typeof openQuotationAuditModal === "function") {
+        // Pass audit ID and mode
+        openQuotationAuditModal(quotationId, quoteNumber, true, auditId);
+      } else if (
+        window.pendingAuditManager &&
+        typeof window.pendingAuditManager.openAuditModalDirectly === "function"
+      ) {
+        // For pending audit manager, pass the audit ID
+        window.pendingAuditManager.openAuditModalDirectly(
+          quotationId,
+          true,
+          auditId,
+        );
+      } else {
+        this.showNotification(
+          "Audit system not available. Please go to Inventory page.",
+          "warning",
+        );
+        sessionStorage.setItem("pending_audit_quotation_id", quotationId);
+        sessionStorage.setItem("pending_audit_quotation_number", quoteNumber);
+        sessionStorage.setItem("pending_audit_mode", "edit");
+        sessionStorage.setItem("pending_audit_id", auditId);
+        setTimeout(() => {
+          window.location.href = "../inventory/inventory.php";
+        }, 1000);
+      }
+    } else {
+      // Create new audit
+      this.showNotification(
+        "Opening audit form for the selected quotation...",
+        "info",
+      );
+      this.closeEditModal();
+
+      if (typeof openQuotationAuditModal === "function") {
+        openQuotationAuditModal(quotationId, quoteNumber, false);
+      } else if (
+        window.pendingAuditManager &&
+        typeof window.pendingAuditManager.openAuditModalDirectly === "function"
+      ) {
+        window.pendingAuditManager.openAuditModalDirectly(quotationId, false);
+      } else {
+        this.showNotification(
+          "Audit system not available. Please go to Inventory page.",
+          "warning",
+        );
+        sessionStorage.setItem("pending_audit_quotation_id", quotationId);
+        sessionStorage.setItem("pending_audit_quotation_number", quoteNumber);
+        sessionStorage.setItem("pending_audit_mode", "create");
+        setTimeout(() => {
+          window.location.href = "../inventory/inventory.php";
+        }, 1000);
+      }
+    }
   }
+
   // ── PDF GENERATION ────────────────────────────────────────────────────────
   async generatePDF(id) {
     if (!id) {
@@ -1464,11 +1578,11 @@ class QuotationManager {
       .map(
         (q) => `
         <tr>
-            <td class="col-quote-id" style="min-width: 100px;">${this._esc(q.quote_number)}</div></td>
-            <td class="col-customer" style="min-width: 120px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this._esc(q.client_name)}">${this._esc(q.client_name)}</div></td>
-            <td class="col-contact" style="min-width: 100px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this._esc(q.contact_person || "")}">${this._esc(q.contact_person || "—")}</div></div></td>
-            <td class="col-total" style="min-width: 90px; text-align: right;">₱ ${parseFloat(q.total || 0).toFixed(2)}</div></div></td>
-            <td class="col-date" style="min-width: 90px;">${new Date(q.created_at).toLocaleDateString()}</div></div></td>
+            <td class="col-quote-id" style="min-width: 100px;">${this._esc(q.quote_number)}</td>
+            <td class="col-customer" style="min-width: 120px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this._esc(q.client_name)}">${this._esc(q.client_name)}</td>
+            <td class="col-contact" style="min-width: 100px; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${this._esc(q.contact_person || "")}">${this._esc(q.contact_person || "—")}</td>
+            <td class="col-total" style="min-width: 90px; text-align: right;">₱ ${parseFloat(q.total || 0).toFixed(2)}</td>
+            <td class="col-date" style="min-width: 90px;">${new Date(q.created_at).toLocaleDateString()}</td>
             <td class="col-status" style="min-width: 130px;">
                 <select class="status-select" data-id="${q.id}"
                     onchange="quotationManager.updateStatus(${q.id}, this.value)"
@@ -1478,12 +1592,12 @@ class QuotationManager {
                     <option value="expired"   ${q.status === "expired" ? "selected" : ""}>Declined</option>
                     <option value="converted" ${q.status === "converted" ? "selected" : ""}>Delivered</option>
                 </select>
-            </div></div></td>
+            </td>
             <td class="col-audit" style="min-width: 100px;">
                 <span class="audit-badge ${q.audited == 1 ? "audited" : "not-audited"}" style="font-size: 11px; padding: 3px 8px;">
                     ${q.audited == 1 ? '<i class="fa-solid fa-check-circle"></i> Audited' : '<i class="fa-solid fa-clock"></i> Pending'}
                 </span>
-            </div></div></td>
+            </td>
             <td class="col-actions" style="min-width: 100px;">
                 <div class="action-buttons" style="display: flex; gap: 5px; justify-content: flex-start;">
                     <button class="btn-edit" onclick="quotationManager.openEditModal(${q.id})" title="Edit" style="background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; color: #2563eb;">
@@ -1496,12 +1610,13 @@ class QuotationManager {
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
-            </div></div></td>
+            </td>
         </tr>
     `,
       )
       .join("");
   }
+
   // ── DELETE ────────────────────────────────────────────────────────────────
   deleteQuotation(id, quoteNumber = "") {
     document

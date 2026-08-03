@@ -4,7 +4,7 @@ header('Content-Type: application/json');
 error_reporting(0);
 
 require_once '../../../connect/config.php';
-require_once '../../../vendor/autoload.php'; // Composer autoload
+require_once '../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -28,34 +28,88 @@ try {
     }
 
     $file = $_FILES['csv_file']['tmp_name'];
-    $fileType = $_FILES['csv_file']['type'];
     $fileExtension = strtolower(pathinfo($_FILES['csv_file']['name'], PATHINFO_EXTENSION));
+
+    // Expected columns for validation
+    $expectedHeaders = [
+        'Type', 'Materials', 'Shop', 'PH', 'Total On Hand',
+        'Total Cost', 'Quantity per pack', 'Unit Cost', 'Remarks'
+    ];
+
+    // Normalize header names for comparison
+    $normalizeHeader = function($h) {
+        return strtolower(trim($h));
+    };
+
+    // Check if headers match expected format
+    $headersMatch = function($headers) use ($expectedHeaders, $normalizeHeader) {
+        if (count($headers) < 5) return false; // Minimum required columns
+
+        $normalizedHeaders = array_map($normalizeHeader, $headers);
+        $normalizedExpected = array_map($normalizeHeader, $expectedHeaders);
+
+        // Check if at least the first 5 columns match
+        for ($i = 0; $i < 5; $i++) {
+            if (!isset($normalizedHeaders[$i]) || !in_array($normalizedHeaders[$i], $normalizedExpected)) {
+                return false;
+            }
+        }
+        return true;
+    };
 
     // ============================================================
     // Handle Excel or CSV
     // ============================================================
     $rows = [];
+    $allSheets = [];
+    $validSheets = [];
 
     if ($fileExtension === 'xlsx' || $fileExtension === 'xls') {
-        // ----- Load Excel file -----
+        // ----- Load Excel file and check all sheets -----
         $spreadsheet = IOFactory::load($file);
-        $worksheet = $spreadsheet->getActiveSheet();
-        $rows = $worksheet->toArray();
+        $sheetNames = $spreadsheet->getSheetNames();
 
-        // Remove empty trailing rows
-        $rows = array_filter($rows, function ($row) {
-            return !empty(array_filter($row));
-        });
+        foreach ($sheetNames as $idx => $sheetName) {
+            $worksheet = $spreadsheet->getSheet($idx);
+            $sheetRows = $worksheet->toArray();
+
+            // Remove empty trailing rows
+            $sheetRows = array_filter($sheetRows, function ($row) {
+                return !empty(array_filter($row));
+            });
+
+            if (!empty($sheetRows)) {
+                $headers = array_shift($sheetRows);
+
+                // Check if this sheet has matching columns
+                if ($headersMatch($headers)) {
+                    $validSheets[] = $sheetName;
+                    if (count($validSheets) === 1) {
+                        // Store first valid sheet's data
+                        $rows = $sheetRows;
+                    }
+                }
+            }
+        }
+
+        // If multiple valid sheets found, return list for user selection
+        if (count($validSheets) > 1) {
+            $response['sheets'] = $validSheets;
+            echo json_encode($response);
+            exit;
+        }
+
+        if (empty($rows)) {
+            throw new Exception('No sheets with matching columns found in Excel file');
+        }
     } else {
         // ----- Load CSV file -----
         $content = file_get_contents($file);
 
-        // Remove UTF-8 BOM if present
         if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
             $content = substr($content, 3);
         }
 
-        // Detect and convert encoding
         $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
         if ($encoding && $encoding !== 'UTF-8') {
             $content = mb_convert_encoding($content, 'UTF-8', $encoding);
@@ -74,14 +128,16 @@ try {
             }
         }
         fclose($tempHandle);
-    }
 
-    if (count($rows) < 2) {
-        throw new Exception('File contains no data rows');
-    }
+        if (count($rows) < 2) {
+            throw new Exception('File contains no data rows');
+        }
 
-    // Remove header row
-    $headers = array_shift($rows);
+        $headers = array_shift($rows);
+        if (!$headersMatch($headers)) {
+            throw new Exception('CSV columns do not match the required format. Expected: Type, Materials, Shop, PH, Total On Hand, Total Cost, Quantity per pack, Unit Cost, Remarks');
+        }
+    }
 
     $pdo = getDBConnection();
     $pdo->exec("SET NAMES utf8mb4");
@@ -90,22 +146,19 @@ try {
     $imported = 0;
     $updated = 0;
 
-    // Expected columns: Type, Materials, Shop, PH, Total On Hand, Cost per pack, Quantity per pack, Unit Cost
+    // Process rows
     foreach ($rows as $rowIndex => $row) {
         if (empty(array_filter($row))) continue;
 
         $type = trim($row[0] ?? '');
         $materialName = trim($row[1] ?? '');
 
-        // If material name is empty, skip this row
         if (empty($materialName)) continue;
 
-        // Handle numeric values - Excel may return floats
         $shopStock = (int) ($row[2] ?? 0);
         $phStock = (int) ($row[3] ?? 0);
         $totalStock = (int) ($row[4] ?? 0);
 
-        // If total stock is empty or 0, calculate from shop + ph
         if ($totalStock <= 0) {
             $totalStock = $shopStock + $phStock;
         }
@@ -113,30 +166,25 @@ try {
         $totalCost = (float) ($row[5] ?? 0);
         $piecesPerPack = (int) ($row[6] ?? 1);
 
-        // If pieces per pack is 0, set to 1
         if ($piecesPerPack <= 0) $piecesPerPack = 1;
 
         $unitCost = (float) ($row[7] ?? 0);
 
-        // If unit cost is empty, calculate from total cost / pieces per pack
         if ($unitCost <= 0 && $totalCost > 0) {
             $unitCost = $totalCost / $piecesPerPack;
         }
 
         $remarks = trim($row[8] ?? '');
 
-        // Force UTF-8 encoding
         $materialName = mb_convert_encoding($materialName, 'UTF-8', 'UTF-8');
         $type = mb_convert_encoding($type, 'UTF-8', 'UTF-8');
         $remarks = mb_convert_encoding($remarks, 'UTF-8', 'UTF-8');
 
-        // Check if material exists
         $checkStmt = $pdo->prepare("SELECT id FROM materials WHERE material_name = :name");
         $checkStmt->execute([':name' => $materialName]);
         $existing = $checkStmt->fetch();
 
         if ($existing) {
-            // Update
             $updateStmt = $pdo->prepare("
                 UPDATE materials 
                 SET type = :type, shop_stock = :shop, ph_stock = :ph, total_stock = :total,
@@ -156,7 +204,6 @@ try {
             ]);
             $updated++;
         } else {
-            // Insert
             $insertStmt = $pdo->prepare("
                 INSERT INTO materials (type, material_name, shop_stock, ph_stock, total_stock, total_cost, pieces_per_pack, unit_cost, remarks)
                 VALUES (:type, :name, :shop, :ph, :total, :total_cost, :pieces, :unit_cost, :remarks)
@@ -190,3 +237,4 @@ try {
 if (ob_get_level()) ob_end_clean();
 echo json_encode($response);
 exit;
+

@@ -10,7 +10,6 @@
 //  - Searchable material selector dropdown
 //  - Audit/BOM creation with dynamic rows
 //  - Import/Export functionality
-//  - Audit preview modal
 //  - ADD NEW ITEM functionality
 // ============================================================
 
@@ -22,13 +21,13 @@ const MAT_API = {
   materialsForAudit:
     "../../api/admin_site/inventory/get_materials_for_audit.php",
   createAudit: "../../api/admin_site/inventory/create_audit.php",
-  getAudit: "../../api/admin_site/inventory/get_audit.php",
   getAuditDetails: "../../api/admin_site/inventory/get_audit_details.php",
   listAudits: "../../api/admin_site/inventory/list_audits.php",
   import: "../../api/admin_site/inventory/import_materials.php",
   export: "../../api/admin_site/inventory/export_materials.php",
   addItem: "../../api/admin_site/add_inventory_item.php",
-  getTypes: "../../api/admin_site/inventory/get_types.php", // NEW: Get types endpoint
+  getTypes: "../../api/admin_site/inventory/get_types.php",
+  deleteAll: "../../api/admin_site/inventory/delete_all_materials.php",
 };
 
 /* ── State ─────────────────────────────────────────────────── */
@@ -53,6 +52,10 @@ let auditAutoCompute = true;
 
 // Store type options for datalist
 let matTypeOptions = [];
+
+// Store pending quotations list
+let pendingQuotationsList = [];
+let selectedPendingQuotation = null;
 
 // Shared helper for opening the audit modal from Quotation page
 window.openQuotationAuditModal = async (
@@ -314,12 +317,13 @@ document.addEventListener("DOMContentLoaded", () => {
   matInitModal();
   matInitToast();
   matInitAddItemModal();
+  matInitLogDetailsModal();
   matLoadMaterials();
   matLoadLogs();
-  matLoadTypes(); // NEW: Load types for datalist
+  matLoadTypes();
   setTimeout(matAddAuditListButton, 500);
 
-  // NEW: Check for pending audit from quotation
+  // Check for pending audit from quotation
   initPendingAuditCheck();
 });
 
@@ -431,20 +435,13 @@ const matRenderMaterialRows = (materials = []) => {
                       data-shop="${m.shop_stock}" 
                       data-ph="${m.ph_stock}" 
                       data-cost="${m.unit_cost}">
-                      <i class="fa-solid fa-pencil"></i> Edit
-                    </button>
-                    <button class="btn-action mat-update-btn" 
-                      data-id="${m.id}" 
-                      data-name="${matEsc(m.material_name)}" 
-                      data-stock="${m.total_stock}">
-                      <i class="fa-solid fa-pen-to-square"></i> Stock
+                      <i class="fa-solid fa-pencil"></i>
                     </button>
                    </div>
                 </tr>`;
     })
     .join("");
 
-  // Add event listeners for Edit Item buttons
   tbody.querySelectorAll(".mat-edit-item-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.id;
@@ -455,13 +452,6 @@ const matRenderMaterialRows = (materials = []) => {
       const unitCost = btn.dataset.cost;
       matOpenEditItemModal(id, name, type, shopStock, phStock, unitCost);
     });
-  });
-
-  // Add event listeners for Update Stock buttons
-  tbody.querySelectorAll(".mat-update-btn").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      matOpenModal(btn.dataset.id, btn.dataset.name, btn.dataset.stock),
-    );
   });
 };
 
@@ -479,7 +469,7 @@ const matLoadLogs = async () => {
   });
   const tbody = document.getElementById("materialsLogsTableBody");
   if (!tbody) return;
-  tbody.innerHTML = matLoadingRow(9, "Loading logs…");
+  tbody.innerHTML = matLoadingRow(8, "Loading logs…");
   try {
     const data = await matFetch(`${MAT_API.logs}?${params}`);
     if (!data.logs) throw new Error("Response missing 'logs' field");
@@ -495,7 +485,7 @@ const matLoadLogs = async () => {
     );
   } catch (err) {
     console.error("❌ matLoadLogs failed:", err);
-    tbody.innerHTML = matErrorRow(9, `Error: ${err.message}`);
+    tbody.innerHTML = matErrorRow(8, `Error: ${err.message}`);
   }
 };
 
@@ -504,11 +494,80 @@ window.matReloadLogs = (reset = false) => {
   matLoadLogs();
 };
 
+const matInitLogDetailsModal = () => {
+  const overlay = document.getElementById("matLogDetailsModal");
+  const closeBtn = document.getElementById("matLogDetailsCloseBtn");
+  if (overlay) {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) matCloseLogDetailsModal();
+    });
+  }
+  closeBtn?.addEventListener("click", matCloseLogDetailsModal);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") matCloseLogDetailsModal();
+  });
+};
+
+window.matOpenLogDetails = async (logId) => {
+  if (!logId) return;
+  const overlay = document.getElementById("matLogDetailsModal");
+  const body = document.getElementById("matLogDetailsBody");
+  if (!overlay || !body) return;
+  body.innerHTML = '<div class="loading-cell">Loading details…</div>';
+  overlay.style.display = "flex";
+  document.body.style.overflow = "hidden";
+
+  try {
+    const response = await matFetch(
+      `${MAT_API.logs}?log_id=${encodeURIComponent(logId)}`,
+    );
+    const log = response?.log || response?.logs?.[0] || null;
+    if (!log) {
+      body.innerHTML = '<div class="no-data">No log details found.</div>';
+      return;
+    }
+
+    const dateStr = new Date(log.created_at).toLocaleString();
+    const note = String(
+      log.note || log.remarks || log.material_remarks || "",
+    ).trim();
+    const noteText = note || "No remarks were provided for this change.";
+    const details = [
+      `<div style="display:grid; gap:10px;">`,
+      `<div style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px;">`,
+      `<div><div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b;">Material</div><div style="font-size:1rem; font-weight:700; color:#111;">${matEsc(log.material_name || "—")}</div></div>`,
+      `<span style="padding:6px 10px; border-radius:999px; background:#e0f2fe; color:#075985; font-size:0.78rem; font-weight:700;">${matEsc(log.change_type || "adjust")}</span>`,
+      `</div>`,
+      `<div style="display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">`,
+      `<div style="padding:10px 12px; background:#fff; border:1px solid #e5e7eb; border-radius:10px;"><div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b;">Location</div><div style="font-weight:700; color:#111; margin-top:2px;">${matEsc(log.location || "total_stock")}</div></div>`,
+      `<div style="padding:10px 12px; background:#fff; border:1px solid #e5e7eb; border-radius:10px;"><div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b;">Qty Δ</div><div style="font-weight:700; color:#111; margin-top:2px;">${matEsc(String(log.quantity ?? 0))}</div></div>`,
+      `<div style="padding:10px 12px; background:#fff; border:1px solid #e5e7eb; border-radius:10px;"><div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b;">Before → After</div><div style="font-weight:700; color:#111; margin-top:2px;">${matEsc(`${log.previous_stock ?? 0} → ${log.new_stock ?? 0}`)}</div></div>`,
+      `<div style="padding:10px 12px; background:#fff; border:1px solid #e5e7eb; border-radius:10px;"><div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b;">Admin</div><div style="font-weight:700; color:#111; margin-top:2px;">${matEsc(log.admin_name || "—")}</div></div>`,
+      `</div>`,
+      `<div style="padding:12px 14px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;">`,
+      `<div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:#64748b;">Remarks / Note</div>`,
+      `<div style="margin-top:6px; white-space:pre-wrap; color:#111;">${matEsc(noteText)}</div>`,
+      `<div style="margin-top:8px; font-size:0.8rem; color:#64748b;">Recorded on ${matEsc(dateStr)}</div>`,
+      `</div>`,
+      `</div>`,
+    ];
+    body.innerHTML = details.join("");
+  } catch (err) {
+    body.innerHTML = `<div class="no-data">Unable to load log details: ${matEsc(err.message || "Unknown error")}</div>`;
+  }
+};
+
+const matCloseLogDetailsModal = () => {
+  const overlay = document.getElementById("matLogDetailsModal");
+  if (overlay) overlay.style.display = "none";
+  document.body.style.overflow = "";
+};
+
 const matRenderLogRows = (logs = []) => {
   const tbody = document.getElementById("materialsLogsTableBody");
   if (!tbody) return;
   if (!logs.length) {
-    tbody.innerHTML = matLoadingRow(9, "No log entries found.");
+    tbody.innerHTML = matLoadingRow(8, "No log entries found.");
     return;
   }
   tbody.innerHTML = logs
@@ -520,9 +579,8 @@ const matRenderLogRows = (logs = []) => {
       const tb = matLogTypeBadge(l.change_type);
       const locBadge = matLocationBadge(l.location || "total_stock");
       const dateStr = new Date(l.created_at).toLocaleString();
-      const hasAudit = l.audit_id
-        ? `<button class="audit-view-btn" onclick="matViewAudit(${l.audit_id})"><i class="fa-solid fa-eye"></i> View Audit</button>`
-        : "—";
+      const noteText =
+        String(l.note || l.remarks || l.material_remarks || "").trim() || "—";
       return `<tr>
                   <td><div class="mat-cell"><span>${matEsc(l.material_name)}</span></div></td>
                   <td><span class="badge ${tb.cls}">${tb.label}</span></td>
@@ -530,9 +588,9 @@ const matRenderLogRows = (logs = []) => {
                   <td class="qty-cell"><span class="${deltaCls}">${deltaStr}</span></td>
                   <td class="stock-range">${l.previous_stock} → ${l.new_stock}</td>
                   <td>${matEsc(l.admin_name || "—")}</td>
-                  <td class="note-cell" title="${matEsc(l.note || "")}">${matEsc(l.note || "—")}</td>
+                  <td class="note-cell" title="${matEsc(noteText)}">${matEsc(noteText)}</td>
+                  <td><button class="btn-action" onclick="window.matOpenLogDetails(${l.id})"><i class="fa-solid fa-eye"></i></button></td>
                   <td class="date-cell">${dateStr}</td>
-                  <td>${hasAudit}</td>
               </tr>`;
     })
     .join("");
@@ -1139,6 +1197,7 @@ const matInitAuditModal = () => {
   const modalContainer = document.getElementById("auditModal");
   OverheadHelper.attachListeners(modalContainer, () => matComputeTotals());
 };
+
 const matLoadMaterialsForAudit = async () => {
   try {
     const data = await matFetch(MAT_API.materialsForAudit);
@@ -1148,8 +1207,16 @@ const matLoadMaterialsForAudit = async () => {
   }
 };
 
+// ============================================================
+// FIXED: matAddMaterialRow - Properly handles undefined values
+// ============================================================
 const matAddMaterialRow = (materialData = null) => {
   const container = document.getElementById("materialCostsContainer");
+  if (!container) {
+    console.warn("materialCostsContainer not found");
+    return;
+  }
+
   const rowId =
     "material_row_" +
     Date.now() +
@@ -1158,112 +1225,292 @@ const matAddMaterialRow = (materialData = null) => {
   const row = document.createElement("div");
   row.className = "dynamic-row";
   row.id = rowId;
-  row.innerHTML = `<div class="material-selector-wrapper" style="flex:2;"></div><input type="number" class="material-qty" placeholder="QTY" step="1" min="0" value="${materialData?.quantity || ""}" style="flex:1;" oninput="matUpdateMaterialCostFromRow('${rowId}')"><input type="number" class="material-cost-per-unit" placeholder="Cost/Unit" step="0.0001" value="${materialData?.unit_cost || ""}" style="flex:1;" readonly><input type="number" class="material-total-cost" placeholder="Total Cost" step="0.01" value="${materialData?.total_cost || ""}" style="flex:1;" readonly><button class="remove-row" onclick="matRemoveDynamicRow(this)"><i class="fa-solid fa-trash"></i></button>`;
+
+  // ===== CRITICAL FIX: Ensure all values are properly defined =====
+  // Use safe defaults for all values to prevent "undefined" errors
+  const materialId = materialData?.id || null;
+
+  // Get quantity - handle both 'quantity' and 'suggested_quantity'
+  const quantity =
+    materialData?.quantity || materialData?.suggested_quantity || 1;
+
+  // Get unit cost - ensure it's a number
+  const unitCost =
+    typeof materialData?.unit_cost === "number"
+      ? materialData.unit_cost
+      : typeof materialData?.cost === "number"
+        ? materialData.cost
+        : 0;
+
+  // Get total cost - calculate if not provided
+  const totalCost =
+    typeof materialData?.total_cost === "number"
+      ? materialData.total_cost
+      : quantity * unitCost;
+
+  // Get material name
+  const materialName = materialData?.name || materialData?.material_name || "";
+
+  console.log(
+    `Adding material row: id=${materialId}, name=${materialName}, qty=${quantity}, cost=${unitCost}, total=${totalCost}`,
+  );
+
+  row.innerHTML = `
+    <div class="material-selector-wrapper" style="flex:2;"></div>
+    <input type="number" class="material-qty" placeholder="QTY" step="1" min="0" 
+           value="${quantity}" style="flex:1;" 
+           oninput="matUpdateMaterialCostFromRow('${rowId}')">
+    <input type="number" class="material-cost-per-unit" placeholder="Cost/Unit" step="0.0001" 
+           value="${parseFloat(unitCost).toFixed(4)}" style="flex:1;" readonly>
+    <input type="number" class="material-total-cost" placeholder="Total Cost" step="0.01" 
+           value="${parseFloat(totalCost).toFixed(2)}" style="flex:1;" readonly>
+    <button class="remove-row" onclick="matRemoveDynamicRow(this)"><i class="fa-solid fa-trash"></i></button>
+    ${materialName ? `<span class="prefill-badge" style="background:#dbeafe; color:#1e40af; font-size:0.7rem; padding:2px 6px; border-radius:4px;">from quotation</span>` : ""}
+  `;
+
   container.appendChild(row);
+
+  // Initialize the material selector
   const selectorWrapper = row.querySelector(".material-selector-wrapper");
   const selector = new MaterialSelector(
     selectorWrapper,
     (material) => {
       const costInput = row.querySelector(".material-cost-per-unit");
-      if (costInput && material)
-        costInput.value = parseFloat(material.unit_cost || 0).toFixed(4);
+      if (costInput && material) {
+        const cost = parseFloat(material.unit_cost || 0);
+        costInput.value = cost.toFixed(4);
+      }
       matUpdateMaterialCostFromRow(rowId);
       row.dataset.materialId = material.id;
     },
-    materialData?.id || null,
+    materialId || null,
   );
+
   materialSelectors.push({ rowId, selector });
-  if (materialData)
+
+  // If we have a material name but no ID, try to find the material by name
+  if (materialName && !materialId) {
+    // Try to find a matching material in the selector's list
     setTimeout(() => {
-      const qtyInput = row.querySelector(".material-qty");
-      if (qtyInput) qtyInput.value = materialData.quantity;
-      matUpdateMaterialCostFromRow(rowId);
-    }, 100);
+      const matchingMaterial = selector.materials.find(
+        (m) => m.material_name.toLowerCase() === materialName.toLowerCase(),
+      );
+      if (matchingMaterial) {
+        // Select the matching material
+        selector.selectedMaterialId = matchingMaterial.id;
+        const selectedText = selector.container.querySelector(".selected-text");
+        if (selectedText)
+          selectedText.textContent = matchingMaterial.material_name;
+        row.dataset.materialId = matchingMaterial.id;
+
+        // Update cost
+        const costInput = row.querySelector(".material-cost-per-unit");
+        if (costInput) {
+          costInput.value = parseFloat(matchingMaterial.unit_cost || 0).toFixed(
+            4,
+          );
+        }
+        matUpdateMaterialCostFromRow(rowId);
+      }
+    }, 200);
+  }
+
+  // Ensure totals are calculated
+  setTimeout(() => matUpdateMaterialCostFromRow(rowId), 100);
 };
 
 const matUpdateMaterialCostFromRow = (rowId) => {
   const row = document.getElementById(rowId);
   if (!row) return;
-  const qty = parseFloat(row.querySelector(".material-qty")?.value) || 0;
-  const unitCost =
-    parseFloat(row.querySelector(".material-cost-per-unit")?.value) || 0;
-  const total = qty * unitCost;
+
+  const qtyInput = row.querySelector(".material-qty");
+  const costInput = row.querySelector(".material-cost-per-unit");
   const totalInput = row.querySelector(".material-total-cost");
-  if (totalInput) totalInput.value = total.toFixed(2);
+
+  if (!qtyInput || !costInput || !totalInput) return;
+
+  const qty = parseFloat(qtyInput.value) || 0;
+  const unitCost = parseFloat(costInput.value) || 0;
+  const total = qty * unitCost;
+
+  totalInput.value = total.toFixed(2);
   matComputeTotals();
 };
 
+// ============================================================
+// FIXED: matAddRejectRow - Properly handles undefined values
+// ============================================================
 const matAddRejectRow = (rejectData = null) => {
   const container = document.getElementById("rejectCostsContainer");
+  if (!container) {
+    console.warn("rejectCostsContainer not found");
+    return;
+  }
+
   const rowId =
     "reject_row_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
   const row = document.createElement("div");
   row.className = "dynamic-row";
   row.id = rowId;
-  row.innerHTML = `<div class="material-selector-wrapper" style="flex:2;"></div><input type="number" class="reject-qty" placeholder="QTY" step="1" min="0" value="${rejectData?.quantity || ""}" style="flex:1;" oninput="matUpdateRejectCostFromRow('${rowId}')"><input type="number" class="reject-cost-per-unit" placeholder="Cost/Unit" step="0.0001" value="${rejectData?.unit_cost || ""}" style="flex:1;" readonly><input type="number" class="reject-total-cost" placeholder="Total Cost" step="0.01" value="${rejectData?.total_cost || ""}" style="flex:1;" readonly><button class="remove-row" onclick="matRemoveDynamicRow(this)"><i class="fa-solid fa-trash"></i></button>`;
+
+  // ===== CRITICAL FIX: Ensure all values are properly defined =====
+  const materialId = rejectData?.id || null;
+  const quantity = rejectData?.quantity || 1;
+  const unitCost =
+    typeof rejectData?.unit_cost === "number"
+      ? rejectData.unit_cost
+      : typeof rejectData?.cost === "number"
+        ? rejectData.cost
+        : 0;
+  const totalCost =
+    typeof rejectData?.total_cost === "number"
+      ? rejectData.total_cost
+      : quantity * unitCost;
+  const materialName = rejectData?.name || rejectData?.material_name || "";
+
+  row.innerHTML = `
+    <div class="material-selector-wrapper" style="flex:2;"></div>
+    <input type="number" class="reject-qty" placeholder="QTY" step="1" min="0" 
+           value="${quantity}" style="flex:1;" 
+           oninput="matUpdateRejectCostFromRow('${rowId}')">
+    <input type="number" class="reject-cost-per-unit" placeholder="Cost/Unit" step="0.0001" 
+           value="${parseFloat(unitCost).toFixed(4)}" style="flex:1;" readonly>
+    <input type="number" class="reject-total-cost" placeholder="Total Cost" step="0.01" 
+           value="${parseFloat(totalCost).toFixed(2)}" style="flex:1;" readonly>
+    <button class="remove-row" onclick="matRemoveDynamicRow(this)"><i class="fa-solid fa-trash"></i></button>
+    ${materialName ? `<span class="prefill-badge" style="background:#dbeafe; color:#1e40af; font-size:0.7rem; padding:2px 6px; border-radius:4px;">from quotation</span>` : ""}
+  `;
+
   container.appendChild(row);
+
   const selectorWrapper = row.querySelector(".material-selector-wrapper");
   const selector = new MaterialSelector(
     selectorWrapper,
     (material) => {
       const costInput = row.querySelector(".reject-cost-per-unit");
-      if (costInput && material)
-        costInput.value = parseFloat(material.unit_cost || 0).toFixed(4);
+      if (costInput && material) {
+        const cost = parseFloat(material.unit_cost || 0);
+        costInput.value = cost.toFixed(4);
+      }
       matUpdateRejectCostFromRow(rowId);
       row.dataset.materialId = material.id;
     },
-    rejectData?.id || null,
+    materialId || null,
   );
+
   rejectSelectors.push({ rowId, selector });
-  if (rejectData)
+
+  // If we have a material name but no ID, try to find the material by name
+  if (materialName && !materialId) {
     setTimeout(() => {
-      const qtyInput = row.querySelector(".reject-qty");
-      if (qtyInput) qtyInput.value = rejectData.quantity;
-      matUpdateRejectCostFromRow(rowId);
-    }, 100);
+      const matchingMaterial = selector.materials.find(
+        (m) => m.material_name.toLowerCase() === materialName.toLowerCase(),
+      );
+      if (matchingMaterial) {
+        selector.selectedMaterialId = matchingMaterial.id;
+        const selectedText = selector.container.querySelector(".selected-text");
+        if (selectedText)
+          selectedText.textContent = matchingMaterial.material_name;
+        row.dataset.materialId = matchingMaterial.id;
+
+        const costInput = row.querySelector(".reject-cost-per-unit");
+        if (costInput) {
+          costInput.value = parseFloat(matchingMaterial.unit_cost || 0).toFixed(
+            4,
+          );
+        }
+        matUpdateRejectCostFromRow(rowId);
+      }
+    }, 200);
+  }
+
+  setTimeout(() => matUpdateRejectCostFromRow(rowId), 100);
 };
 
 const matUpdateRejectCostFromRow = (rowId) => {
   const row = document.getElementById(rowId);
   if (!row) return;
-  const qty = parseFloat(row.querySelector(".reject-qty")?.value) || 0;
-  const unitCost =
-    parseFloat(row.querySelector(".reject-cost-per-unit")?.value) || 0;
-  const total = qty * unitCost;
+
+  const qtyInput = row.querySelector(".reject-qty");
+  const costInput = row.querySelector(".reject-cost-per-unit");
   const totalInput = row.querySelector(".reject-total-cost");
-  if (totalInput) totalInput.value = total.toFixed(2);
+
+  if (!qtyInput || !costInput || !totalInput) return;
+
+  const qty = parseFloat(qtyInput.value) || 0;
+  const unitCost = parseFloat(costInput.value) || 0;
+  const total = qty * unitCost;
+
+  totalInput.value = total.toFixed(2);
   matComputeTotals();
 };
 
 const matAddItemRow = (itemData = null) => {
   const container = document.getElementById("itemsContainer");
+  if (!container) return;
+
   const rowId = Date.now() + Math.random();
   const row = document.createElement("div");
   row.className = "dynamic-row";
   row.dataset.id = rowId;
-  row.innerHTML = `<input type="text" class="item-name" placeholder="Item name" value="${itemData?.name || ""}" style="flex:2;" oninput="matUpdateItemTotal(this)"><input type="number" class="item-qty" placeholder="QTY" value="${itemData?.quantity || ""}" style="flex:1;" oninput="matUpdateItemTotal(this)"><input type="number" class="item-unit-price" placeholder="Unit Price" step="0.01" value="${itemData?.unit_price || ""}" style="flex:1;" oninput="matUpdateItemTotal(this)"><input type="number" class="item-total-amount" placeholder="Total Amount" step="0.01" value="${itemData?.total_amount || ""}" style="flex:1;" readonly><button class="remove-row" onclick="matRemoveDynamicRow(this)"><i class="fa-solid fa-trash"></i></button>`;
+
+  // Clean the description (strip HTML)
+  let cleanName = "";
+  if (itemData?.name) {
+    const tempDiv = document.createElement("div");
+    tempDiv.innerHTML = itemData.name;
+    cleanName = tempDiv.textContent || tempDiv.innerText || itemData.name;
+  }
+
+  row.innerHTML = `
+    <input type="text" class="item-name" placeholder="Item name" 
+           value="${matEsc(cleanName)}" style="flex:2;" 
+           oninput="matUpdateItemTotal(this)">
+    <input type="number" class="item-qty" placeholder="QTY" 
+           value="${itemData?.quantity || 1}" style="flex:1;" 
+           oninput="matUpdateItemTotal(this)">
+    <input type="number" class="item-unit-price" placeholder="Unit Price" step="0.01" 
+           value="${itemData?.unit_price || 0}" style="flex:1;" 
+           oninput="matUpdateItemTotal(this)">
+    <input type="number" class="item-total-amount" placeholder="Total Amount" step="0.01" 
+           value="${itemData?.total_amount || (itemData?.quantity || 1) * (itemData?.unit_price || 0)}" style="flex:1;" readonly>
+    <button class="remove-row" onclick="matRemoveDynamicRow(this)"><i class="fa-solid fa-trash"></i></button>
+    ${itemData ? '<span class="prefill-badge" style="background:#dbeafe; color:#1e40af; font-size:0.7rem; padding:2px 6px; border-radius:4px;">from quotation</span>' : ""}
+  `;
+
   container.appendChild(row);
   matComputeTotals();
 };
 
 const matUpdateItemTotal = (element) => {
   const row = element.closest(".dynamic-row");
-  const qty = parseFloat(row.querySelector(".item-qty")?.value) || 0;
-  const price = parseFloat(row.querySelector(".item-unit-price")?.value) || 0;
-  const total = qty * price;
+  if (!row) return;
+
+  const qtyInput = row.querySelector(".item-qty");
+  const priceInput = row.querySelector(".item-unit-price");
   const totalInput = row.querySelector(".item-total-amount");
-  if (totalInput) totalInput.value = total.toFixed(2);
+
+  if (!qtyInput || !priceInput || !totalInput) return;
+
+  const qty = parseFloat(qtyInput.value) || 0;
+  const price = parseFloat(priceInput.value) || 0;
+  const total = qty * price;
+
+  totalInput.value = total.toFixed(2);
   matComputeTotals();
 };
 
 const matRemoveDynamicRow = (button) => {
   const row = button.closest(".dynamic-row");
+  if (!row) return;
+
   const rowId = row.id;
   materialSelectors = materialSelectors.filter((s) => s.rowId !== rowId);
   rejectSelectors = rejectSelectors.filter((s) => s.rowId !== rowId);
   row.remove();
   matComputeTotals();
 };
+
 const matComputeTotals = () => {
   if (!auditAutoCompute) return;
   let materialTotal = 0,
@@ -1303,12 +1550,14 @@ const matComputeTotals = () => {
     if (manualInput) manualInput.value = profit.toFixed(2);
   }
 
-  document.getElementById("totalMaterialCost").textContent =
-    `₱${materialTotal.toFixed(2)}`;
-  document.getElementById("totalRejectCost").textContent =
-    `₱${rejectTotal.toFixed(2)}`;
-  document.getElementById("totalAmountDue").textContent =
-    `₱${amountTotal.toFixed(2)}`;
+  const materialCostEl = document.getElementById("totalMaterialCost");
+  const rejectCostEl = document.getElementById("totalRejectCost");
+  const amountDueEl = document.getElementById("totalAmountDue");
+
+  if (materialCostEl)
+    materialCostEl.textContent = `₱${materialTotal.toFixed(2)}`;
+  if (rejectCostEl) rejectCostEl.textContent = `₱${rejectTotal.toFixed(2)}`;
+  if (amountDueEl) amountDueEl.textContent = `₱${amountTotal.toFixed(2)}`;
 };
 
 const matPrefillAuditFormFromQuotation = async (quotationId) => {
@@ -1332,6 +1581,7 @@ const matPrefillAuditFormFromQuotation = async (quotationId) => {
     const items = result.items || [];
     const suggestedMaterials = result.suggested_materials || [];
 
+    // Clear existing rows
     document.getElementById("materialCostsContainer").innerHTML = "";
     document.getElementById("rejectCostsContainer").innerHTML = "";
     document.getElementById("itemsContainer").innerHTML = "";
@@ -1339,15 +1589,28 @@ const matPrefillAuditFormFromQuotation = async (quotationId) => {
     materialSelectors = [];
     rejectSelectors = [];
 
-    if (suggestedMaterials.length > 0) {
-      suggestedMaterials.forEach((material) => matAddMaterialRow(material));
+    // ===== FIXED: Add suggested materials with proper error handling =====
+    if (suggestedMaterials && suggestedMaterials.length > 0) {
+      suggestedMaterials.forEach((material) => {
+        // Ensure material has the expected properties
+        const safeMaterial = {
+          id: material.id || null,
+          name: material.name || material.material_name || "",
+          quantity: material.suggested_quantity || material.quantity || 1,
+          unit_cost:
+            typeof material.unit_cost === "number" ? material.unit_cost : 0,
+          total_cost:
+            typeof material.total_cost === "number" ? material.total_cost : 0,
+        };
+        matAddMaterialRow(safeMaterial);
+      });
     } else {
       matAddMaterialRow();
     }
 
     matAddRejectRow();
 
-    if (items.length > 0) {
+    if (items && items.length > 0) {
       items.forEach((item) =>
         matAddItemRow({
           name: item.description || "",
@@ -1362,7 +1625,7 @@ const matPrefillAuditFormFromQuotation = async (quotationId) => {
 
     const itemNameInput = document.getElementById("auditItemName");
     if (itemNameInput) {
-      const itemName = items[0]?.description || quotation.quote_number || "";
+      const itemName = items?.[0]?.description || quotation.quote_number || "";
       itemNameInput.value = itemName ? itemName.replace(/<[^>]+>/g, "") : "";
     }
 
@@ -1381,7 +1644,8 @@ const matPrefillAuditFormFromQuotation = async (quotationId) => {
       acknowledgedByInput.value = "";
     }
 
-    matComputeTotals();
+    // Recalculate totals after all rows are added
+    setTimeout(() => matComputeTotals(), 200);
   } catch (error) {
     console.error("Failed to load quotation for audit:", error);
     matShowToast("Unable to load quotation details for audit.", "error");
@@ -1405,6 +1669,8 @@ window.matOpenAuditModalForQuotation = async (
 window.matOpenAuditModal = async () => {
   matInitAuditModal();
   await matLoadMaterialsForAudit();
+
+  // Clear and reset form
   document.getElementById("materialCostsContainer").innerHTML = "";
   document.getElementById("rejectCostsContainer").innerHTML = "";
   document.getElementById("itemsContainer").innerHTML = "";
@@ -1429,14 +1695,25 @@ window.matOpenAuditModal = async () => {
     matAddItemRow();
   }
 
-  document.getElementById("auditModal").style.display = "flex";
-  document.body.style.overflow = "hidden";
+  // Show the modal
+  const auditModal = document.getElementById("auditModal");
+  if (auditModal) {
+    auditModal.style.display = "flex";
+    document.body.style.overflow = "hidden";
+  } else {
+    console.error("Audit modal not found!");
+    matShowToast("Error: Audit modal not found", "error");
+  }
 };
 
 const matCloseAuditModal = () => {
-  document.getElementById("auditModal").style.display = "none";
-  document.body.style.overflow = "";
+  const auditModal = document.getElementById("auditModal");
+  if (auditModal) {
+    auditModal.style.display = "none";
+    document.body.style.overflow = "";
+  }
 };
+
 const matSubmitAudit = async () => {
   const materials = [];
   document
@@ -1632,321 +1909,10 @@ const matSubmitAudit = async () => {
     matShowToast(err.message || "Failed to create audit", "error");
   }
 };
+
 /* ══════════════════════════════════════════════════════════════
-   AUDIT PREVIEW
+   AUDIT MANAGEMENT FUNCTIONS - Kept for viewing from Inventory
 ══════════════════════════════════════════════════════════════ */
-const matViewAudit = async (auditId) => {
-  try {
-    const response = await fetch(`${MAT_API.getAudit}?id=${auditId}`);
-    const data = await response.json();
-    if (data.success) matShowAuditPreviewModal(data.audit);
-    else matShowToast("Audit not found", "error");
-  } catch (err) {
-    matShowToast("Failed to load audit details: " + err.message, "error");
-  }
-};
-
-const matShowAuditPreviewModal = (audit) => {
-  let previewModal = document.getElementById("auditPreviewModal");
-  if (!previewModal) {
-    previewModal = document.createElement("div");
-    previewModal.id = "auditPreviewModal";
-    previewModal.className = "audit-preview-modal";
-    document.body.appendChild(previewModal);
-  }
-
-  // Get the main item name (from the top field) - this is the product/bom name
-  const mainItemName = audit.item_name || "";
-
-  // Filter out the duplicate item (the one with quantity 1 and price 0 that came from item_name field)
-  // In the audit creation, we push item_name as first item. We need to separate it.
-  const allItems = audit.items || [];
-
-  // The first item is often the main item name with quantity 1 and price 0
-  // We'll treat it as the header, not as a table row
-  let mainItemHeader = "";
-  let displayItems = [...allItems];
-
-  if (
-    allItems.length > 0 &&
-    allItems[0].quantity === 1 &&
-    parseFloat(allItems[0].unit_price || 0) === 0
-  ) {
-    // First item is the header item (from item_name field)
-    mainItemHeader = allItems[0].name;
-    displayItems = allItems.slice(1); // Remove the first item from display
-  } else if (mainItemName) {
-    mainItemHeader = mainItemName;
-  }
-
-  const materialsHtml = (audit.materials || [])
-    .map(
-      (mat) =>
-        `<tr><td style="padding:10px">${matEsc(mat.name)}</td><td style="padding:10px;text-align:center">${mat.quantity || 0}</td><td style="padding:10px;text-align:right">₱${(parseFloat(mat.unit_cost) || 0).toFixed(4)}</td><td style="padding:10px;text-align:right">₱${(parseFloat(mat.total_cost) || 0).toFixed(2)}</td></tr>`,
-    )
-    .join("");
-
-  const rejectsHtml = (audit.rejects || [])
-    .map(
-      (rej) =>
-        `<tr><td style="padding:10px">${matEsc(rej.name)}</td><td style="padding:10px;text-align:center">${rej.quantity || 0}</td><td style="padding:10px;text-align:right">₱${(parseFloat(rej.unit_cost) || 0).toFixed(4)}</td><td style="padding:10px;text-align:right">₱${(parseFloat(rej.total_cost) || 0).toFixed(2)}</td></tr>`,
-    )
-    .join("");
-
-  const itemsHtml = displayItems
-    .map(
-      (item) =>
-        `<tr><td style="padding:10px">${matEsc(item.name)}</td><td style="padding:10px;text-align:center">${item.quantity || 0}</td><td style="padding:10px;text-align:right">₱${(parseFloat(item.unit_price) || 0).toFixed(2)}</td><td style="padding:10px;text-align:right">₱${(parseFloat(item.total_amount) || 0).toFixed(2)}</td></tr>`,
-    )
-    .join("");
-
-  previewModal.innerHTML = `
-    <div class="audit-preview-container">
-      <div class="audit-preview-header">
-        <h3><i class="fa-solid fa-receipt"></i> Audit #${audit.id}</h3>
-        <button class="audit-preview-close" onclick="matCloseAuditPreview()">&times;</button>
-      </div>
-      <div class="audit-preview-body">
-        ${
-          mainItemHeader
-            ? `
-        <div class="audit-main-item">
-          <h4><i class="fa-solid fa-tag"></i> ${matEsc(mainItemHeader)}</h4>
-        </div>
-        `
-            : ""
-        }
-        
-        ${
-          itemsHtml
-            ? `
-        <div class="audit-preview-section">
-          <h4><i class="fa-solid fa-cube"></i> Items</h4>
-          <table class="audit-table">
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>QTY</th>
-                <th>Unit Price</th>
-                <th>Total Amount</th>
-              </tr>
-            </thead>
-            <tbody>${itemsHtml}</tbody>
-          </table>
-        </div>
-        `
-            : ""
-        }
-        
-        ${
-          materialsHtml
-            ? `
-        <div class="audit-preview-section">
-          <h4><i class="fa-solid fa-box"></i> Material Costs</h4>
-          <table class="audit-table">
-            <thead>
-              <tr>
-                <th>Material</th>
-                <th>QTY</th>
-                <th>Cost per Unit</th>
-                <th>Total Cost</th>
-              </tr>
-            </thead>
-            <tbody>${materialsHtml}</tbody>
-          </table>
-        </div>
-        `
-            : ""
-        }
-        
-        ${
-          rejectsHtml
-            ? `
-        <div class="audit-preview-section">
-          <h4><i class="fa-solid fa-trash"></i> Reject Costs</h4>
-          <table class="audit-table">
-            <thead>
-              <tr>
-                <th>Material</th>
-                <th>QTY</th>
-                <th>Cost per Unit</th>
-                <th>Total Cost</th>
-              </tr>
-            </thead>
-            <tbody>${rejectsHtml}</tbody>
-          </table>
-        </div>
-        `
-            : ""
-        }
-        
-      <div class="audit-preview-totals">
-  <div class="total-item">
-    <span>Total Material Cost:</span>
-    <strong>₱${(parseFloat(audit.total_material_cost) || 0).toFixed(2)}</strong>
-  </div>
-  <div class="total-item">
-    <span>Total Reject Cost:</span>
-    <strong>₱${(parseFloat(audit.total_reject_cost) || 0).toFixed(2)}</strong>
-  </div>
-  <!-- ADD OVERHEAD ROW -->
-  <div class="total-item">
-    <span>Total Overhead:</span>
-    <strong>₱${(parseFloat(audit.total_overhead) || 0).toFixed(2)}</strong>
-  </div>
-  <div class="total-item">
-    <span>Total Amount Due:</span>
-    <strong>₱${(parseFloat(audit.total_amount_due) || 0).toFixed(2)}</strong>
-  </div>
-  <div class="total-item profit-item">
-    <span>Profit:</span>
-    <strong class="profit">₱${(parseFloat(audit.profit) || 0).toFixed(2)}</strong>
-  </div>
-</div>
-        
-        <div class="audit-preview-signatures">
-          <div><i class="fa-regular fa-user"></i> Created By: ${matEsc(audit.signatures?.created_by || "—")}</div>
-          <div><i class="fa-regular fa-user-check"></i> Audited By: ${matEsc(audit.signatures?.audited_by || "—")}</div>
-          <div><i class="fa-regular fa-hand-peace"></i> Acknowledged By: ${matEsc(audit.signatures?.acknowledged_by || "—")}</div>
-        </div>
-        
-        <div class="audit-preview-date">
-          <i class="fa-regular fa-calendar"></i> Created: ${new Date(audit.created_at).toLocaleString()}
-        </div>
-      </div>
-    </div>
-  `;
-
-  previewModal.style.display = "flex";
-  document.body.style.overflow = "hidden";
-};
-
-const matCloseAuditPreview = () => {
-  const modal = document.getElementById("auditPreviewModal");
-  if (modal) modal.style.display = "none";
-  document.body.style.overflow = "";
-};
-
-// Make sure the Escape key listener is properly set
-if (typeof document !== "undefined") {
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      matCloseAuditPreview();
-      matCloseDetailedAudit();
-      matCloseAuditList();
-      matCloseModal();
-      matCloseAddItemModal();
-      matCloseAuditModal();
-    }
-  });
-}
-/* ══════════════════════════════════════════════════════════════
-   IMPORT/EXPORT
-══════════════════════════════════════════════════════════════ */
-const matOpenImportModal = () => {
-  document.getElementById("matImportModal").style.display = "flex";
-};
-const matCloseImportModal = () => {
-  document.getElementById("matImportModal").style.display = "none";
-};
-const matDownloadSampleCSV = () => {
-  const sampleData = [
-    [
-      "Type",
-      "Materials",
-      "Shop",
-      "PH",
-      "Total On Hand",
-      "Total Cost",
-      "Quantity per pack",
-      "Unit Cost",
-      "Remarks",
-    ],
-    [
-      "Ink",
-      "Sample Ink Black",
-      "5",
-      "10",
-      "15",
-      "95.00",
-      "1",
-      "95.0000",
-      "Test material",
-    ],
-    [
-      "Paper",
-      "Sample Photo Paper",
-      "20",
-      "30",
-      "50",
-      "135.00",
-      "20",
-      "6.7500",
-      "For testing",
-    ],
-  ];
-
-  // FIX: Use UTF-8 without BOM
-  let csvContent = sampleData.map((row) => row.join(",")).join("\n");
-
-  // NO BOM - just plain UTF-8
-  const blob = new Blob([csvContent], {
-    type: "text/csv;charset=utf-8",
-  });
-
-  const link = document.createElement("a");
-  const url = URL.createObjectURL(blob);
-  link.href = url;
-  link.setAttribute("download", "materials_sample.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-};
-
-const matProcessImport = async () => {
-  const fileInput = document.getElementById("importCSVFile");
-  const file = fileInput.files[0];
-  if (!file) {
-    matShowToast("Please select a file", "error");
-    return;
-  }
-  const formData = new FormData();
-  formData.append("csv_file", file);
-  try {
-    const response = await fetch(MAT_API.import, {
-      method: "POST",
-      body: formData,
-    });
-    const text = await response.text();
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (e) {
-      throw new Error(
-        "Server returned invalid response: " + text.substring(0, 100),
-      );
-    }
-    if (data.success) {
-      matShowToast(data.message, "success");
-      matCloseImportModal();
-      matReloadMaterials(true);
-      fileInput.value = "";
-    } else {
-      matShowToast(data.message, "error");
-    }
-  } catch (err) {
-    matShowToast("Import failed: " + err.message, "error");
-  }
-};
-
-const matExportData = () => {
-  window.location.href = MAT_API.export;
-};
-
-// ============================================================
-// AUDIT MANAGEMENT FUNCTIONS
-// ============================================================
 
 /* ── Audit List Modal ─────────────────────────────────────────── */
 let currentAuditPage = 1;
@@ -2637,3 +2603,277 @@ async function checkForPendingAuditsAndShowBadge() {
     console.error("Error checking pending audits:", err);
   }
 }
+
+// ============================================================
+// HELPER FUNCTION: Add Audit List Button to UI
+// ============================================================
+function matAddAuditListButton() {
+  // Find the top button container
+  const topBtnContainer = document.querySelector(".top-btn");
+  if (!topBtnContainer) {
+    console.warn("Could not find .top-btn container for audit list button");
+    return;
+  }
+
+  // Check if button already exists
+  if (document.getElementById("matViewAuditsBtn")) return;
+
+  const auditBtn = document.createElement("button");
+  auditBtn.id = "matViewAuditsBtn";
+  auditBtn.className = "btn-audit-list";
+  auditBtn.innerHTML = '<i class="fa-solid fa-clipboard-list"></i> View Audits';
+  auditBtn.onclick = matOpenAuditList;
+  auditBtn.style.cssText = `
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+  `;
+
+  topBtnContainer.appendChild(auditBtn);
+}
+
+// Make sure the Escape key listener is properly set
+if (typeof document !== "undefined") {
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      matCloseDetailedAudit();
+      matCloseAuditList();
+      matCloseModal();
+      matCloseAddItemModal();
+      matCloseAuditModal();
+    }
+  });
+}
+/* ══════════════════════════════════════════════════════════════
+   IMPORT/EXPORT
+══════════════════════════════════════════════════════════════ */
+const matOpenImportModal = () => {
+  document.getElementById("matImportModal").style.display = "flex";
+};
+const matCloseImportModal = () => {
+  document.getElementById("matImportModal").style.display = "none";
+};
+const matDownloadSampleCSV = () => {
+  const sampleData = [
+    [
+      "Type",
+      "Materials",
+      "Shop",
+      "PH",
+      "Total On Hand",
+      "Total Cost",
+      "Quantity per pack",
+      "Unit Cost",
+      "Remarks",
+    ],
+    [
+      "Ink",
+      "Sample Ink Black",
+      "5",
+      "10",
+      "15",
+      "95.00",
+      "1",
+      "95.0000",
+      "Test material",
+    ],
+    [
+      "Paper",
+      "Sample Photo Paper",
+      "20",
+      "30",
+      "50",
+      "135.00",
+      "20",
+      "6.7500",
+      "For testing",
+    ],
+  ];
+
+  // FIX: Use UTF-8 without BOM
+  let csvContent = sampleData.map((row) => row.join(",")).join("\n");
+
+  // NO BOM - just plain UTF-8
+  const blob = new Blob([csvContent], {
+    type: "text/csv;charset=utf-8",
+  });
+
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.href = url;
+  link.setAttribute("download", "materials_sample.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
+const matProcessImport = async () => {
+  const fileInput = document.getElementById("importCSVFile");
+  const file = fileInput.files[0];
+  if (!file) {
+    matShowToast("Please select a file", "error");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("csv_file", file);
+
+  try {
+    const response = await fetch(MAT_API.import, {
+      method: "POST",
+      body: formData,
+    });
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      throw new Error(
+        "Server returned invalid response: " + text.substring(0, 100),
+      );
+    }
+    if (data.success) {
+      matShowToast(data.message, "success");
+      matCloseImportModal();
+      matReloadMaterials(true);
+      fileInput.value = "";
+    } else if (data.sheets) {
+      // Handle multi-sheet Excel files - display sheet selector
+      const sheetSelector = document.getElementById("matImportSheetSelector");
+      const sheetSelect = document.getElementById("matImportSheetSelect");
+      if (sheetSelector && sheetSelect) {
+        sheetSelect.innerHTML = "";
+        data.sheets.forEach((sheet, idx) => {
+          const option = document.createElement("option");
+          option.value = idx;
+          option.textContent = sheet;
+          sheetSelect.appendChild(option);
+        });
+        sheetSelector.style.display = "block";
+      }
+      matShowToast("Please select a sheet to import from", "info");
+    } else {
+      matShowToast(data.message, "error");
+    }
+  } catch (err) {
+    matShowToast("Import failed: " + err.message, "error");
+  }
+};
+
+const matExportData = () => {
+  window.location.href = MAT_API.export;
+};
+
+// ============================================================
+// DELETE ALL MATERIALS
+// ============================================================
+const matOpenDeleteAllModal = () => {
+  const modal = document.getElementById("matDeleteAllModal");
+  if (modal) {
+    document.getElementById("matDeleteAllPassword").value = "";
+    const feedback = document.getElementById("matDeleteAllFeedback");
+    if (feedback) {
+      feedback.style.display = "none";
+      feedback.textContent = "";
+    }
+    modal.style.display = "flex";
+    document.getElementById("matDeleteAllPassword").focus();
+  }
+};
+
+const matCloseDeleteAllModal = () => {
+  const modal = document.getElementById("matDeleteAllModal");
+  if (modal) {
+    modal.style.display = "none";
+    document.getElementById("matDeleteAllPassword").value = "";
+    const feedback = document.getElementById("matDeleteAllFeedback");
+    if (feedback) {
+      feedback.style.display = "none";
+      feedback.textContent = "";
+    }
+  }
+};
+
+const matConfirmDeleteAll = async () => {
+  const password = document.getElementById("matDeleteAllPassword").value.trim();
+  const feedback = document.getElementById("matDeleteAllFeedback");
+  const confirmBtn = document.getElementById("matDeleteAllConfirmBtn");
+
+  if (!password) {
+    if (feedback) {
+      feedback.style.display = "block";
+      feedback.className = "text-danger";
+      feedback.style.color = "#dc2626";
+      feedback.style.backgroundColor = "#fee2e2";
+      feedback.textContent = "Please enter your admin password.";
+    }
+    return;
+  }
+
+  if (confirmBtn) confirmBtn.disabled = true;
+  if (confirmBtn)
+    confirmBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+
+  try {
+    const response = await fetch(MAT_API.deleteAll, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      if (feedback) {
+        feedback.style.display = "block";
+        feedback.className = "text-success";
+        feedback.style.color = "#166534";
+        feedback.style.backgroundColor = "#f0fdf4";
+        feedback.textContent =
+          data.message || "All materials deleted successfully.";
+      }
+      matShowToast(
+        data.message || "All materials deleted successfully.",
+        "success",
+      );
+      setTimeout(() => {
+        matCloseDeleteAllModal();
+        matReloadMaterials(true);
+      }, 800);
+    } else {
+      if (feedback) {
+        feedback.style.display = "block";
+        feedback.className = "text-danger";
+        feedback.style.color = "#dc2626";
+        feedback.style.backgroundColor = "#fee2e2";
+        feedback.textContent =
+          data.message || "Unable to delete all materials.";
+      }
+      matShowToast(data.message || "Unable to delete all materials.", "error");
+    }
+  } catch (err) {
+    if (feedback) {
+      feedback.style.display = "block";
+      feedback.className = "text-danger";
+      feedback.style.color = "#dc2626";
+      feedback.style.backgroundColor = "#fee2e2";
+      feedback.textContent = "Network error. Please try again.";
+    }
+    matShowToast("Network error: " + err.message, "error");
+  } finally {
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (confirmBtn)
+      confirmBtn.innerHTML =
+        '<i class="fa-solid fa-trash"></i> Delete All Materials';
+  }
+};

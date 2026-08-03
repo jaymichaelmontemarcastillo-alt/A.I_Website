@@ -1,10 +1,17 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$role = strtolower($_SESSION['role'] ?? 'staff');
+$name = $_SESSION['full_name'] ?? strtolower($_SESSION['role']);
+?>
+
 <header class="top-nav">
 
     <div class="header-left">
-        <button id="toggle-btn" aria-label="Toggle Sidebar">
-            <i class="fa-solid fa-chevron-left toggle-arrow"></i>
-        </button>
-        <span>Hello, Admin</span>
+        
+<span>Hello, <?= htmlspecialchars($name) ?></span>
     </div>
 
     <div class="header-right">
@@ -19,7 +26,7 @@
         </div>
         <div class="dropdown-menu" id="dropdownMenu">
             <div class="dropdown-header">
-                <strong>My Account</strong>
+                <span>My Account</span>
             </div>
 
             <!-- Dark Mode Toggle -->
@@ -41,10 +48,18 @@
                     <span class="dropdown-text">Account Settings</span>
                 </div>
             </div>
-
+ <?php if (in_array($role, ['admin'])): ?>
+            <!-- Email Notification Settings (business Gmail + app password used for outgoing mail) -->
+            <div class="dropdown-item" id="openEmailSettingsModal">
+                <div class="dropdown-left">
+                    <i class="fa-solid fa-envelope"></i>
+                    <span class="dropdown-text">Email Notification Settings</span>
+                </div>
+            </div>
+      <?php endif; ?>
             <!-- Logout -->
-            <div class="dropdown-item logout">
-                <a href="Logout.php">
+            <div class="dropdown-item" id="logout">
+                <a class="dropdown-left" href="logout.php">
                     <i class="fa-solid fa-right-from-bracket"></i>
                     <span class="dropdown-text">Logout</span>
                 </a>
@@ -52,6 +67,7 @@
         </div>
     </div>
 </header>
+
 <div class="admin-account-modal" id="accountModal">
     <div class="modal-feedback" id="accountModalMessage"></div>
     <div class="admin-account-modal-content">
@@ -113,6 +129,48 @@
                     <button id="saveProfileBtn" type="button" class="btn btn-primary">Update Profile</button>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Notification Settings Modal -->
+<div class="admin-account-modal" id="emailSettingsModal">
+    <div class="modal-feedback" id="emailSettingsMessage"></div>
+    <div class="admin-account-modal-content">
+        <div class="modal-header">
+            <div>
+                <h2>Email Notification Settings</h2>
+                <p class="modal-description">This Gmail address and app password is used to send password reset codes and other system notifications. It's shared across the whole admin panel, not tied to your personal login.</p>
+            </div>
+            <button type="button" class="close-modal" onclick="closeEmailSettingsModal()" aria-label="Close modal">×</button>
+        </div>
+
+        <div class="input-group">
+            <label for="gmailAddressInput">Gmail Address</label>
+            <input type="email" id="gmailAddressInput" placeholder="business@gmail.com">
+        </div>
+
+        <div class="input-group password-field">
+            <label for="appPasswordInput">Gmail App Password</label>
+            <input type="password" id="appPasswordInput" placeholder="Leave blank to keep the current app password">
+            <span id="toggleAppPassword">👁</span>
+        </div>
+        <p class="helper-text" id="appPasswordStatus">Checking current status…</p>
+
+        <p class="helper-text">
+            Don't have one? Generate it from your Google Account under
+            Security &gt; 2-Step Verification &gt; App passwords. It's a 16-character code,
+            separate from your normal Gmail password.
+        </p>
+
+        <div class="input-group password-field">
+            <label for="emailCurrentPasswordInput">Your Admin Password</label>
+            <input type="password" id="emailCurrentPasswordInput" placeholder="Confirm your own admin password to save">
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary cancel" onclick="closeEmailSettingsModal()">Cancel</button>
+            <button id="saveEmailSettingsBtn" type="button" class="btn btn-primary">Save Email Settings</button>
         </div>
     </div>
 </div>

@@ -21,6 +21,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once '../../connect/config.php';
+require_once '../../api/admin_site/activity_logger.php';
 
 try {
     $pdo = getDBConnection();
@@ -34,6 +35,7 @@ try {
     $quotationId = isset($input['quotation_id']) ? (int)$input['quotation_id'] : 0;
     $auditId = isset($input['audit_id']) ? (int)$input['audit_id'] : 0;
     $adminId = $_SESSION['admin_id'] ?? null;
+    $adminName = 'Unknown';
 
     if ($quotationId <= 0) {
         throw new Exception('Invalid quotation ID');
@@ -42,6 +44,21 @@ try {
     if ($auditId <= 0) {
         throw new Exception('Invalid audit ID');
     }
+
+    // Get admin name for logging
+    if ($adminId) {
+        $stmt = $pdo->prepare("SELECT FullName FROM admins WHERE AdminID = ?");
+        $stmt->execute([$adminId]);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        $adminName = $admin ? $admin['FullName'] : 'Unknown';
+    }
+
+    // Get quotation details for logging
+    $stmt = $pdo->prepare("SELECT client_name, quote_number FROM quotations WHERE id = ?");
+    $stmt->execute([$quotationId]);
+    $quotation = $stmt->fetch(PDO::FETCH_ASSOC);
+    $clientName = $quotation ? $quotation['client_name'] : 'Unknown';
+    $quoteNumber = $quotation ? $quotation['quote_number'] : '';
 
     // Update the quotation with audit information
     $stmt = $pdo->prepare("
@@ -59,11 +76,48 @@ try {
         ':quotation_id' => $quotationId
     ]);
 
+    // ✅ LOG ACTIVITY - Success
+    logActivity(
+        $pdo,
+        $adminId,
+        $adminName,
+        "Marked quotation #{$quoteNumber} (ID: {$quotationId}) for client '{$clientName}' as audited - Audit ID: {$auditId}",
+        $quotationId,
+        "Quotation Audit",
+        "Success"
+    );
+
     echo json_encode([
         'success' => true,
         'message' => 'Quotation marked as audited successfully.'
     ]);
 } catch (Exception $e) {
+    // ❌ LOG FAILED ACTIVITY
+    if (isset($pdo)) {
+        $adminId = $_SESSION['admin_id'] ?? null;
+        $adminName = 'Unknown';
+        if ($adminId) {
+            try {
+                $stmt = $pdo->prepare("SELECT FullName FROM admins WHERE AdminID = ?");
+                $stmt->execute([$adminId]);
+                $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+                $adminName = $admin ? $admin['FullName'] : 'Unknown';
+            } catch (Exception $e) {
+                // Ignore
+            }
+        }
+        
+        logActivity(
+            $pdo,
+            $adminId,
+            $adminName,
+            "Failed to mark quotation as audited (ID: {$quotationId}): " . $e->getMessage(),
+            $quotationId ?? null,
+            "Quotation Audit",
+            "Failed"
+        );
+    }
+    
     error_log('update_quotation_audited.php error: ' . $e->getMessage());
     echo json_encode([
         'success' => false,

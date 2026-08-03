@@ -5,17 +5,55 @@ ini_set('display_errors', 0); // Don't show errors in output
 
 header('Content-Type: application/json');
 
+// ------------------------------------------------------------------
+// Structured error handling
+// ------------------------------------------------------------------
+// ImportException carries a "type" so the frontend can show a clear,
+// user-friendly modal instead of raw technical text. The real technical
+// detail is still logged server-side (error_log) and included in the
+// JSON as `technical_message` for developer debugging in the browser
+// console only - the UI never displays it directly to the end user.
+class ImportException extends Exception
+{
+    public $type;
+
+    public function __construct($message, $type = 'general')
+    {
+        parent::__construct($message);
+        $this->type = $type;
+    }
+}
+
+// User-facing message shown per error type. Kept short, non-technical,
+// and actionable so the person knows what to do next.
+$friendlyMessages = [
+    'upload'          => "We couldn't upload your file. Please check your connection and try again.",
+    'invalid_type'    => "This file type isn't supported. Please upload an Excel file (.xlsx or .xls).",
+    'file_read'       => "We couldn't read this file. Please make sure it isn't corrupted or password-protected, then try again.",
+    'empty_file'      => "This file doesn't have any product data in it. Please add your products and try again.",
+    'column_mismatch' => 'This Excel file doesn\'t match the expected format. Please make sure it has a column named "Product Name" (or "Product", "Name", or "Item"), then try again.',
+    'database'        => "A technical problem occurred while saving your data. Please try again in a moment.",
+    'general'         => "Something went wrong during the import. Please try again.",
+];
+
 try {
     // Include config
     require_once __DIR__ . '/../../../connect/config.php';
 
     if (!function_exists('getDBConnection')) {
-        throw new Exception('getDBConnection function not found');
+        throw new ImportException('getDBConnection function not found', 'database');
     }
 
     $pdo = getDBConnection();
     if (!$pdo) {
-        throw new Exception('Database connection failed');
+        throw new ImportException('Database connection failed', 'database');
+    }
+
+    // Ensure the products table has the extra_data column for storing
+    // unrecognized Excel columns. Only adds it if it doesn't already exist.
+    $colCheck = $pdo->query("SHOW COLUMNS FROM products LIKE 'extra_data'");
+    if ($colCheck->rowCount() === 0) {
+        $pdo->exec("ALTER TABLE products ADD COLUMN extra_data JSON NULL");
     }
 
     // Check if file was uploaded
@@ -31,7 +69,7 @@ try {
         ];
         $errorCode = $_FILES['excel_file']['error'] ?? UPLOAD_ERR_NO_FILE;
         $errorMsg = $errorMessages[$errorCode] ?? 'Unknown upload error';
-        throw new Exception('Upload error: ' . $errorMsg);
+        throw new ImportException('Upload error: ' . $errorMsg, 'upload');
     }
 
     $file = $_FILES['excel_file']['tmp_name'];
@@ -40,7 +78,11 @@ try {
 
     // Validate file extension
     if (!in_array($extension, ['xlsx', 'xls', 'csv'])) {
-        throw new Exception('Only .xlsx, .xls, and .csv files are allowed. Got: ' . $extension);
+        throw new ImportException('Only .xlsx, .xls, and .csv files are allowed. Got: ' . $extension, 'invalid_type');
+    }
+
+    if ($extension === 'csv' && !is_uploaded_file($file)) {
+        throw new ImportException('Uploaded file could not be verified.', 'upload');
     }
 
     // Get data from file (supports both CSV and Excel)
@@ -60,7 +102,7 @@ try {
             // Check if vendor/autoload.php exists
             $vendorPath = __DIR__ . '/../../../vendor/autoload.php';
             if (!file_exists($vendorPath)) {
-                throw new Exception('vendor/autoload.php not found. Please run: composer require phpoffice/phpspreadsheet');
+                throw new ImportException('vendor/autoload.php not found. Please run: composer require phpoffice/phpspreadsheet', 'file_read');
             }
 
             require_once $vendorPath;
@@ -86,120 +128,109 @@ try {
                 $sheet = $spreadsheet->getActiveSheet();
                 $rows = $sheet->toArray();
             }
-        } catch (Exception $e) {
-            // If PhpSpreadsheet fails, try to read as CSV as fallback
+        } catch (ImportException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            // If PhpSpreadsheet fails (corrupt file, wrong format, etc.),
+            // try to read it as CSV as a last-resort fallback.
+            $rows = [];
             if (($handle = fopen($file, 'r')) !== false) {
                 while (($data = fgetcsv($handle, 1000, ',')) !== false) {
                     $rows[] = $data;
                 }
                 fclose($handle);
-            } else {
-                throw new Exception('Failed to read file: ' . $e->getMessage());
+            }
+            if (empty($rows)) {
+                error_log('Import file_read failure: ' . $e->getMessage());
+                throw new ImportException('Failed to read file: ' . $e->getMessage(), 'file_read');
             }
         }
     }
 
     if (empty($rows) || count($rows) < 2) {
-        throw new Exception('File is empty or has no data rows. Found ' . count($rows) . ' rows.');
+        throw new ImportException('File is empty or has no data rows. Found ' . count($rows) . ' rows.', 'empty_file');
     }
 
-    // Get headers from first row and clean them
-    $headers = array_map('trim', $rows[0]);
-    $headers = array_filter($headers, function ($h) {
-        return !empty($h);
-    });
-    $headers = array_values($headers);
+    // ------------------------------------------------------------------
+    // Dynamic header-based column mapping
+    // ------------------------------------------------------------------
+    // Headers are read from row 0 and matched (case-insensitive, trimmed)
+    // against a set of known aliases. This lets the Excel file have its
+    // columns in ANY order - we map by header name, not by position.
+    // Any header that isn't recognized is preserved (not discarded) and
+    // its values are stored per-row in the `extra_data` JSON column.
 
-    // Find column indexes - support multiple header variations
-    $colMap = [];
+    // Keep the raw header row untouched (no filtering/reindexing) so that
+    // column indexes stay perfectly aligned with each data row's indexes.
+    $rawHeaderRow = $rows[0];
+    $headers = [];
+    foreach ($rawHeaderRow as $idx => $h) {
+        $headers[$idx] = ($h === null) ? '' : trim($h);
+    }
 
-    // Map "Type" column
-    $typeKeywords = ['type', 'product type', 'category', 'product category'];
+    // Normalizes a header for comparison: trim, collapse inner whitespace,
+    // lowercase. E.g. " Product   Code " -> "product code"
+    function normalizeHeaderName($h)
+    {
+        $h = trim((string) $h);
+        $h = preg_replace('/\s+/', ' ', $h);
+        return strtolower($h);
+    }
+
+    // Canonical field => accepted header aliases (already normalized/lowercase).
+    $aliasMap = [
+        'product_code' => ['product code', 'code', 'sku', 'item code'],
+        'product_name' => ['product name', 'name', 'item name', 'product', 'item'],
+        'price'        => ['price', 'selling price', 'unit price'],
+        'stock'        => ['stock', 'quantity', 'qty'],
+        'category'     => ['category', 'type', 'product type', 'product category'],
+        'brand'        => ['brand'],
+        'description'  => ['description', 'desc', 'details'],
+        // Kept for backward compatibility with the existing materials feature.
+        'materials'    => ['materials', 'material', 'components'],
+    ];
+
+    // Canonical fields that don't have a dedicated products table column.
+    // Their values are still recognized (not treated as "unknown"), but are
+    // routed into extra_data using a clean, human-readable key.
+    $noColumnFields = [
+        'brand' => 'Brand',
+    ];
+
+    $colMap = [];       // canonical_field => column index
+    $unknownCols = [];  // column index => original header text
+
     foreach ($headers as $index => $header) {
-        $headerLower = strtolower(trim($header));
-        foreach ($typeKeywords as $keyword) {
-            if ($headerLower === $keyword || strpos($headerLower, $keyword) !== false) {
-                $colMap['type'] = $index;
-                break 2;
+        if ($header === '') {
+            continue; // blank header cell, skip entirely
+        }
+
+        $normalized = normalizeHeaderName($header);
+        $matchedField = null;
+
+        foreach ($aliasMap as $field => $aliases) {
+            if (isset($colMap[$field])) {
+                continue; // already mapped to an earlier column
+            }
+            if (in_array($normalized, $aliases, true)) {
+                $matchedField = $field;
+                break;
             }
         }
-    }
 
-    // Map "Product Name" column
-    $productKeywords = ['product', 'product name', 'name', 'item', 'item name', 'materials'];
-    foreach ($headers as $index => $header) {
-        $headerLower = strtolower(trim($header));
-        foreach ($productKeywords as $keyword) {
-            if ($headerLower === $keyword || strpos($headerLower, $keyword) !== false) {
-                $colMap['product'] = $index;
-                break 2;
-            }
-        }
-    }
-
-    // Map "SKU" column
-    $skuKeywords = ['sku', 'code', 'product code', 'item code'];
-    foreach ($headers as $index => $header) {
-        $headerLower = strtolower(trim($header));
-        foreach ($skuKeywords as $keyword) {
-            if ($headerLower === $keyword || strpos($headerLower, $keyword) !== false) {
-                $colMap['sku'] = $index;
-                break 2;
-            }
-        }
-    }
-
-    // Map "Price" column
-    $priceKeywords = ['price', 'cost', 'unit cost', 'amount'];
-    foreach ($headers as $index => $header) {
-        $headerLower = strtolower(trim($header));
-        foreach ($priceKeywords as $keyword) {
-            if ($headerLower === $keyword || strpos($headerLower, $keyword) !== false) {
-                $colMap['price'] = $index;
-                break 2;
-            }
-        }
-    }
-
-    // Map "Stock" column
-    $stockKeywords = ['stock', 'quantity', 'qty', 'inventory', 'total on hand', 'on hand'];
-    foreach ($headers as $index => $header) {
-        $headerLower = strtolower(trim($header));
-        foreach ($stockKeywords as $keyword) {
-            if ($headerLower === $keyword || strpos($headerLower, $keyword) !== false) {
-                $colMap['stock'] = $index;
-                break 2;
-            }
-        }
-    }
-
-    // Map "Materials" column (for product materials)
-    $materialKeywords = ['materials', 'material', 'components'];
-    foreach ($headers as $index => $header) {
-        $headerLower = strtolower(trim($header));
-        foreach ($materialKeywords as $keyword) {
-            if ($headerLower === $keyword || strpos($headerLower, $keyword) !== false) {
-                $colMap['materials'] = $index;
-                break 2;
-            }
-        }
-    }
-
-    // Map "Description" column
-    $descKeywords = ['description', 'desc', 'details'];
-    foreach ($headers as $index => $header) {
-        $headerLower = strtolower(trim($header));
-        foreach ($descKeywords as $keyword) {
-            if ($headerLower === $keyword || strpos($headerLower, $keyword) !== false) {
-                $colMap['description'] = $index;
-                break 2;
-            }
+        if ($matchedField !== null) {
+            $colMap[$matchedField] = $index;
+        } else {
+            $unknownCols[$index] = $header;
         }
     }
 
     // Validate required columns
-    if (!isset($colMap['product'])) {
-        throw new Exception('Could not find "Product" or "Product Name" column. Found headers: ' . implode(', ', $headers));
+    if (!isset($colMap['product_name'])) {
+        throw new ImportException(
+            'Could not find a "Product Name" column. Found headers: ' . implode(', ', array_filter($headers)),
+            'column_mismatch'
+        );
     }
 
     $pdo->beginTransaction();
@@ -222,32 +253,64 @@ try {
         $defaultTypeId = $pdo->lastInsertId();
     }
 
+    // Helper: clean a numeric string (strips currency symbols, commas,
+    // stray spaces) before casting, so "₱1,250.00" or " 20 " convert correctly.
+    function cleanNumeric($val)
+    {
+        $val = trim((string) $val);
+        $val = str_replace([',', '₱', '$', ' '], '', $val);
+        return $val === '' ? 0 : $val;
+    }
+
     // Process each row
     for ($i = 1; $i < count($rows); $i++) {
         $row = $rows[$i];
 
         // Skip completely empty rows
-        $rowData = array_map('trim', $row);
+        $rowData = array_map(function ($v) {
+            return trim((string) ($v ?? ''));
+        }, $row);
         if (empty(array_filter($rowData, function ($val) {
             return $val !== '' && $val !== null;
         }))) {
+            $skipped++;
             continue;
         }
 
         try {
-            // Get values from columns
-            $productName = isset($colMap['product']) ? trim($row[$colMap['product']] ?? '') : '';
+            // Get values from columns using the dynamic header map
+            $productName = isset($colMap['product_name']) ? trim($row[$colMap['product_name']] ?? '') : '';
             if (empty($productName)) {
-                $errors[] = "Row " . ($i + 1) . ": Product name is required";
+                $errors[] = "Row " . ($i + 1) . ": Skipped - Product name is required";
+                $skipped++;
                 continue;
             }
 
-            $productType = isset($colMap['type']) ? trim($row[$colMap['type']] ?? '') : '';
-            $sku = isset($colMap['sku']) ? trim($row[$colMap['sku']] ?? '') : '';
-            $price = isset($colMap['price']) ? floatval(trim($row[$colMap['price']] ?? 0)) : 0;
-            $stock = isset($colMap['stock']) ? intval(trim($row[$colMap['stock']] ?? 0)) : 0;
+            $productType = isset($colMap['category']) ? trim($row[$colMap['category']] ?? '') : '';
+            $sku = isset($colMap['product_code']) ? trim($row[$colMap['product_code']] ?? '') : '';
+            $price = isset($colMap['price']) ? floatval(cleanNumeric($row[$colMap['price']] ?? 0)) : 0;
+            $stock = isset($colMap['stock']) ? intval(cleanNumeric($row[$colMap['stock']] ?? 0)) : 0;
             $materialsStr = isset($colMap['materials']) ? trim($row[$colMap['materials']] ?? '') : '';
             $description = isset($colMap['description']) ? trim($row[$colMap['description']] ?? '') : '';
+
+            // Build extra_data JSON from recognized-but-columnless fields
+            // (e.g. Brand) plus any header that wasn't recognized at all.
+            $extraData = [];
+            foreach ($noColumnFields as $field => $label) {
+                if (isset($colMap[$field])) {
+                    $val = trim($row[$colMap[$field]] ?? '');
+                    if ($val !== '') {
+                        $extraData[$label] = $val;
+                    }
+                }
+            }
+            foreach ($unknownCols as $colIndex => $originalHeader) {
+                $val = isset($row[$colIndex]) ? trim((string) $row[$colIndex]) : '';
+                if ($val !== '') {
+                    $extraData[$originalHeader] = $val;
+                }
+            }
+            $extraDataJson = !empty($extraData) ? json_encode($extraData, JSON_UNESCAPED_UNICODE) : null;
 
             // Generate SKU if not provided
             if (empty($sku)) {
@@ -298,6 +361,7 @@ try {
                         price = ?,
                         stock = ?,
                         description = ?,
+                        extra_data = ?,
                         updated_at = NOW()
                     WHERE id = ?
                 ");
@@ -307,6 +371,7 @@ try {
                     $price,
                     $stock,
                     $description,
+                    $extraDataJson,
                     $existing['id']
                 ]);
                 $productId = $existing['id'];
@@ -325,9 +390,10 @@ try {
                         status, 
                         image,
                         material_type,
+                        extra_data,
                         created_at,
                         updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'assembled_product', NOW(), NOW())
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'assembled_product', ?, NOW(), NOW())
                 ");
                 $stmt->execute([
                     $productName,
@@ -338,7 +404,8 @@ try {
                     $description,
                     $defaultUnit,
                     $defaultStatus,
-                    $defaultImage
+                    $defaultImage,
+                    $extraDataJson
                 ]);
                 $productId = $pdo->lastInsertId();
                 $imported++;
@@ -384,13 +451,16 @@ try {
                 }
             }
         } catch (Exception $e) {
+            // Row-level errors never abort the whole import - record the
+            // reason and continue with the next row.
             $errors[] = "Row " . ($i + 1) . ": " . $e->getMessage();
+            $skipped++;
         }
     }
 
     $pdo->commit();
 
-    $summary = "Import completed! Added: $imported, Updated: $updated, Errors: " . count($errors);
+    $summary = "Import completed! Added: $imported, Updated: $updated, Skipped: $skipped, Errors: " . count($errors);
 
     echo json_encode([
         'success' => true,
@@ -402,12 +472,40 @@ try {
             'errors' => $errors
         ]
     ]);
-} catch (Exception $e) {
+} catch (ImportException $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    error_log('Import failed [' . $e->type . ']: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'error_type' => $e->type,
+        'message' => $friendlyMessages[$e->type] ?? $friendlyMessages['general'],
+        'technical_message' => $e->getMessage()
+    ]);
+} catch (PDOException $e) {
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log('Import database error: ' . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'error_type' => 'database',
+        'message' => $friendlyMessages['database'],
+        'technical_message' => $e->getMessage()
+    ]);
+} catch (Throwable $e) {
+    // Catches anything unexpected (PHP fatal-level errors, type errors, etc.)
+    // so the response is always valid JSON instead of a raw PHP error page
+    // that would break JSON.parse() on the frontend.
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    error_log('Import unexpected error: ' . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'error_type' => 'general',
+        'message' => $friendlyMessages['general'],
+        'technical_message' => $e->getMessage()
     ]);
 }

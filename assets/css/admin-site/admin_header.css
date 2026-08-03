@@ -9,7 +9,7 @@
 }
 
 body.dark-mode {
-  --bg: #0f172a;
+  --bg: #07090e;
   --bg-soft: #1e293b;
   --border: #334155;
   --text: #f1f5f9;
@@ -22,7 +22,6 @@ body.dark-mode {
   align-items: center;
   padding: 12px 20px;
   background: var(--bg);
-  border-bottom: 1px solid var(--border);
 }
 
 .header-left {
@@ -30,17 +29,15 @@ body.dark-mode {
   align-items: center;
   gap: 12px;
 }
-
+.header-right {
+  position: relative;
+}
 #toggle-btn {
   background: var(--bg-soft);
   border: none;
   padding: 8px;
   border-radius: 8px;
   cursor: pointer;
-}
-
-.header-right {
-  position: relative;
 }
 
 .user-info {
@@ -73,7 +70,7 @@ body.dark-mode {
   position: absolute;
   top: 60px;
   right: 0;
-  width: 240px;
+  width: 288px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -97,6 +94,10 @@ body.dark-mode {
   border-bottom: 1px solid var(--border);
   font-weight: 600;
   font-size: 1rem;
+
+  span {
+    font-size: clamp(10px, 1vw, 13px);
+  }
 }
 
 /* Dropdown items */
@@ -109,8 +110,18 @@ body.dark-mode {
   transition: 0.2s;
   gap: 8px;
   text-decoration: none;
-}
 
+  a {
+    text-decoration: none;
+  }
+}
+/* Remove underline from <a> and make icon/text aligned */
+
+/* Logout item styling */
+#logout i {
+  color: var(--danger); /* can be changed dynamically by theme */
+  transition: 0.3s;
+}
 .modal-feedback {
   display: none;
   position: absolute;
@@ -164,22 +175,6 @@ body.dark-mode {
 .dropdown-left i {
   font-size: 1rem;
   color: var(--text-color);
-}
-
-/* Remove underline from <a> and make icon/text aligned */
-.dropdown-item a {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: inherit;
-  width: 100%;
-}
-
-/* Logout item styling */
-.logout i {
-  color: var(--danger); /* can be changed dynamically by theme */
-  transition: 0.3s;
 }
 
 /* Dark mode toggle switch */

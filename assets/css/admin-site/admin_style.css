@@ -1,6 +1,9 @@
 :root {
   --primary-blue: #0d3b56;
   --primary-hover: #164e70;
+  --warm-yellow: #f4ba31;
+  --warm-yellow-hover: rgb(184, 125, 0);
+  --warm-yellow-light: #f5e6b8;
 
   --bg-light: #f8fafc;
   --border-color: #e2e8f0;
@@ -212,13 +215,13 @@ input:focus {
   text-align: center;
   margin-top: 1rem;
 }
-/* BUTTON */
+/* BUTTON - WARM YELLOW */
 
 .sign-in-btn,
 .sign-up-btn {
   width: 100%;
-  background: var(--primary-blue);
-  color: white;
+  background: var(--warm-yellow);
+  color: #1a2a3a;
   border: none;
   padding: 1rem;
   border-radius: 8px;
@@ -229,16 +232,22 @@ input:focus {
   justify-content: center;
   align-items: center;
   gap: 0.5rem;
-
-  transition: 0.2s;
+  transition: 0.25s ease;
+  box-shadow: 0 4px 14px rgba(212, 160, 43, 0.3);
 }
 
-.sign-in-btn:hover {
-  background: var(--primary-hover);
+.sign-in-btn:hover,
+.sign-up-btn:hover {
+  background: var(--warm-yellow-hover);
+  transform: translateY(-2px);
+  color: white;
+  box-shadow: 0 8px 24px rgba(212, 160, 43, 0.4);
 }
 
-.sign-in-btn:active {
-  transform: scale(0.98);
+.sign-in-btn:active,
+.sign-up-btn:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 8px rgba(212, 160, 43, 0.25);
 }
 
 /* RESPONSIVE */

@@ -3,6 +3,8 @@ session_start();
 header('Content-Type: application/json');
 
 require_once '../../connect/config.php';
+require_once '../../api/admin_site/activity_logger.php';
+
 $pdo = getDBConnection();
 
 /*
@@ -43,7 +45,7 @@ if (!$currentPassword) {
 | VERIFY CURRENT PASSWORD
 |--------------------------------------------------
 */
-$stmt = $pdo->prepare("SELECT Password FROM admins WHERE AdminID = ?");
+$stmt = $pdo->prepare("SELECT Password, FullName FROM admins WHERE AdminID = ?");
 $stmt->execute([$adminID]);
 $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -105,14 +107,18 @@ try {
 
     $params = [$fullName, $email];
 
+    $changes = [];
+    
     if ($password) {
         $query .= ", Password = ?";
         $params[] = password_hash($password, PASSWORD_DEFAULT);
+        $changes[] = "password updated";
     }
 
     if ($profilePath) {
         $query .= ", ProfilePicture = ?";
         $params[] = $profilePath;
+        $changes[] = "profile picture updated";
     }
 
     $query .= " WHERE AdminID = ?";
@@ -121,12 +127,39 @@ try {
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
 
+    // ✅ LOG ACTIVITY
+    $actionDetails = "Profile updated";
+    if (!empty($changes)) {
+        $actionDetails .= " (" . implode(", ", $changes) . ")";
+    }
+    
+    logActivity(
+        $pdo,
+        $adminID,
+        $admin['FullName'],
+        $actionDetails,
+        null,
+        "Profile Management",
+        "Success"
+    );
+
     echo json_encode([
         'status' => 'success',
         'message' => 'Profile updated successfully'
     ]);
 } catch (PDOException $e) {
-
+    
+    // ❌ LOG FAILED ACTIVITY
+    logActivity(
+        $pdo,
+        $adminID,
+        $admin['FullName'],
+        "Profile update failed: " . $e->getMessage(),
+        null,
+        "Profile Management",
+        "Failed"
+    );
+    
     echo json_encode([
         'status' => 'error',
         'message' => 'Database error: ' . $e->getMessage()

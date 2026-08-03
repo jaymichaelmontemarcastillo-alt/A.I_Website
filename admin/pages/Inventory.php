@@ -2,6 +2,8 @@
 //materials_inventory.php
 include 'auth_check.php';
 include '../includes/header.php';
+
+$isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin';
 ?>
 
 <link rel="stylesheet" href="../../assets/css/admin-site/admin_inventory.css">
@@ -24,28 +26,55 @@ include '../includes/header.php';
                     <p class="page-subtitle">Stock levels, locations, and history</p>
                 </div>
                 <div class="top-btn" style="display: flex; gap: 12px;">
-
                     <button class="btn-import" onclick="matOpenImportModal()">
                         <i class="fa-solid fa-upload"></i> Import
                     </button>
                     <button class="btn-export" onclick="matExportData()">
                         <i class="fa-solid fa-download"></i> Export
                     </button>
+                    <?php if ($isAdminRole): ?>
+                    <button class="btn-delete-all" onclick="matOpenDeleteAllModal()" style="background: #dc2626; color: #fff; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 14px;">
+                        <i class="fa-solid fa-trash"></i> Delete All
+                    </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <!-- Import CSV Modal -->
             <div id="matImportModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:99999; align-items:center; justify-content:center;">
                 <div style="background:#fff; border-radius:10px; max-width:500px; width:90%; padding:24px;">
-                    <h3 style="margin:0 0 16px 0;"><i class="fa-solid fa-file-csv"></i> Import Materials (CSV)</h3>
-                    <p style="margin-bottom:16px; color:#666;">Upload CSV file with columns: Type, Materials, Shop, PH, Total On Hand, Total Cost, Quantity per pack, Unit Cost, Remarks</p>
+                    <h3 style="margin:0 0 16px 0;"><i class="fa-solid fa-file-import"></i> Import Materials</h3>
+                    <p style="margin-bottom:16px; color:#666;">Upload CSV or Excel file (.xlsx, .xls) with columns: Type, Materials, Shop, PH, Total On Hand, Total Cost, Quantity per pack, Unit Cost, Remarks</p>
+                    <p style="margin-bottom:16px; color:#666; font-size: 0.9rem; background: #f0f9ff; padding: 8px; border-radius: 5px; border-left: 3px solid #2563eb;"><i class="fa-solid fa-info-circle" style="color: #2563eb;"></i> For Excel files with multiple sheets, only sheets matching the required columns will be accepted.</p>
                     <button onclick="matDownloadSampleCSV()" style="margin-bottom:16px; padding:6px 12px; background:#f3f4f6; border:1px solid #ddd; border-radius:5px; cursor:pointer;">
                         <i class="fa-solid fa-download"></i> Download Sample CSV
                     </button>
-                    <input type="file" id="importCSVFile" accept=".csv" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; margin-bottom:16px;">
+                    <input type="file" id="importCSVFile" accept=".csv,.xlsx,.xls" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; margin-bottom:16px;">
+                    <div id="matImportSheetSelector" style="display:none; margin-bottom:16px;">
+                        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:0.9rem;">Select Sheet:</label>
+                        <select id="matImportSheetSelect" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px;"></select>
+                    </div>
+                    <div id="matImportSheetError" style="display:none; color:#dc2626; font-size:0.9rem; margin-bottom:12px; padding:8px; background:#fee2e2; border-radius:5px;"></div>
                     <div style="display:flex; gap:10px; justify-content:flex-end;">
                         <button onclick="matCloseImportModal()" style="padding:8px 16px; border:1px solid #ddd; border-radius:5px; background:#fff; cursor:pointer;">Cancel</button>
                         <button onclick="matProcessImport()" style="padding:8px 20px; border:none; border-radius:5px; background:#2563eb; color:#fff; cursor:pointer;"><i class="fa-solid fa-upload"></i> Import</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Delete All Materials Modal -->
+            <div id="matDeleteAllModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:99999; align-items:center; justify-content:center;">
+                <div style="background:#fff; border-radius:10px; max-width:450px; width:90%; padding:24px;">
+                    <h3 style="margin:0 0 16px 0; color:#dc2626;"><i class="fa-solid fa-triangle-exclamation"></i> Delete All Materials</h3>
+                    <p style="margin:0 0 16px 0; color:#666;">This will permanently delete every material from the inventory. This action cannot be undone.</p>
+                    <div style="margin-bottom:16px;">
+                        <label for="matDeleteAllPassword" style="display:block; margin-bottom:6px; font-weight:600; font-size:0.9rem;">Admin Password <span style="color:#dc2626;">*</span></label>
+                        <input type="password" id="matDeleteAllPassword" placeholder="Enter your admin password" autocomplete="current-password" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; box-sizing:border-box;">
+                    </div>
+                    <div id="matDeleteAllFeedback" style="display:none; margin-bottom:12px; padding:8px; border-radius:5px; font-size:0.9rem;"></div>
+                    <div style="display:flex; gap:10px; justify-content:flex-end;">
+                        <button onclick="matCloseDeleteAllModal()" style="padding:8px 16px; border:1px solid #ddd; border-radius:5px; background:#fff; cursor:pointer;">Cancel</button>
+                        <button onclick="matConfirmDeleteAll()" id="matDeleteAllConfirmBtn" style="padding:8px 20px; border:none; border-radius:5px; background:#dc2626; color:#fff; cursor:pointer;"><i class="fa-solid fa-trash"></i> Delete All Materials</button>
                     </div>
                 </div>
             </div>
@@ -387,7 +416,7 @@ include '../includes/header.php';
                                 <th>Total Stock</th>
                                 <th>Unit Cost</th>
                                 <th>Status</th>
-                                <th>Actions</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody id="materialsTableBody">
@@ -437,12 +466,13 @@ include '../includes/header.php';
                                 <th>Before → After</th>
                                 <th>Admin</th>
                                 <th>Note</th>
+                                <th>Action</th>
                                 <th>Date</th>
                             </tr>
                         </thead>
                         <tbody id="materialsLogsTableBody">
                             <tr>
-                                <td colspan="8" class="loading-cell">Loading logs…</td>
+                                <td colspan="9" class="loading-cell">Loading logs…</td>
                             </tr>
                         </tbody>
                     </table>
@@ -565,6 +595,19 @@ include '../includes/header.php';
                            box-sizing:border-box; outline:none;">
                     </div>
 
+                    <!-- Remarks -->
+                    <div style="margin-bottom:16px;">
+                        <label for="matEditRemarks" style="display:block; font-size:0.78rem; font-weight:600;
+                          margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
+                            Remarks
+                        </label>
+                        <textarea id="matEditRemarks" rows="3" placeholder="Add a note for this material update..."
+                            style="display:block; width:100%; padding:10px 12px;
+                           border:1px solid #d1d5db; border-radius:8px;
+                           font-size:0.9rem; background:#f9fafb; color:#111;
+                           box-sizing:border-box; outline:none; resize:vertical;"></textarea>
+                    </div>
+
                     <!-- Preview Total Stock -->
                     <div id="matEditTotalPreview" style="margin-top:12px; padding:10px; background:#f0fdf4; border-radius:8px; text-align:center;">
                         <span style="font-size:0.85rem; color:#166534;">Total Stock: <strong id="matEditTotalValue">0</strong></span>
@@ -596,6 +639,19 @@ include '../includes/header.php';
             </div>
         </div>
     </main>
+
+    <div id="matLogDetailsModal" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.72); z-index:100002; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+        <div style="background:#fff; border-radius:16px; width:100%; max-width:560px; box-shadow:0 24px 80px rgba(0,0,0,0.25); overflow:hidden; border:1px solid #e5e7eb;">
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 20px; border-bottom:1px solid #e5e7eb; background:linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);">
+                <div>
+                    <h3 style="margin:0; font-size:1rem; font-weight:700; color:#111;">Material Log Details</h3>
+                    <p style="margin:4px 0 0; font-size:0.8rem; color:#64748b;">Review the recorded stock change and remarks.</p>
+                </div>
+                <button id="matLogDetailsCloseBtn" type="button" style="background:none; border:none; font-size:1.5rem; cursor:pointer; color:#6b7280; line-height:1; padding:2px 6px; border-radius:4px;">&times;</button>
+            </div>
+            <div id="matLogDetailsBody" style="padding:20px; line-height:1.6; color:#374151;"></div>
+        </div>
+    </div>
 
     <!-- ═══════════════════════════════════════════════════════════════
          QUOTATION AUDIT MODAL (Created from quotation selection)

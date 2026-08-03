@@ -23,6 +23,7 @@ $location = trim($_GET['location'] ?? '');
 $dateFrom = trim($_GET['date_from'] ?? '');
 $dateTo = trim($_GET['date_to'] ?? '');
 $auditId = isset($_GET['audit_id']) ? (int) $_GET['audit_id'] : 0;
+$logId = isset($_GET['log_id']) ? (int) $_GET['log_id'] : 0;
 $page = max(1, (int) ($_GET['page'] ?? 1));
 $perPage = min(50, max(1, (int) ($_GET['per_page'] ?? 15)));
 $offset = ($page - 1) * $perPage;
@@ -60,6 +61,11 @@ if ($auditId > 0) {
     $params[':audit_id'] = $auditId;
 }
 
+if ($logId > 0) {
+    $where[] = 'il.id = :log_id';
+    $params[':log_id'] = $logId;
+}
+
 if ($dateFrom) {
     $where[] = 'DATE(il.created_at) >= :date_from';
     $params[':date_from'] = $dateFrom;
@@ -75,23 +81,11 @@ $whereSQL = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 try {
     $pdo = getDBConnection();
 
-    // Check which log table to use (prefer inventory_logs)
-    $tableCheck = $pdo->query("SHOW TABLES LIKE 'inventory_logs'");
-    $useInventoryLogs = $tableCheck && $tableCheck->rowCount() > 0;
+    // Prefer materials_logs for inventory/material edits. Fall back to inventory_logs only if needed.
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'materials_logs'");
+    $useMaterialsLogs = $tableCheck && $tableCheck->rowCount() > 0;
 
-    if (!$useInventoryLogs) {
-        // Fallback to materials_logs
-        $tableCheck2 = $pdo->query("SHOW TABLES LIKE 'materials_logs'");
-        if (!$tableCheck2 || $tableCheck2->rowCount() === 0) {
-            echo json_encode([
-                'success' => true,
-                'logs' => [],
-                'pagination' => ['total' => 0, 'per_page' => $perPage, 'current_page' => $page, 'last_page' => 0],
-                'message' => 'No log tables found'
-            ]);
-            exit;
-        }
-
+    if ($useMaterialsLogs) {
         // Count total
         $countSQL = "SELECT COUNT(*) FROM materials_logs il $whereSQL";
         $countStmt = $pdo->prepare($countSQL);
@@ -110,7 +104,7 @@ try {
                     il.new_stock,
                     il.admin_id,
                     COALESCE(a.FullName, 'Unknown Admin') AS admin_name,
-                    il.note,
+                    COALESCE(NULLIF(il.note, ''), NULLIF(m.remarks, ''), 'No remarks provided') AS note,
                     il.audit_id,
                     il.created_at,
                     il.location
@@ -121,8 +115,18 @@ try {
                 ORDER BY il.created_at DESC
                 LIMIT :limit OFFSET :offset";
     } else {
+        $tableCheck2 = $pdo->query("SHOW TABLES LIKE 'inventory_logs'");
+        if (!$tableCheck2 || $tableCheck2->rowCount() === 0) {
+            echo json_encode([
+                'success' => true,
+                'logs' => [],
+                'pagination' => ['total' => 0, 'per_page' => $perPage, 'current_page' => $page, 'last_page' => 0],
+                'message' => 'No log tables found'
+            ]);
+            exit;
+        }
+
         // Use inventory_logs with proper columns
-        // Check if location column exists in inventory_logs
         $colCheck = $pdo->query("SHOW COLUMNS FROM inventory_logs LIKE 'location'");
         $hasLocation = $colCheck && $colCheck->rowCount() > 0;
 
@@ -146,7 +150,7 @@ try {
                     il.new_stock,
                     il.admin_id,
                     COALESCE(a.FullName, 'Unknown Admin') AS admin_name,
-                    il.note,
+                    COALESCE(NULLIF(il.note, ''), NULLIF(m.remarks, ''), 'No remarks provided') AS note,
                     il.audit_id,
                     il.created_at,
                     $locationSelect
@@ -164,8 +168,13 @@ try {
     foreach ($params as $k => $v) {
         $stmt->bindValue($k, $v);
     }
-    $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    if ($logId > 0) {
+        $stmt->bindValue(':limit', 1, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', 0, PDO::PARAM_INT);
+    } else {
+        $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    }
     $stmt->execute();
     $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -177,6 +186,15 @@ try {
         $log['audit_id'] = $log['audit_id'] ? (int) $log['audit_id'] : null;
         $log['location'] = $log['location'] ?? 'total_stock';
         $log['delta'] = $log['new_stock'] - $log['previous_stock'];
+    }
+
+    if ($logId > 0) {
+        echo json_encode([
+            'success' => true,
+            'log' => $logs[0] ?? null,
+            'logs' => $logs,
+        ]);
+        exit;
     }
 
     echo json_encode([

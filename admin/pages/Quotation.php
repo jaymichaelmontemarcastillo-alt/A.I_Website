@@ -6,6 +6,7 @@ include '../includes/header.php';
 <body>
     <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_inventory.css">
+    <link rel="stylesheet" href="../../assets/css/admin-site/quotation-audit-modal.css">
     <div class="admin-wrapper">
         <?php
         $current_page = 'Quotation';
@@ -286,26 +287,6 @@ include '../includes/header.php';
                 </div>
             </div>
 
-            <style>
-                .qe-btn-delivery {
-                    background: #ff9800;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: background 0.2s;
-                }
-
-                .qe-btn-delivery:hover {
-                    background: #f57c00;
-                }
-            </style>
-        </div>
-    </div>
-
     <!-- APPROVAL CONFIRMATION MODAL (For generating Delivery Receipt) -->
     <div id="ApprovalModal" class="approval-overlay" style="display:none;">
         <div class="approval-modal">
@@ -330,12 +311,12 @@ include '../includes/header.php';
         </div>
     </div>
 
-    <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/admin_inventory.css">
 
 </body>
 <script src="../../assets/js/admin-site-functions/overhead_audit_helper.js"></script>
 <script src="../../assets/js/admin-site-functions/admin_materials.js"></script>
 <script src="../../assets/js/admin-site-functions/admin_data_fetch/fetch_quotations.js"></script>
+<script src="../../assets/js/admin-site-functions/quotation_view_manager.js"></script>
+<script src="../../assets/js/admin-site-functions/quotation_audit_integration.js"></script>
 
 </html>

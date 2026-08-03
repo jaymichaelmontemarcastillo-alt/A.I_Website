@@ -1,7 +1,11 @@
 <?php
-session_start();
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 require_once '../../connect/config.php';
 include '../includes/header.php';
+
+$isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'admin';
 ?>
 
 <link rel="stylesheet" href="../../assets/css/admin-site/products.css">
@@ -18,9 +22,11 @@ include '../includes/header.php';
 
                 <!-- PAGE HEADER -->
                 <div class="pg-header">
+                    
                     <div class="pg-header-left">
-                        <h1 class="pg-title"><i class="fa-solid fa-cube"></i> Products</h1>
+                        <h1 class="pg-title">  Products</h1>
                         <span class="pg-count" id="totalCount">Loading...</span>
+                        
                     </div>
                     <div class="pg-actions">
                         <button class="btn btn-secondary" id="importBtn">
@@ -50,6 +56,11 @@ include '../includes/header.php';
                         <option value="low_stock">Low Stock</option>
                         <option value="out_of_stock">Out of Stock</option>
                     </select>
+                    <?php if ($isAdminRole): ?>
+                        <button type="button" class="btn btn-delete" id="deleteAllBtn">
+                            <i class="fa-solid fa-trash"></i> Delete All
+                        </button>
+                    <?php endif; ?>
                 </div>
 
                 <!-- TABLE -->
@@ -201,6 +212,34 @@ include '../includes/header.php';
     </div>
 
     <!-- ==========================================
+    MODAL: DELETE ALL PRODUCTS
+    ========================================== -->
+    <?php if ($isAdminRole): ?>
+    <div id="deleteAllModal" class="modal-overlay">
+        <div class="modal-box modal-box-sm">
+            <div class="modal-head">
+                <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--clr-danger);"></i> Delete All Products</h2>
+                <button class="modal-close" id="deleteAllCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteAllMsg" style="margin: 16px 0; font-size: 15px; color: var(--clr-text-secondary);">This will permanently delete every product from the table. This action cannot be undone.</p>
+                <div class="form-group">
+                    <label for="deleteAllPassword">Admin Password <span class="req">*</span></label>
+                    <input type="password" id="deleteAllPassword" name="password" placeholder="Enter your admin password" autocomplete="current-password">
+                </div>
+                <div id="deleteAllFeedback" style="display:none; margin-top:8px; font-size:13px;"></div>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-cancel" id="deleteAllCancelBtn">Cancel</button>
+                <button type="button" class="btn btn-delete" id="deleteAllConfirmBtn">
+                    <i class="fa-solid fa-trash"></i> Delete All Products
+                </button>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
+
+    <!-- ==========================================
     MODAL: IMPORT
     ========================================== -->
     <div id="importModal" class="modal-overlay">
@@ -217,7 +256,7 @@ include '../includes/header.php';
                             <div>
                                 <p><strong>Instructions:</strong></p>
                                 <ul>
-                                    <li>Upload an Excel file (.xlsx or .xls)</li>
+                                    <li>Upload an Excel or CSV file (.xlsx, .xls, or .csv)</li>
                                     <li>Required columns: <strong>Product Type</strong> and <strong>Product Name</strong></li>
                                     <li>Existing products will be <strong>updated</strong> (matched by SKU or Name)</li>
                                     <li>New products will be <strong>created</strong></li>
@@ -229,8 +268,8 @@ include '../includes/header.php';
 
                     <div class="form-group">
                         <label for="excelFile">Select Excel File <span class="req">*</span></label>
-                        <input type="file" id="excelFile" name="excel_file" accept=".xlsx,.xls" required>
-                        <p class="form-help">Supported formats: .xlsx, .xls</p>
+                        <input type="file" id="excelFile" name="excel_file" accept=".xlsx,.xls,.csv" required>
+                        <p class="form-help">Supported formats: .xlsx, .xls, .csv</p>
                     </div>
 
                     <div id="importProgress" style="display:none;" class="progress-wrap">
@@ -250,6 +289,29 @@ include '../includes/header.php';
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ==========================================
+    MODAL: IMPORT ERROR
+    ========================================== -->
+    <div id="importErrorModal" class="modal-overlay">
+        <div class="modal-box modal-box-sm">
+            <div class="modal-head">
+                <h2 id="importErrorTitle"><i class="fa-solid fa-triangle-exclamation" style="color: var(--clr-danger);"></i> Import Problem</h2>
+                <button class="modal-close" id="importErrorCloseBtn"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p id="importErrorMessage" style="margin: 16px 0; font-size: 15px; color: var(--clr-text-secondary);">
+                    Something went wrong during the import. Please try again.
+                </p>
+            </div>
+            <div class="modal-foot">
+                <button type="button" class="btn btn-cancel" id="importErrorCancelBtn">Close</button>
+                <button type="button" class="btn btn-save" id="importErrorRetryBtn">
+                    <i class="fa-solid fa-rotate-right"></i> Try Again
+                </button>
+            </div>
         </div>
     </div>
 

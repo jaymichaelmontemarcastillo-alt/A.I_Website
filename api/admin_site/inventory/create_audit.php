@@ -35,11 +35,23 @@ try {
     $overhead = $input['overhead'] ?? [];
     $productionHours = floatval($input['production_hours'] ?? 0);
     $autoCompute = isset($input['auto_compute']) ? (bool)$input['auto_compute'] : true;
+    $quotationId = isset($input['quotation_id']) ? (int)$input['quotation_id'] : 0;
+    $auditName = $input['audit_name'] ?? '';
+    
+    // Extract electricity data
+    $electricity = $input['electricity'] ?? ['shop' => 0, 'production' => 0];
+    $electricityShop = floatval($electricity['shop'] ?? 0);
+    $electricityProduction = floatval($electricity['production'] ?? 0);
+    
+    // Extract working hours
+    $workingHours = floatval($input['working_hours'] ?? 250);
+    $overheadPerHour = floatval($input['overhead_per_hour'] ?? 0);
 
+    // Extract signatures/people data
     $signatures = [
-        'created_by' => $input['created_by'] ?? $adminName,
-        'audited_by' => $input['audited_by'] ?? '',
-        'acknowledged_by' => $input['acknowledged_by'] ?? ''
+        'created_by' => trim($input['created_by'] ?? $adminName),
+        'audited_by' => trim($input['audited_by'] ?? ''),
+        'acknowledged_by' => trim($input['acknowledged_by'] ?? '')
     ];
 
     if (empty($materials) && empty($items)) {
@@ -52,6 +64,24 @@ try {
     }
 
     $pdo->beginTransaction();
+
+    // ── Guard: prevent creating a duplicate/blank audit that shadows an existing one ──
+    if ($quotationId > 0) {
+        $checkQuote = $pdo->prepare("SELECT audit_id FROM quotations WHERE id = :id FOR UPDATE");
+        $checkQuote->execute([':id' => $quotationId]);
+        $existingAuditId = $checkQuote->fetchColumn();
+
+        if ($existingAuditId) {
+            $pdo->rollBack();
+            http_response_code(409);
+            echo json_encode([
+                'success' => false,
+                'message' => "This quotation already has an audit (#{$existingAuditId}). Please edit the existing audit instead of creating a new one.",
+                'existing_audit_id' => (int) $existingAuditId
+            ]);
+            exit;
+        }
+    }
 
     // Calculate totals from materials/rejects/items
     $totalMaterialCost = 0;
@@ -76,13 +106,17 @@ try {
     $subscriptions = floatval($overhead['subscriptions'] ?? 0);
     $machineDepreciation = floatval($overhead['machine_depreciation'] ?? 0);
     $maintenanceRepair = floatval($overhead['maintenance_repair'] ?? 0);
-    $marketing = floatval($overhead['marketing'] ?? 0);
-    $electricity = floatval($overhead['electricity'] ?? 0);
-
+    $marketing = floatval($overhead['marketing_promo'] ?? 0);
+    
+    // Calculate total overhead from categories
     $totalOverhead = $shopRent + $fixedSalaries + $shopUtilities + $subscriptions +
-        $machineDepreciation + $maintenanceRepair + $marketing + $electricity;
+        $machineDepreciation + $maintenanceRepair + $marketing;
 
-    $overheadPerHour = ($productionHours > 0) ? ($totalOverhead / $productionHours) : 0;
+    // Calculate overhead per hour if not provided
+    if ($overheadPerHour <= 0 && $workingHours > 0) {
+        $overheadPerHour = $totalOverhead / $workingHours;
+    }
+
     $totalCostWithOverhead = $totalMaterialCost + $totalRejectCost + $totalOverhead;
 
     // Calculate profit (manual if provided)
@@ -97,26 +131,35 @@ try {
     $materialsJson = json_encode($materials);
     $rejectsJson = json_encode($rejects);
     $signaturesJson = json_encode($signatures);
+    $overheadJson = json_encode($overhead);
+
+    // Get the quotation ID from the payload
+    $quoteId = isset($input['quotation_id']) ? (int)$input['quotation_id'] : null;
 
     // Insert into bom_audit
     $stmt = $pdo->prepare("
         INSERT INTO bom_audit 
-        (items, materials, rejects, signatures, 
+        (quote_id, items, materials, rejects, signatures,
          total_material_cost, total_reject_cost, total_amount_due, profit, auto_compute,
          overhead_shop_rent, overhead_fixed_salaries, overhead_shop_utilities, 
          overhead_subscriptions, overhead_machine_depreciation, overhead_maintenance_repair,
          overhead_marketing, overhead_electricity, total_overhead, overhead_per_hour,
-         production_hours, total_cost_with_overhead, is_completed, created_at)
+         production_hours, total_cost_with_overhead, is_completed, created_at,
+         electricity_shop, electricity_production, overhead_data, working_hours,
+         audit_name)
         VALUES 
-        (:items, :materials, :rejects, :signatures,
+        (:quote_id, :items, :materials, :rejects, :signatures,
          :total_material_cost, :total_reject_cost, :total_amount_due, :profit, :auto_compute,
          :overhead_shop_rent, :overhead_fixed_salaries, :overhead_shop_utilities,
          :overhead_subscriptions, :overhead_machine_depreciation, :overhead_maintenance_repair,
          :overhead_marketing, :overhead_electricity, :total_overhead, :overhead_per_hour,
-         :production_hours, :total_cost_with_overhead, 1, NOW())
+         :production_hours, :total_cost_with_overhead, 1, NOW(),
+         :electricity_shop, :electricity_production, :overhead_data, :working_hours,
+         :audit_name)
     ");
 
     $stmt->execute([
+        ':quote_id' => $quoteId,
         ':items' => $itemsJson,
         ':materials' => $materialsJson,
         ':rejects' => $rejectsJson,
@@ -133,14 +176,32 @@ try {
         ':overhead_machine_depreciation' => $machineDepreciation,
         ':overhead_maintenance_repair' => $maintenanceRepair,
         ':overhead_marketing' => $marketing,
-        ':overhead_electricity' => $electricity,
+        ':overhead_electricity' => 0, // This column is deprecated, we use electricity_shop/production
         ':total_overhead' => $totalOverhead,
         ':overhead_per_hour' => $overheadPerHour,
         ':production_hours' => $productionHours,
-        ':total_cost_with_overhead' => $totalCostWithOverhead
+        ':total_cost_with_overhead' => $totalCostWithOverhead,
+        ':electricity_shop' => $electricityShop,
+        ':electricity_production' => $electricityProduction,
+        ':overhead_data' => $overheadJson,
+        ':working_hours' => $workingHours,
+        ':audit_name' => $auditName
     ]);
 
     $auditId = $pdo->lastInsertId();
+
+    // Update quotation to mark as audited
+    if ($quoteId > 0 && $auditId > 0) {
+        $updateQuotation = $pdo->prepare("
+            UPDATE quotations 
+            SET audited = 1, audit_id = :audit_id 
+            WHERE id = :quote_id
+        ");
+        $updateQuotation->execute([
+            ':audit_id' => $auditId,
+            ':quote_id' => $quoteId
+        ]);
+    }
 
     // Process materials - DEDUCT from inventory
     $loggedCount = 0;

@@ -45,7 +45,7 @@ try {
     $totalStock = $shopStock + $phStock;
     $totalCost = $totalStock * $unitCost;
     $piecesPerPack = 1; // Default value
-    $remarks = '';
+    $remarks = trim($input['remarks'] ?? '');
 
     // Validation
     if (empty($materialName)) {
@@ -99,27 +99,33 @@ try {
 
     $newId = $pdo->lastInsertId();
 
-    // Log the addition (if materials_log table exists)
+    // Log the addition in the inventory log table.
     $adminName = $_SESSION['admin_name'] ?? 'Admin';
 
-    // Check if materials_log table exists
-    $tableCheck = $pdo->query("SHOW TABLES LIKE 'materials_log'");
-    if ($tableCheck->rowCount() > 0) {
+    try {
         $logStmt = $pdo->prepare('
-            INSERT INTO materials_log (material_id, material_name, type, location, quantity_change, before_quantity, after_quantity, admin_name, note, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            INSERT INTO materials_logs (material_id, location, change_type, quantity, previous_stock, new_stock, admin_id, note, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
         ');
         $logStmt->execute([
             $newId,
-            $materialName,
-            'add',
             'total_stock',
+            'add',
             $totalStock,
             0,
             $totalStock,
-            $adminName,
-            'New material added'
+            $_SESSION['admin_id'],
+            $remarks !== '' ? $remarks : 'New material added'
         ]);
+    } catch (PDOException $logErr) {
+        error_log('add_inventory_item.log failed: ' . $logErr->getMessage());
+    }
+
+    try {
+        require_once __DIR__ . '/../../activity_logger.php';
+        logActivity($pdo, $_SESSION['admin_id'], $adminName, 'Added material "' . $materialName . '"' . ($remarks !== '' ? ' — ' . $remarks : ''), $newId, 'Inventory', 'Success');
+    } catch (Throwable $activityErr) {
+        error_log('activity log insert failed: ' . $activityErr->getMessage());
     }
 
     echo json_encode([

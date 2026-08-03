@@ -12,6 +12,9 @@ $current_page = $current_page ?? '';
     <div class="sidebar-header">
         <img src="../../assets/images/AI_Logo.jpg" class="logo-icon">
         <span class="logo-text">Anything Inside Admin</span>
+        <button id="toggle-btn" class="sidebar-toggle" aria-label="Toggle Sidebar">
+            <i class="fa-solid fa-chevron-left toggle-arrow"></i>
+        </button>
     </div>
 
     <nav class="sidebar-nav">
@@ -32,15 +35,6 @@ $current_page = $current_page ?? '';
             </a>
         <?php endif; ?>
 
-
-        <!-- CATEGORIES (ADMIN ONLY) 
-        <?php if ($role === 'admin'): ?>
-            <a href="Categories.php" class="nav-item <?= ($current_page == 'Categories') ? 'active' : '' ?>">
-                <i class="fa-solid fa-tags"></i> <span>Categories</span>
-            </a>
-        <?php endif; ?>
--->
-
         <!-- ORDERS (ALL ROLES) -->
         <?php if (in_array($role, ['admin', 'finance', 'staff'])): ?>
             <a href="Orders.php" class="nav-item <?= ($current_page == 'Orders') ? 'active' : '' ?>">
@@ -48,6 +42,12 @@ $current_page = $current_page ?? '';
             </a>
         <?php endif; ?>
 
+        <!-- BUNDLES AND MERCHANDISE (ALL ROLES) 
+        <?php if (in_array($role, ['admin', 'finance', 'staff'])): ?>
+            <a href="Bundles_Merchandise.php" class="nav-item <?= ($current_page == 'Bundles_Merchandise') ? 'active' : '' ?>">
+           <i class="fa-solid fa-layer-group"></i><span>Bundles & Merch</span>
+            </a>
+        <?php endif; ?>-->
 
         <!-- ACTIVITY LOGS (ADMIN ONLY) -->
         <?php if ($role === 'admin'): ?>

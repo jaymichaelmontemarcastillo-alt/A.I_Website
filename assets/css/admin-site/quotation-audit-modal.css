@@ -1,0 +1,1876 @@
+/* ============================================================
+   quotation-audit-modal.css - Updated with combined dropdown
+   ============================================================ */
+
+/* ---------- Shared loading overlay ---------- */
+.qa-loading-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100070;
+  background: rgba(0, 0, 0, 0.35);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+.qa-loading-overlay i {
+  margin-right: 10px;
+}
+
+/* ============================================================
+   1. QUOTATION PICKER MODAL
+   ============================================================ */
+.qa-quotation-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100060;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+body.dark-mode .qa-quotation-modal {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.qa-quotation-container {
+  background: var(--card-bg);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: qaSlideInUp 0.25s ease;
+}
+
+@keyframes qaSlideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.qa-quotation-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.qa-quotation-header h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+}
+
+.qa-quotation-close {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.qa-quotation-close:hover {
+  color: var(--text-primary);
+}
+
+.qa-quotation-search {
+  padding: 16px 24px;
+}
+
+.qa-quotation-search input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-light);
+  color: var(--text-primary);
+}
+
+.qa-quotation-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 24px 24px 24px;
+}
+
+.qa-loading,
+.qa-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}
+
+.qa-quotation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.qa-quotation-item:hover {
+  border-color: var(--button-primary);
+  background: var(--hover-light);
+}
+
+.qa-quotation-number {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.qa-quotation-client {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.qa-quotation-date {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.qa-quotation-total {
+  font-weight: 700;
+  color: #10b981;
+  white-space: nowrap;
+  margin-left: 12px;
+}
+
+.qa-pagination {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.qa-page-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.qa-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.qa-page-btn.active {
+  background: var(--button-primary);
+  border-color: var(--button-primary);
+  color: #fff;
+}
+
+.qa-page-dots {
+  padding: 6px 4px;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+   2. AUDIT FORM MODAL
+   ============================================================ */
+.qa-audit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100065;
+  background: rgba(0, 0, 0, 0.5);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+body.dark-mode .qa-audit-overlay {
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.qa-audit-modal {
+  background: #ffffff;
+  border-radius: 6px;
+  width: 94%;
+  max-width: 1100px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: qaSlideInUp 0.25s ease;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+/* Clean header */
+.qa-audit-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+  color: #0f172a;
+  flex-shrink: 0;
+}
+
+.qa-audit-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #0f172a;
+}
+
+.qa-audit-header h3 i {
+  color: #2563eb;
+}
+
+.qa-audit-close {
+  background: #f1f5f9;
+  border: none;
+  font-size: 1.2rem;
+  color: #64748b;
+  cursor: pointer;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.qa-audit-close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* ============================================================
+   2a. TWO-COLUMN LAYOUT
+   ============================================================ */
+.qa-audit-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+}
+
+.qa-audit-body-two-col {
+  display: flex;
+  gap: 0;
+  padding: 0 !important;
+  min-height: 400px;
+}
+
+/* LEFT COLUMN - 70% */
+.qa-audit-col-left {
+  flex: 0 0 70%;
+  max-width: 70%;
+  min-width: 0;
+  padding: 20px 28px 24px 28px;
+  overflow-y: auto;
+  border-right: 1px solid #e5e7eb;
+}
+
+/* RIGHT COLUMN - 30% */
+.qa-audit-col-right {
+  flex: 0 0 30%;
+  max-width: 30%;
+  min-width: 0;
+  border-bottom: none;
+  background: #fafbfc;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* ============================================================
+   2b. AUDIT CONTAINER
+   ============================================================ */
+.qa-audit-container {
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+/* ============================================================
+   2c. SECTION STYLES
+   ============================================================ */
+.qa-section {
+  padding: 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.qa-section:last-child {
+  margin-bottom: 0;
+}
+
+.qa-section-label {
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.qa-section-label i {
+  color: #2563eb;
+  width: 16px;
+  font-size: 0.8rem;
+}
+
+/* Sub-section labels inside dropdown */
+.qa-sub-section {
+  margin-bottom: 14px;
+}
+
+.qa-sub-section:last-child {
+  margin-bottom: 0;
+}
+.qa-section.qa-quotation-info-section {
+  border-bottom: 1px solid #e2e8f0;
+}
+.qa-section.qa-people-section {
+  border: none;
+}
+.qa-sub-section-label {
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   2d. COLLAPSIBLE SECTION (Combined Overhead & Electricity)
+   ============================================================ */
+.qa-collapsible-section {
+  margin-bottom: 0;
+}
+
+.qa-collapsible-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s;
+}
+
+.qa-collapsible-header:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.qa-collapsible-header .qa-collapsible-title {
+  font-weight: 500;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.qa-collapsible-header .fa-chevron-right {
+  transition: transform 0.3s ease;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.qa-collapsible-header .fa-chevron-right.open {
+  transform: rotate(90deg);
+}
+
+.qa-collapsible-badge {
+  margin-left: auto;
+  font-size: 10px;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 2px 10px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.qa-collapsible-body {
+  padding: 10px 0 0 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+  max-height: 0;
+}
+
+.qa-collapsible-body.open {
+  max-height: 2000px;
+}
+
+.qa-collapsible-inner {
+  padding-top: 2px;
+}
+
+/* ============================================================
+   2e. AUDIT ITEM NAME
+   ============================================================ */
+.qa-input-full {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fafbfc;
+  color: #0f172a;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.qa-input-full:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+  background: #ffffff;
+  outline: none;
+}
+
+.qa-input-full::placeholder {
+  color: #94a3b8;
+}
+
+/* ============================================================
+   2f. QUOTATION INFO (Right Column)
+   ============================================================ */
+.qa-quotation-info-section .qa-section-label {
+  margin-bottom: 10px;
+}
+
+.qa-quotation-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-quotation-info-item:last-child {
+  border-bottom: none;
+}
+
+.qa-quotation-info-item .qa-info-label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.qa-quotation-info-item .qa-info-value {
+  color: #0f172a;
+  font-weight: 500;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
+}
+
+/* ============================================================
+   2g. PEOPLE SECTION (Right Column)
+   ============================================================ */
+.qa-people-section .qa-section-label {
+  margin-bottom: 10px;
+}
+
+.qa-people-section .qa-field {
+  margin-bottom: 10px;
+}
+
+.qa-people-section .qa-field:last-child {
+  margin-bottom: 0;
+}
+
+.qa-people-section .qa-field label {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-people-section .qa-field input {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 13px;
+  background: #ffffff;
+  color: #0f172a;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.qa-people-section .qa-field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+  outline: none;
+}
+
+.qa-people-section .qa-field input::placeholder {
+  color: #94a3b8;
+}
+
+/* ============================================================
+   2h. DYNAMIC ROWS (Materials / Rejects / Items)
+   ============================================================ */
+.qa-dynamic-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  padding: 4px 8px;
+  background: #fafbfc;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
+  transition: border-color 0.2s;
+}
+
+.qa-dynamic-row:hover {
+  border-color: #e2e8f0;
+}
+
+.qa-material-name-field {
+  flex: 2;
+  position: relative;
+  min-width: 80px;
+}
+
+.qa-material-name-field input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.qa-material-name-field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+.qa-inline-label {
+  display: none;
+}
+
+.qty-input {
+  flex: 0.6;
+  min-width: 35px;
+  padding: 5px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  text-align: center;
+  background: #ffffff;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.qty-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+.cost-input,
+.total-input {
+  flex: 1;
+  min-width: 60px;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  text-align: right;
+  background: #ffffff;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.cost-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+.total-input {
+  background: #f8fafc;
+  font-weight: 500;
+  color: #0f172a;
+}
+
+.qa-remove-row {
+  flex: 0 0 auto;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 12px;
+}
+
+.qa-remove-row:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.qa-prefill-badge {
+  flex: 0 0 auto;
+  font-size: 0.55rem;
+  color: #10b981;
+  background: #10b98122;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-add-row-btn {
+  border: 1px dashed #d1d5db;
+  background: none;
+  color: #2563eb;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-top: 2px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-add-row-btn:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+
+/* ============================================================
+   2i. TOTALS SUMMARY
+   ============================================================ */
+.qa-totals-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  background: #f8fafc;
+  border-radius: 6px;
+  padding: 12px 16px;
+  border: 1px solid #f1f5f9;
+}
+
+.qa-totals-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.qa-totals-summary span.label {
+  font-size: 0.6rem;
+  color: #94a3b8;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-totals-summary span.value {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #0f172a;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-totals-summary span.value.positive {
+  color: #10b981;
+}
+
+.qa-totals-summary span.value.negative {
+  color: #ef4444;
+}
+
+/* ============================================================
+   2j. ELECTRICITY FIELDS
+   ============================================================ */
+.qa-electricity-fields {
+  display: flex;
+  gap: 12px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
+}
+
+.qa-electricity-field {
+  flex: 1;
+}
+
+.qa-electricity-field label {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-electricity-field input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 12px;
+  text-align: right;
+  background: #ffffff;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.qa-electricity-field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+/* ============================================================
+   2k. OVERHEAD TABLE
+   ============================================================ */
+.qa-overhead-table-wrapper {
+  overflow-x: auto;
+  margin-top: 2px;
+}
+
+.qa-overhead-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-overhead-table th {
+  text-align: left;
+  padding: 4px 8px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 600;
+  color: #475569;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qa-overhead-table td {
+  padding: 4px 8px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.qa-overhead-table .category-label {
+  font-size: 11px;
+  color: #334155;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.overhead-cost-input {
+  width: 90px;
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  text-align: right;
+  background: #ffffff;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.overhead-cost-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+.overhead-cost-input::placeholder {
+  color: #94a3b8;
+}
+
+.qa-overhead-total-row td {
+  padding-top: 8px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.qa-overhead-total-row td strong {
+  font-size: 12px;
+  color: #0f172a;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-overhead-hours-row td {
+  padding-top: 6px;
+}
+
+.qa-overhead-hours-row label {
+  font-weight: 500;
+  color: #475569;
+  font-size: 11px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-overhead-hours-input {
+  width: 70px;
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 11px;
+  text-align: right;
+  background: #ffffff;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.qa-overhead-hours-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+.qa-overhead-perhour-row td {
+  padding-top: 8px;
+  border-top: 2px solid #e2e8f0;
+}
+
+.qa-overhead-perhour-row td strong {
+  font-size: 12px;
+  color: #2563eb;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+/* ============================================================
+   2l. FOOTER
+   ============================================================ */
+.qa-audit-footer {
+  padding: 14px 28px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+  background: #fafbfc;
+}
+
+.qa-btn-cancel {
+  background: #f1f5f9;
+  color: #475569;
+  border: none;
+  padding: 8px 18px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+.qa-btn-submit {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  padding: 8px 22px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-btn-submit:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+}
+
+/* ============================================================
+   3. SEARCHABLE SELECT
+   ============================================================ */
+.searchable-select {
+  position: relative;
+  width: 100%;
+}
+
+.searchable-select-input {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 30px;
+}
+
+.searchable-select-input:hover {
+  border-color: #94a3b8;
+}
+
+.searchable-select-input.open {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+}
+
+.searchable-select-input .selected-text {
+  flex: 1;
+  color: #0f172a;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.searchable-select-input .selected-text.placeholder {
+  color: #94a3b8;
+}
+
+.searchable-select-input i {
+  color: #94a3b8;
+  font-size: 10px;
+  transition: transform 0.2s;
+}
+
+.searchable-select-input.open i {
+  transform: rotate(180deg);
+}
+
+.searchable-select-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  z-index: 100080;
+  max-height: 240px;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.searchable-select-dropdown.show {
+  display: flex;
+}
+
+.searchable-select-search {
+  padding: 4px 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.searchable-select-search input {
+  width: 100%;
+  padding: 4px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  outline: none;
+}
+
+.searchable-select-search input:focus {
+  border-color: #2563eb;
+}
+
+.searchable-select-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.searchable-select-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+  gap: 10px;
+}
+
+.searchable-select-item:hover {
+  background: #f0fdf4;
+}
+
+.searchable-select-item.selected {
+  background: #eff6ff;
+}
+
+.searchable-select-item .item-name {
+  font-weight: 500;
+  color: #0f172a;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.searchable-select-item .item-stock {
+  font-size: 10px;
+  color: #94a3b8;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.searchable-select-item .item-cost {
+  font-weight: 600;
+  color: #10b981;
+  font-size: 12px;
+  white-space: nowrap;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.no-results {
+  padding: 16px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.no-results i {
+  margin-right: 6px;
+}
+
+/* ============================================================
+   DARK MODE OVERRIDES
+   ============================================================ */
+body.dark-mode .qa-audit-modal {
+  background: #1e293b;
+}
+
+body.dark-mode .qa-audit-container {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+body.dark-mode .qa-audit-header {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+body.dark-mode .qa-audit-header h3 {
+  color: #e2e8f0;
+}
+
+body.dark-mode .qa-audit-close {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+body.dark-mode .qa-audit-close:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+body.dark-mode .qa-audit-col-right {
+  border-left-color: #1e293b;
+  background: #0f172a;
+}
+
+body.dark-mode .qa-section-label {
+  color: #e2e8f0;
+}
+
+body.dark-mode .qa-sub-section-label {
+  color: #94a3b8;
+}
+
+body.dark-mode .qa-input-full,
+body.dark-mode .qa-people-section .qa-field input,
+body.dark-mode .qa-material-name-field input,
+body.dark-mode .qty-input,
+body.dark-mode .cost-input,
+body.dark-mode .total-input {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+body.dark-mode .qa-input-full:focus,
+body.dark-mode .qa-people-section .qa-field input:focus,
+body.dark-mode .qa-material-name-field input:focus,
+body.dark-mode .qty-input:focus,
+body.dark-mode .cost-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+body.dark-mode .total-input {
+  background: #1a2332;
+}
+
+body.dark-mode .qa-dynamic-row {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+body.dark-mode .qa-dynamic-row:hover {
+  border-color: #334155;
+}
+
+body.dark-mode .qa-totals-summary {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+body.dark-mode .qa-totals-summary span.label {
+  color: #94a3b8;
+}
+
+body.dark-mode .qa-totals-summary span.value {
+  color: #e2e8f0;
+}
+
+body.dark-mode .qa-collapsible-header {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+body.dark-mode .qa-collapsible-header:hover {
+  background: #1a2332;
+  border-color: #334155;
+}
+
+body.dark-mode .qa-collapsible-header .qa-collapsible-title {
+  color: #e2e8f0;
+}
+
+body.dark-mode .qa-collapsible-badge {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+body.dark-mode .qa-overhead-table th {
+  background: #0f172a;
+  color: #94a3b8;
+  border-bottom-color: #1e293b;
+}
+
+body.dark-mode .qa-overhead-table td {
+  border-bottom-color: #1a2332;
+}
+
+body.dark-mode .overhead-cost-input,
+body.dark-mode .qa-overhead-hours-input,
+body.dark-mode .qa-electricity-field input {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+body.dark-mode .overhead-cost-input:focus,
+body.dark-mode .qa-overhead-hours-input:focus,
+body.dark-mode .qa-electricity-field input:focus {
+  border-color: #2563eb;
+}
+
+body.dark-mode .qa-overhead-table .category-label {
+  color: #cbd5e1;
+}
+
+body.dark-mode .qa-electricity-fields {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+body.dark-mode .qa-audit-footer {
+  background: #0f172a;
+  border-top-color: #1e293b;
+}
+
+body.dark-mode .qa-btn-cancel {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+body.dark-mode .qa-btn-cancel:hover {
+  background: #334155;
+}
+
+body.dark-mode .qa-quotation-info-item {
+  border-bottom-color: #1e293b;
+}
+
+body.dark-mode .qa-quotation-info-item .qa-info-value {
+  color: #e2e8f0;
+}
+
+body.dark-mode .searchable-select-input {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+body.dark-mode .searchable-select-dropdown {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+body.dark-mode .searchable-select-search input {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+body.dark-mode .searchable-select-item:hover {
+  background: #2d3748;
+}
+
+body.dark-mode .searchable-select-item.selected {
+  background: #1a2332;
+}
+
+body.dark-mode .searchable-select-item .item-name {
+  color: #e2e8f0;
+}
+
+body.dark-mode .searchable-select-input .selected-text {
+  color: #e2e8f0;
+}
+
+body.dark-mode .searchable-select-input .selected-text.placeholder {
+  color: #64748b;
+}
+
+/* ============================================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================================ */
+@media (max-width: 820px) {
+  .qa-audit-body-two-col {
+    flex-direction: column;
+  }
+
+  .qa-audit-col-left,
+  .qa-audit-col-right {
+    flex: 1 1 100%;
+    max-width: 100%;
+    padding: 16px 20px;
+  }
+
+  .qa-audit-col-right {
+    border-left: none;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 16px;
+    margin-top: 0;
+    position: static;
+    max-height: none;
+    background: #fafbfc;
+  }
+
+  body.dark-mode .qa-audit-col-right {
+    border-top-color: #1e293b;
+    background: #0f172a;
+  }
+
+  .qa-totals-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .qa-electricity-fields {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .qa-dynamic-row {
+    flex-wrap: wrap;
+    padding: 6px 8px;
+  }
+
+  .qa-material-name-field {
+    flex: 1 1 100%;
+    min-width: 100%;
+  }
+
+  .qty-input,
+  .cost-input,
+  .total-input {
+    flex: 1 1 calc(33% - 6px);
+    min-width: 40px;
+  }
+
+  .qa-audit-footer {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .qa-audit-footer button {
+    flex: 1;
+    min-width: 100px;
+    justify-content: center;
+  }
+
+  .qa-audit-container {
+    padding: 12px 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .qa-totals-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .qa-dynamic-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .qty-input,
+  .cost-input,
+  .total-input {
+    flex: 1 1 100%;
+  }
+
+  .qa-remove-row {
+    align-self: flex-end;
+  }
+
+  .qa-audit-header {
+    padding: 12px 16px;
+  }
+
+  .qa-audit-header h3 {
+    font-size: 0.85rem;
+  }
+
+  .qa-audit-col-left,
+  .qa-audit-col-right {
+    padding: 12px 14px;
+  }
+
+  .qa-audit-footer {
+    padding: 12px 16px;
+  }
+
+  .qa-overhead-table {
+    font-size: 10px;
+  }
+
+  .overhead-cost-input {
+    width: 60px;
+    font-size: 10px;
+  }
+
+  .qa-audit-container {
+    padding: 10px 12px;
+  }
+}
+/* Add these styles to quotation-audit-modal.css */
+
+/* ============================================================
+   DYNAMIC ROWS WITH HEADERS
+   ============================================================ */
+
+/* Container for dynamic rows with header */
+.qa-dynamic-container {
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.qa-dynamic-container .qa-table-header {
+  display: grid;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 4px 4px 0 0;
+}
+
+/* Material/Reject header - 4 columns */
+.qa-dynamic-container.qa-material-header .qa-table-header {
+  grid-template-columns: 2fr 0.6fr 1fr 1fr 0.3fr;
+}
+
+/* Item header - 4 columns */
+.qa-dynamic-container.qa-item-header .qa-table-header {
+  grid-template-columns: 2fr 0.8fr 1fr 1fr 0.3fr;
+}
+
+.qa-dynamic-container .qa-table-header span {
+  padding: 0 4px;
+}
+
+.qa-dynamic-container .qa-dynamic-row {
+  display: grid;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  background: #fafbfc;
+  border-radius: 4px;
+  border: 1px solid #f1f5f9;
+  transition: border-color 0.2s;
+  margin-bottom: 4px;
+}
+
+/* Material/Reject row - 4 columns */
+.qa-dynamic-container.qa-material-header .qa-dynamic-row {
+  grid-template-columns: 2fr 0.6fr 1fr 1fr 0.3fr;
+}
+
+/* Item row - 4 columns */
+.qa-dynamic-container.qa-item-header .qa-dynamic-row {
+  grid-template-columns: 2fr 0.8fr 1fr 1fr 0.3fr;
+}
+
+.qa-dynamic-container .qa-dynamic-row:hover {
+  border-color: #e2e8f0;
+}
+
+.qa-dynamic-container .qa-material-name-field {
+  position: relative;
+  min-width: 0;
+}
+
+.qa-dynamic-container .qa-material-name-field input {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+}
+
+.qa-dynamic-container .qa-material-name-field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+.qa-dynamic-container .qty-input {
+  padding: 5px 6px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  text-align: center;
+  background: #ffffff;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+  width: 100%;
+  min-width: 35px;
+}
+
+.qa-dynamic-container .qty-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+.qa-dynamic-container .cost-input,
+.qa-dynamic-container .price-input {
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  text-align: right;
+  background: #ffffff;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  transition: all 0.2s;
+  width: 100%;
+  min-width: 60px;
+}
+
+.qa-dynamic-container .cost-input:focus,
+.qa-dynamic-container .price-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.06);
+  outline: none;
+}
+
+.qa-dynamic-container .total-input {
+  padding: 5px 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  text-align: right;
+  background: #f8fafc;
+  font-weight: 500;
+  color: #0f172a;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  width: 100%;
+  min-width: 60px;
+}
+
+.qa-dynamic-container .qa-remove-row {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  font-size: 12px;
+  justify-self: center;
+}
+
+.qa-dynamic-container .qa-remove-row:hover {
+  background: #fef2f2;
+  color: #ef4444;
+}
+
+.qa-dynamic-container .qa-prefill-badge {
+  font-size: 0.55rem;
+  color: #10b981;
+  background: #10b98122;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+  justify-self: center;
+}
+
+.qa-add-row-btn {
+  border: 1px dashed #d1d5db;
+  background: none;
+  color: #2563eb;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  margin-top: 2px;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-add-row-btn:hover {
+  background: #eff6ff;
+  border-color: #2563eb;
+}
+
+/* ============================================================
+   QUOTATION INFO - LEFT ALIGNED
+   ============================================================ */
+.qa-quotation-info-section .qa-quotation-info-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 12px;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
+}
+
+.qa-quotation-info-section .qa-quotation-info-item:last-child {
+  border-bottom: none;
+}
+
+.qa-quotation-info-section .qa-quotation-info-item .qa-info-label {
+  color: #94a3b8;
+  font-weight: 500;
+  flex: 0 0 auto;
+}
+
+.qa-quotation-info-section .qa-quotation-info-item .qa-info-value {
+  color: #0f172a;
+  font-weight: 500;
+  text-align: left;
+  flex: 1;
+  padding-left: 16px;
+  word-break: break-word;
+}
+
+/* ============================================================
+   DARK MODE OVERRIDES FOR NEW HEADERS
+   ============================================================ */
+body.dark-mode .qa-dynamic-container .qa-table-header {
+  background: #0f172a;
+  border-bottom-color: #1e293b;
+  color: #64748b;
+}
+
+body.dark-mode .qa-dynamic-container .qa-dynamic-row {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+body.dark-mode .qa-dynamic-container .qa-dynamic-row:hover {
+  border-color: #334155;
+}
+
+body.dark-mode .qa-dynamic-container .qa-material-name-field input,
+body.dark-mode .qa-dynamic-container .qty-input,
+body.dark-mode .qa-dynamic-container .cost-input,
+body.dark-mode .qa-dynamic-container .price-input,
+body.dark-mode .qa-dynamic-container .total-input {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #e2e8f0;
+}
+
+body.dark-mode .qa-dynamic-container .qa-material-name-field input:focus,
+body.dark-mode .qa-dynamic-container .qty-input:focus,
+body.dark-mode .qa-dynamic-container .cost-input:focus,
+body.dark-mode .qa-dynamic-container .price-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+body.dark-mode .qa-dynamic-container .total-input {
+  background: #1a2332;
+}
+
+body.dark-mode .qa-quotation-info-section .qa-quotation-info-item {
+  border-bottom-color: #1e293b;
+}
+
+body.dark-mode
+  .qa-quotation-info-section
+  .qa-quotation-info-item
+  .qa-info-value {
+  color: #e2e8f0;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 820px) {
+  .qa-dynamic-container.qa-material-header .qa-dynamic-row,
+  .qa-dynamic-container.qa-item-header .qa-dynamic-row {
+    grid-template-columns: 1fr 1fr 1fr 1fr 0.3fr;
+    gap: 4px;
+  }
+
+  .qa-dynamic-container.qa-material-header .qa-table-header,
+  .qa-dynamic-container.qa-item-header .qa-table-header {
+    grid-template-columns: 1fr 1fr 1fr 1fr 0.3fr;
+    gap: 4px;
+    font-size: 8px;
+  }
+
+  .qa-dynamic-container .qa-material-name-field {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .qa-dynamic-container.qa-material-header .qa-dynamic-row,
+  .qa-dynamic-container.qa-item-header .qa-dynamic-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+  }
+
+  .qa-dynamic-container.qa-material-header .qa-table-header,
+  .qa-dynamic-container.qa-item-header .qa-table-header {
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    font-size: 7px;
+  }
+
+  .qa-dynamic-container .qa-material-name-field {
+    grid-column: 1 / -1;
+  }
+
+  .qa-dynamic-container .qa-remove-row {
+    grid-column: 2;
+    justify-self: end;
+  }
+
+  .qa-dynamic-container .qa-prefill-badge {
+    grid-column: 1;
+    justify-self: start;
+  }
+}

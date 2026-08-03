@@ -170,7 +170,7 @@ function showReceipt(orderData) {
   receiptItems.innerHTML = itemsHtml;
 
   checkoutModal.style.display = "none";
-  receiptModal.style.display = "block";
+  receiptModal.style.display = "flex";
 }
 
 // ── Print Receipt ───────────────────────────────────────────────────────────
@@ -356,7 +356,7 @@ function initCheckout(cart, totalAmount) {
       ).checked = true;
       document.getElementById("gcashProofContainer").style.display = "none";
 
-      checkoutModal.style.display = "block";
+      checkoutModal.style.display = "flex";
     });
   }
 

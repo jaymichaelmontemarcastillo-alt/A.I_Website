@@ -1,16 +1,15 @@
 <?php
-// api/admin_site/inventory/export_materials.php
-header('Content-Type: text/csv');
-header('Content-Disposition: attachment; filename="materials_inventory_' . date('Y-m-d') . '.csv"');
-
+session_start();
 require_once '../../../connect/config.php';
 
-session_start();
-if (empty($_SESSION['admin_id'])) {
-    die('Unauthorized');
-}
+if (ob_get_level()) ob_end_clean();
+ob_start();
 
 try {
+    if (empty($_SESSION['admin_id'])) {
+        throw new Exception('Unauthorized');
+    }
+
     $pdo = getDBConnection();
     $stmt = $pdo->query("
         SELECT type, material_name, shop_stock, ph_stock, total_stock, 
@@ -19,6 +18,15 @@ try {
         ORDER BY type, material_name
     ");
     $materials = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // Clear output buffer before sending headers
+    if (ob_get_level()) ob_end_clean();
+
+    // Send headers ONLY after processing is complete
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="materials_inventory_' . date('Y-m-d_H-i-s') . '.csv"');
+    header('Cache-Control: max-age=0, must-revalidate');
+    header('Pragma: public');
 
     $output = fopen('php://output', 'w');
 
@@ -44,7 +52,15 @@ try {
     }
 
     fclose($output);
+    exit;
+
 } catch (Exception $e) {
-    echo "Export failed: " . $e->getMessage();
+    if (ob_get_level()) ob_end_clean();
+    header('Content-Type: application/json');
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Export failed: ' . $e->getMessage()
+    ]);
+    exit;
 }
-exit;

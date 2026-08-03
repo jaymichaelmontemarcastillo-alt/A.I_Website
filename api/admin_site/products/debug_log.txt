@@ -197,3 +197,107 @@ Product updated: 348
 Product updated: 348
 SUCCESS: Product updated
 SUCCESS: Product updated
+=== 2026-07-08 05:31:27 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 768
+    [name] => Tote Plain Flat logo print DTF 12  by 14
+    [sku] => TOTEPLAI-240
+    [product_type_id] => 15
+    [price] => 100
+    [stock] => 110
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=768, name=Tote Plain Flat logo print DTF 12  by 14, type=15
+=== 2026-07-08 05:31:27 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 768
+    [name] => Tote Plain Flat logo print DTF 12  by 14
+    [sku] => TOTEPLAI-240
+    [product_type_id] => 15
+    [price] => 100
+    [stock] => 110
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=768, name=Tote Plain Flat logo print DTF 12  by 14, type=15
+Product updated: 768
+Product updated: 768
+SUCCESS: Product updated
+SUCCESS: Product updated
+=== 2026-07-11 07:50:22 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 768
+    [name] => Tote Plain Flat logo print DTF 12  by 14
+    [sku] => TOTEPLAI-240
+    [product_type_id] => 15
+    [price] => 199.99
+    [stock] => 110
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=768, name=Tote Plain Flat logo print DTF 12  by 14, type=15
+DTF 12  by 14
+    [sku] => TOTEPLAI-240
+    [product_type_id] => 15
+    [price] => 199.99
+    [stock] => 110
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=768, name=Tote Plain Flat logo print DTF 12  by 14, type=15
+Product updated: 768
+Product updated: 768
+SUCCESS: Product updated
+SUCCESS: Product updated
+=== 2026-07-11 07:50:29 - UPDATE PRODUCT ===
+POST: Array
+(
+    [id] => 769
+    [name] => Sintra A3 3mm UV
+    [sku] => SINTRAA3-941
+    [product_type_id] => 16
+    [price] => 10.00
+    [stock] => 107
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+=== 2026-07-11 07:50:29 - UPDATE PRODUCT ===
+6
+POST: Array
+(
+    [id] => 769
+    [name] => Sintra A3 3mm UV
+    [sku] => SINTRAA3-941
+    [product_type_id] => 16
+    [price] => 10.00
+    [stock] => 107
+    [unit] => piece
+    [material_type] => assembled_product
+    [description] => 
+    [materials] => []
+)
+
+Parsed: id=769, name=Sintra A3 3mm UV, type=16
+Product updated: 769
+SUCCESS: Product updated
+Product updated: 769
+SUCCESS: Product updated

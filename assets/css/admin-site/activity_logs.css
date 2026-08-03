@@ -24,7 +24,7 @@
 
 /* ── Dark Mode ─────────────────────────────────────────────── */
 body.dark-mode {
-  --bg: #0a0f1a;
+  --bg: #000000;
   --surface: #0f172a;
   --surface2: #111827;
   --border: #1f2937;
@@ -121,6 +121,184 @@ body.dark-mode .stat-value.error-val {
 }
 .stat-dot.error-dot {
   background: #dc2626;
+}
+
+/* ── Data Retention Controls ───────────────────────────────── */
+.retention-controls {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.retention-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+
+.retention-header h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.retention-header h3 i {
+  color: var(--accent);
+  margin-right: 8px;
+}
+
+.retention-status {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.retention-status i {
+  color: #16a34a;
+}
+
+.retention-status strong {
+  font-weight: 600;
+}
+
+.retention-body {
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.retention-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background-color: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+  transform: translateX(20px);
+}
+
+.toggle-label {
+  font-size: 13px;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.retention-config {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+.config-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.config-group label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.config-group .filter-select {
+  flex: 1;
+  min-width: 120px;
+}
+
+.btn-apply-retention {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--trans);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn-apply-retention:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.btn-apply-retention:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+body.dark-mode .btn-apply-retention {
+  background: #dc2626;
+}
+
+body.dark-mode .btn-apply-retention:hover {
+  background: #ef4444;
 }
 
 /* ── Controls Row ──────────────────────────────────────────── */
@@ -557,10 +735,287 @@ body.dark-mode .tag-other {
   cursor: not-allowed;
 }
 
+/* ── Activity Logs Modal (Specific to this page) ─────────────────── */
+/* IMPORTANT: Hidden by default with !important to prevent conflicts */
+.activity-log-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  display: none !important;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  animation: activityModalFadeIn 0.25s ease;
+}
+
+/* Only show when explicitly opened via JavaScript */
+.activity-log-modal-overlay.active {
+  display: flex !important;
+}
+
+@keyframes activityModalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.activity-log-modal-container {
+  background: var(--surface);
+  border-radius: var(--radius);
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  position: relative;
+  margin: 20px;
+}
+
+.activity-log-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.activity-log-modal-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+}
+
+.activity-log-modal-header h3 i {
+  color: #dc2626;
+  margin-right: 8px;
+}
+
+.activity-log-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.activity-log-modal-close:hover {
+  color: var(--text);
+}
+
+.activity-log-modal-body {
+  padding: 20px;
+}
+
+.activity-log-modal-body p {
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.activity-log-modal-warning {
+  background: var(--error-bg);
+  color: var(--error-text);
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  margin: 12px 0 16px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-log-password-group {
+  margin-top: 16px;
+}
+
+.activity-log-password-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.activity-log-password-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-family: "DM Sans", sans-serif;
+  outline: none;
+  transition: var(--trans);
+}
+
+.activity-log-password-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.activity-log-modal-error {
+  color: #dc2626;
+  font-size: 13px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--error-bg);
+  border-radius: 4px;
+  display: none;
+}
+
+.activity-log-modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.activity-log-btn-cancel {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--trans);
+}
+
+.activity-log-btn-cancel:hover {
+  background: var(--surface2);
+}
+
+.activity-log-btn-confirm {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 6px;
+  background: #dc2626;
+  color: #fff;
+  font-family: "DM Sans", sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--trans);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.activity-log-btn-confirm:hover {
+  background: #b91c1c;
+}
+
+.activity-log-btn-confirm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── Dark mode support for modal ────────────────────────────── */
+body.dark-mode .activity-log-modal-overlay {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+body.dark-mode .activity-log-modal-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+/* ── Notification Toast ────────────────────────────────────── */
+.notification-toast {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 100000;
+  max-width: 400px;
+  animation: slideIn 0.3s ease;
+  display: none;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.notification-toast.success {
+  border-left: 4px solid #16a34a;
+}
+
+.notification-toast.success::before {
+  content: "✓ ";
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.notification-toast.error {
+  border-left: 4px solid #dc2626;
+}
+
+.notification-toast.error::before {
+  content: "✗ ";
+  color: #dc2626;
+  font-weight: 700;
+}
+
 /* ── Responsive ────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .stats-row {
     grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .retention-body {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .retention-config {
+    flex-direction: column;
+  }
+
+  .config-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .btn-apply-retention {
+    justify-content: center;
+  }
+
+  .activity-log-modal-container {
+    width: 95%;
+    margin: 10px;
   }
 }
 

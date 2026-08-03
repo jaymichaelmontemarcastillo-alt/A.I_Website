@@ -1,220 +1,180 @@
-<?php
-include 'includes/header.php';
+<?php 
+$baseDir = '';
+include 'includes/header.php'; 
 ?>
 
-<link rel="stylesheet" href="assets/css/customer-site/home.css">
-
-<!-- Toast notification -->
-<div id="toast" class="toast">
-    <i class="fa-solid fa-check-circle"></i>
-    <span id="toastMessage">Item added to cart!</span>
-</div>
-
 <main>
+
+    <!-- ===== 1. HERO ===== -->
     <section class="hero">
-        <div class="hero-content">
-            <div class="hero-copy">
-                <span class="eyebrow">Anything Inside</span>
-                <h1>Curated gift sets and custom merchandise that feel premium from the first glance.</h1>
-                <p>Bring your gifting ideas to life with personalized bundles, polished presentation, and one-stop production support.</p>
-
-                <div class="hero-buttons">
-                    <a class="btn-primary form-modal-trigger" href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Request a Quote</a>
-                    <a class="btn-secondary" href="#showcase">View Showcase</a>
-                </div>
-
-                <div class="hero-stats">
-                    <div class="hero-stat">
-                        <strong>120+</strong>
-                        <span>Gift sets delivered</span>
-                    </div>
-                    <div class="hero-stat">
-                        <strong>24h</strong>
-                        <span>Quote response time</span>
-                    </div>
-                </div>
+        <div class="hero-inner">
+            <h2>Thoughtful <span class="gw-font">gifts</span> and <span class="gw-font">custom merch</span> without a stress.</h2>
+            
+            <p class="hero-sub">We help you bring your ideas to life with custom pieces and heartfelt gift sets—crafted with love, without the headache.</p>
+            <div class="hero-gallery">
+                <div class="hero-image"><img src="assets/images/products/product5.jpg" alt="Ribbon-tied gift box"></div>
+                <div class="hero-image"><img src="assets/images/products/product6.jpg" alt="Curated mug and candle gift set"></div>
+                <div class="hero-image"><img src="assets/images/products/product7.jpg" alt="Coffee lover's gift set"></div>
+                <div class="hero-image"><img src="assets/images/products/product3.jpg" alt="Notebook, pen, and tumbler gift set"></div>
             </div>
 
-            <div class="hero-visual">
-                <div class="hero-card hero-card-large">
-                    <img src="https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=1200" alt="Curated gift set">
-                    <div class="hero-card-copy">
-                        <span class="label">Featured bundle</span>
-                        <h3>Executive Welcome Collection</h3>
-                        <p>Custom stationery, branded essentials, and premium packaging designed to make every first impression count.</p>
-                    </div>
+
+            <div class="hero-buttons">
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-highlight">Request a Free Quote</a>
+                <a href="<?php echo $baseDir; ?>Bundles.php" class="btn btn-primary">View Catalog <span aria-hidden="true">→</span></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== 2. THE PROBLEM ===== -->
+    <section class="section problem">
+        <div class="container">
+            <div class="section-head">
+                <h2>Finding the perfect gift shouldn't feel stressful.</h2>
+            </div>
+            <div class="problem-grid">
+                <div class="problem-card">
+                    <div class="icon-circle"><i class="fa-regular fa-clock"></i></div>
+                    <h3>Time spent searching</h3>
+                    <p>Hours wasted hunting for matching items that actually work together.</p>
                 </div>
-                <div class="hero-card-group">
-                    <div class="hero-card hero-card-small">
-                        <h4>Branded event kits</h4>
-                        <p>Stylish promo sets built for conferences, fairs, and company launches.</p>
-                    </div>
-                    <div class="hero-card hero-card-small">
-                        <h4>Premium appreciation gifts</h4>
-                        <p>Thoughtful packages made to delight employees, customers, and VIP guests.</p>
-                    </div>
+                <div class="problem-card">
+                    <div class="icon-circle"><i class="fa-regular fa-face-frown"></i></div>
+                    <h3>Overthinking the gift</h3>
+                    <p>Second-guessing whether your gift will feel thoughtful enough.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="icon-circle"><i class="fa-regular fa-building"></i></div>
+                    <h3>Too many suppliers</h3>
+                    <p>Coordinating with multiple vendors for different products.</p>
+                </div>
+                <div class="problem-card">
+                    <div class="icon-circle"><i class="fa-regular fa-rectangle-list"></i></div>
+                    <h3>Minimum order headaches</h3>
+                    <p>MOQs that don't fit your actual needs or budget.</p>
+                </div>
+            </div>
+            <div class="transition-box">
+                <p>You should be focusing on the people receiving the gift — not the logistics behind it.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== 3. THE SOLUTION ===== -->
+    <section class="section solution">
+        <div class="container">
+            <div class="section-head">
+                <h2>We make gifting easier.</h2>
+                <h3>At Anything Inside, we simplify the process by helping you create curated gift sets and custom merchandise in one place.</h3>
+            </div>
+            <div class="solution-grid">
+                <div class="solution-card">
+                    <div class="solution-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+                    <h3>Source products</h3>
+                    <p>We find the perfect items that match your vision and budget.</p>
+                </div>
+                <div class="solution-card">
+                    <div class="solution-icon"><i class="fa-solid fa-pen-ruler"></i></div>
+                    <h3>Customize items</h3>
+                    <p>Add your branding, personalization, and unique touches.</p>
+                </div>
+                <div class="solution-card">
+                    <div class="solution-icon"><i class="fa-solid fa-gift"></i></div>
+                    <h3>Package beautifully</h3>
+                    <p>Premium wrapping and presentation that wows every time.</p>
+                </div>
+                <div class="solution-card">
+                    <div class="solution-icon"><i class="fa-solid fa-rocket"></i></div>
+                    <h3>Deliver a complete experience</h3>
+                    <p>From start to finish, we handle everything for you.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="section section-alt product-highlights">
-        <div class="section-title">
-            <h2>Why customers choose Anything Inside</h2>
-            <p>We combine creative product sourcing, quality branding, and seamless coordination so your campaigns and events look exceptional.</p>
-        </div>
-        <div class="feature-grid">
-            <div class="feature-item">
-                <i class="fa-solid fa-gift"></i>
-                <h3>Ready-to-send bundles</h3>
-                <p>Choose complete sets that arrive polished, wrapped, and ready for gifting.</p>
+    <!-- ===== 4. HOW IT WORKS ===== -->
+    <section class="section steps">
+        <div class="container">
+            <div class="section-head">        
+                <h2>How does it work?</h2>
             </div>
-            <div class="feature-item">
-                <i class="fa-solid fa-hand-holding-dollar"></i>
-                <h3>Flexible budgets</h3>
-                <p>Build small or large orders with custom pricing that fits your needs.</p>
-            </div>
-            <div class="feature-item">
-                <i class="fa-solid fa-check-circle"></i>
-                <h3>Full-service support</h3>
-                <p>We manage sourcing, personalization, packaging, and delivery for every order.</p>
-            </div>
-        </div>
-    </section>
-
-    <section class="section showcase-section" id="showcase">
-        <div class="section-title">
-            <h2>Featured product showcase</h2>
-            <p>Sample collections designed to impress customers, clients, and teams.</p>
-        </div>
-
-        <div class="showcase-grid">
-            <article class="product-card">
-                <div class="product-media">
-                    <img src="https://images.unsplash.com/photo-1542831371-d531d36971e6?w=900" alt="Corporate welcome gift">
-                    <span class="product-badge">Bestseller</span>
-                </div>
-                <div class="product-info">
-                    <h3>Corporate Welcome Box</h3>
-                    <p>A polished onboarding set with custom notebook, elegant mug, premium snacks, and brand-ready packaging.</p>
-                    <div class="product-meta">
-                        <span>From ₱1,899</span>
-                        <span>Perfect for clients & new hires</span>
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div class="step-info">
+                        <h3>Share Your Vision</h3>
+                        <p>Tell us your budget, quantity, and goals.</p>
                     </div>
-                    <a class="btn-secondary btn-block form-modal-trigger" href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Inquire Now</a>
                 </div>
-            </article>
-
-            <article class="product-card">
-                <div class="product-media">
-                    <img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=900" alt="Branded event kit">
-                    <span class="product-badge">Custom</span>
-                </div>
-                <div class="product-info">
-                    <h3>Branded Event Kit</h3>
-                    <p>Stylish promotional set with logo pens, premium notepad, and presentation-ready packaging.</p>
-                    <div class="product-meta">
-                        <span>From ₱1,299</span>
-                        <span>Ideal for expos & conferences</span>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div class="step-info">
+                        <h3>Pick You Favorites</h3>
+                        <p>We'll present curated product options and mockups so you can choose the perfect fit.</p>
                     </div>
-                    <a class="btn-secondary btn-block form-modal-trigger" href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Inquire Now</a>
                 </div>
-            </article>
-
-            <article class="product-card">
-                <div class="product-media">
-                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900" alt="Luxury thank-you package">
-                    <span class="product-badge">Premium</span>
-                </div>
-                <div class="product-info">
-                    <h3>Luxury Thank-You Set</h3>
-                    <p>Scented candle, personalized card, and elegant wrapping for a memorable appreciation gift.</p>
-                    <div class="product-meta">
-                        <span>From ₱2,250</span>
-                        <span>Perfect for VIP appreciation</span>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div class="step-info">
+                        <h3>Ready to Gift</h3>
+                        <p>Get your custom-packaged sets prepped, polished, and ready to share.</p>
                     </div>
-                    <a class="btn-secondary btn-block form-modal-trigger" href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Inquire Now</a>
                 </div>
-            </article>
-        </div>
-
-        <div class="showcase-footer">
-            <a class="btn-primary" href="Bundles.php">Explore full collection</a>
-        </div>
-    </section>
-
-    <section class="section section-alt how-it-works" id="how-it-works">
-        <div class="section-title">
-            <h2>How it works</h2>
-            <p>A fast, clear process that keeps your gift planning simple.</p>
-        </div>
-
-        <div class="steps-list">
-            <div class="step-card">
-                <div class="step-top">
-                    <span class="step-icon"><i class="fa-solid fa-comments"></i></span>
-                    <h3>1. Share your vision</h3>
-                </div>
-                <p>Tell us your event, audience, and desired gift style.</p>
             </div>
-
-            <div class="step-card">
-                <div class="step-top">
-                    <span class="step-icon"><i class="fa-solid fa-lightbulb"></i></span>
-                    <h3>2. Review concept ideas</h3>
-                </div>
-                <p>We propose curated packages and product recommendations.</p>
-            </div>
-
-            <div class="step-card">
-                <div class="step-top">
-                    <span class="step-icon"><i class="fa-solid fa-box"></i></span>
-                    <h3>3. Approve and produce</h3>
-                </div>
-                <p>We handle sourcing, assembly, and premium packaging.</p>
-            </div>
-
-            <div class="step-card">
-                <div class="step-top">
-                    <span class="step-icon"><i class="fa-solid fa-truck-fast"></i></span>
-                    <h3>4. Ready to deliver</h3>
-                </div>
-                <p>Receive polished gift sets that are ready to impress.</p>
+            <!-- New button added below the 3 cards -->
+            <div class="steps-cta">
+                <a href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-highlight">
+                    <i class="fas fa-paper-plane"></i> Contact Us
+                </a>
             </div>
         </div>
     </section>
 
-    <section class="section cta-banner">
-        <div class="cta-copy">
-            <h2>Let’s build a gift experience that feels unforgettable.</h2>
-            <p>Get a custom proposal, product recommendations, and premium packaging that reflects your brand.</p>
+    <!-- ===== 5. IMPACT ===== -->
+    <section class="section impact">
+        <div class="container">
+            <div class="section-head light">
+                <h2>Turn your ideas into gifts with heart.</h2>
+            </div>
+            <div class="impact-content">
+                   <p class="impact-text">Whether for teams, clients, celebrations, or special occasions, your gifts become more than products — <span>they become experiences that leave an impression.</span></p>
+            </div>
         </div>
-        <a class="btn-primary form-modal-trigger" href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform?embedded=true" target="_blank" rel="noopener noreferrer">Start your inquiry</a>
     </section>
 
-    <section class="section section-alt about-us" id="about-us">
-        <div class="section-title">
-            <h2>About Anything Inside</h2>
-            <p>We simplify printing, packaging, and gifting for businesses that want premium results without the coordination headache.</p>
-        </div>
-        <div class="about-grid">
-            <div class="about-copy">
-                <p>We deliver custom corporate giveaways, printed materials, and gift packages designed to make a strong impression.</p>
-                <p>Our process is built for businesses and individuals who want creative, polished results without managing multiple suppliers.</p>
-                <ul class="content-list">
-                    <li>Custom sourcing for every concept</li>
-                    <li>Premium wrapping and finishing details</li>
-                    <li>Fast coordination and dependable delivery</li>
-                </ul>
-            </div>
-            <div class="about-visual">
-                <div class="about-card">
-                    <h3>Our promise</h3>
-                    <p>High-quality prints, thoughtful packaging, and smooth coordination from concept to delivery.</p>
+    <!-- ===== 6. BENEFITS ===== 
+    <section class="section benefits">
+        <div class="container">
+            <div class="benefits-wrap">
+                <div class="benefits-left">
+                   
+                    <h2>Skip the hassle of juggling suppliers and last-minute decisions.</h2>
+                    <p>Avoid spending hours sourcing products, managing different vendors, and worrying whether everything fits together.</p>
+                    <p class="highlight-text">Anything Inside helps keep the process <strong>organized</strong> and <strong>efficient</strong> from start to finish.</p>
+                </div>
+                <div class="benefits-right">
+                    <img src="assets/images/products/product1.png" alt="Organized gifting">
                 </div>
             </div>
         </div>
+    </section>-->
+
+    <!-- ===== 7. FINAL CTA ===== -->
+    <section class="section final-cta">
+        <div class="container">
+            <div class="cta-box">
+       
+                <h2>Ready to create <br>something meaningful?</h2>
+                <p>From curated bundles to customized merchandise, we help bring your ideas together.</p>
+                <div class="cta-buttons">
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform" target="_blank" rel="noopener noreferrer" class="btn btn-highlight">Get a Quote</a>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSdBK8Cvyfb8qpRG1aCjTbtV9dILsi4U3xxe6lBrlSVxKggumg/viewform" target="_blank" rel="noopener noreferrer" class="btn btn-outline">Message Us Today</a>
+                </div>
+                <p class="cta-note">No pressure. Tell us your idea and we'll help you build from there.</p>
+            </div>
+        </div>
     </section>
+
 </main>
 
 <?php include 'includes/footer.php'; ?>

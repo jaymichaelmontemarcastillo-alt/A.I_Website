@@ -17,14 +17,36 @@ class QuotationViewManager {
 
     if (!this.modal) return;
 
+    // Save scroll position and lock
+    this._scrollY = window.scrollY;
     this.modal.style.display = "flex";
     document.body.style.overflow = "hidden";
+    document.body.style.position = "fixed";
+    document.body.style.top = `-${this._scrollY}px`;
+    document.body.style.width = "100%";
+    document.body.style.height = "100%";
+
     this.loadQuotationData(quoteId);
   }
 
   closeModal() {
-    if (this.modal) this.modal.style.display = "none";
+    if (this.modal) {
+      this.modal.style.display = "none";
+    }
+
+    // Restore scroll - remove ALL styles
     document.body.style.overflow = "";
+    document.body.style.position = "";
+    document.body.style.top = "";
+    document.body.style.width = "";
+    document.body.style.height = "";
+
+    // Restore scroll position
+    if (this._scrollY > 0) {
+      window.scrollTo(0, this._scrollY);
+      this._scrollY = 0;
+    }
+
     this.isEditMode = false;
     this.currentQuoteId = null;
   }
@@ -56,7 +78,6 @@ class QuotationViewManager {
       this.showLoading(false);
     }
   }
-
   populateModal(quotation, items) {
     // Client info
     document.getElementById("qvClientName").value = quotation.client_name || "";

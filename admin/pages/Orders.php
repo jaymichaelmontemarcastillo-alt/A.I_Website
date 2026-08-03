@@ -3,37 +3,78 @@ include 'auth_check.php';
 include '../includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
+<link rel="stylesheet" href="../../assets/css/admin-site/orders_styles.css">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orders & Payments - Admin Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../../assets/css/admin-site/orders_styles.css">
-</head>
-
-<body>
-    <div class="admin-wrapper">
-        <?php
-        $current_page = 'Orders';
-        include 'admin_sidebar.php';
-        ?>
+<div class="admin-wrapper">
+    <?php
+    $current_page = 'Orders';
+    include 'admin_sidebar.php';
+    ?>
 
         <main class="main-content">
             <?php include 'admin_page_header.php'; ?>
 
             <section class="content-body">
+                <!-- ============================================= -->
                 <!-- PAGE HEADER -->
+                <!-- ============================================= -->
                 <div class="page-header-section">
-                    <div>
+                    <div class="page-header-left">
                         <h1 class="page-title">Orders & Quotations</h1>
                         <p class="page-subtitle">Manage customer orders and track quotation status</p>
                     </div>
+                    <div class="page-header-actions">
+                        <button class="btn-refresh" id="refreshBtn" title="Refresh">
+                            <i class="fa-solid fa-rotate"></i>
+                        </button>
+                    </div>
                 </div>
 
+                <!-- ============================================= -->
+                <!-- STATS CARDS -->
+                <!-- ============================================= -->
+                <div class="stats-grid" id="statsGrid">
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fa-solid fa-box"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="statTotal">0</span>
+                            <span class="stat-label">Total Orders</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon amber">
+                            <i class="fa-solid fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="statPending">0</span>
+                            <span class="stat-label">Pending</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fa-solid fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="statDelivered">0</span>
+                            <span class="stat-label">Delivered</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon indigo">
+                            <i class="fa-solid fa-coin"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-value" id="statRevenue">₱0</span>
+                            <span class="stat-label">Revenue</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ============================================= -->
                 <!-- FILTERS AND SEARCH -->
+                <!-- ============================================= -->
                 <div class="filters-section">
                     <div class="search-wrapper">
                         <i class="fa-solid fa-magnifying-glass"></i>
@@ -78,12 +119,14 @@ include '../includes/header.php';
                     </div>
                 </div>
 
+                <!-- ============================================= -->
                 <!-- ORDERS TABLE -->
+                <!-- ============================================= -->
                 <div class="table-wrapper">
                     <table class="orders-table">
                         <thead>
                             <tr>
-                                <th>Quotation ID</th>
+                              
                                 <th>Customer Name</th>
                                 <th>Quote Number</th>
                                 <th>Date</th>
@@ -96,19 +139,23 @@ include '../includes/header.php';
                         </thead>
                         <tbody id="ordersTableBody">
                             <tr class="loading-row">
-                                <td colspan="9" style="text-align: center; padding: 40px;">
-                                    <i class="fa-solid fa-spinner fa-spin"></i>
-                                    <p style="margin-top: 10px; color: var(--text-secondary);">Loading orders...</p>
+                                <td colspan="9">
+                                    <div class="spinner">
+                                        <i class="fa-solid fa-spinner fa-spin"></i>
+                                        <span>Loading orders...</span>
+                                    </div>
                                 </td>
-                    </table>
-                    </tbody>
+                            </tr>
+                        </tbody>
                     </table>
                 </div>
             </section>
         </main>
     </div>
 
-    <!-- ===================== ORDER DETAIL MODAL ===================== -->
+    <!-- ============================================= -->
+    <!-- ORDER DETAIL MODAL -->
+    <!-- ============================================= -->
     <div id="OrderItemModal" class="modal-overlay">
         <div class="modal-container modal-large">
             <div class="modal-header">
@@ -120,7 +167,7 @@ include '../includes/header.php';
 
             <div class="modal-body">
                 <div class="modal-grid">
-                    <!-- LEFT COLUMN - Customer & Quotation Info -->
+                    <!-- LEFT COLUMN -->
                     <div class="modal-left">
                         <!-- CUSTOMER INFORMATION -->
                         <div class="modal-card">
@@ -195,7 +242,7 @@ include '../includes/header.php';
                         </div>
                     </div>
 
-                    <!-- RIGHT COLUMN - Summary & Payment -->
+                    <!-- RIGHT COLUMN -->
                     <div class="modal-right">
                         <!-- SUMMARY -->
                         <div class="modal-card">
@@ -252,11 +299,7 @@ include '../includes/header.php';
                             </div>
                         </div>
 
-                        <!-- PROOF OF PAYMENT -->
-                        <div class="modal-card" id="proofCard" style="display: none;">
-                            <h3 class="card-title">Payment Proof</h3>
-                            <div id="proofContent"></div>
-                        </div>
+                        <!-- REMOVED: PROOF OF PAYMENT SECTION -->
 
                         <!-- ACTION BUTTONS -->
                         <div class="modal-card action-card" id="actionCard" style="display: none;">
@@ -280,7 +323,9 @@ include '../includes/header.php';
         </div>
     </div>
 
-    <!-- ===================== ADD PAYMENT METHOD MODAL ===================== -->
+    <!-- ============================================= -->
+    <!-- ADD PAYMENT METHOD MODAL -->
+    <!-- ============================================= -->
     <div id="addPaymentMethodModal" class="modal-overlay">
         <div class="modal-container modal-medium">
             <div class="modal-header">

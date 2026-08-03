@@ -35,9 +35,12 @@ try {
 
     // Build query for delivered quotations (converted status)
     $sql = "SELECT q.id, q.quote_number, q.client_name, q.contact_person, 
-                   q.email, q.phone, q.address, q.total, q.created_at, q.status,
+                   q.email, q.phone, q.address, q.total, q.created_at, q.status, q.audited,
+                   q.audit_id,
+                   CASE WHEN a.id IS NOT NULL THEN 1 ELSE 0 END as has_audit,
                    (SELECT COUNT(*) FROM quotation_items WHERE quotation_id = q.id) as item_count
             FROM quotations q
+            LEFT JOIN bom_audit a ON a.id = q.audit_id
             WHERE q.status = 'converted'";
 
     $params = [];
@@ -77,6 +80,8 @@ try {
     foreach ($quotations as &$q) {
         $q['total_formatted'] = number_format($q['total'], 2);
         $q['created_date'] = date('M d, Y', strtotime($q['created_at']));
+        $q['has_audit'] = (int)($q['has_audit'] ?? 0);
+        $q['audit_id'] = $q['audit_id'] ? (int)$q['audit_id'] : null;
     }
 
     echo json_encode([

@@ -14,7 +14,7 @@ include '../includes/header.php';
         <?php include 'admin_page_header.php'; ?>
 
         <section class="content-body">
-            <!-- Page Header -->
+            <!-- Page Header - Tighter spacing -->
             <div class="page-header">
                 <div>
                     <h1 class="page-title">Customer Management</h1>
@@ -25,7 +25,7 @@ include '../includes/header.php';
                 </button>
             </div>
 
-            <!-- Stats Cards -->
+            <!-- Stats Cards - Tighter spacing -->
             <div class="stats-grid" id="statsGrid">
                 <div class="customer-stat-card" data-filter="all">
                     <div class="stat-icon accent-blue"><i class="fa-solid fa-users"></i></div>
@@ -82,10 +82,10 @@ include '../includes/header.php';
                                 <th>Customer</th>
                                 <th>Email</th>
                                 <th>Phone</th>
-                                <th>Orders</th>
+                                <th style="text-align:center;">Orders</th>
                                 <th>Address</th>
                                 <th>Last Order</th>
-                                <th>Actions</th>
+                                <th style="text-align:center;">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="customerTbody">
@@ -107,63 +107,67 @@ include '../includes/header.php';
     </main>
 </div>
 
-<!-- Customer Order Modal -->
+<!-- Customer Order Modal - Two Column -->
 <div class="customer-order-modal-overlay" id="customerOrderModal">
     <div class="customer-order-modal-box">
-        <div class="customer-order-modal-content">
-            <button class="customer-order-modal-close" id="modalClose" aria-label="Close">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
+        <button class="customer-order-modal-close" id="modalClose" aria-label="Close">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
 
-            <!-- Loading State -->
-            <div id="modalLoading">
-                <div class="customer-order-modal-loading">
-                    <div class="spinner"></div>
-                    <p>Loading customer profile...</p>
-                </div>
+        <!-- Loading State -->
+        <div id="modalLoading" style="display:block;">
+            <div class="customer-order-modal-loading">
+                <div class="spinner"></div>
+                <p>Loading customer profile...</p>
             </div>
+        </div>
 
-            <!-- Modal Body -->
-            <div id="modalBody" style="display:none">
-                <!-- Profile Header -->
-                <div class="customer-order-modal-profile">
-                    <div class="customer-order-modal-avatar" id="modalAvatar">?</div>
-                    <div class="customer-order-modal-info">
-                        <h2 id="modalCustomerName">—</h2>
-                        <p><i class="fa-solid fa-envelope"></i> <span id="modalCustomerEmail">—</span></p>
-                        <p><i class="fa-solid fa-phone"></i> <span id="modalCustomerPhone">—</span></p>
-                        <p><i class="fa-solid fa-location-dot"></i> <span id="modalCustomerAddress">—</span></p>
+        <!-- Modal Body - Two Columns -->
+        <div id="modalBody" style="display:none;">
+            <div class="customer-order-modal-body">
+                <!-- LEFT COLUMN - Quotations List (Scrollable) -->
+                <div class="customer-order-modal-left">
+                    <div class="customer-order-modal-tabs">
+                        <button class="customer-order-modal-tab active">Quotation History</button>
+                    </div>
+                    <div id="quotesContainer">
+                        <div class="customer-order-modal-history" id="quotesList"></div>
+                        <p class="customer-order-modal-empty" id="quotesEmpty" style="display:none">No quotations found for this customer.</p>
                     </div>
                 </div>
 
-                <!-- Summary Tiles -->
-                <div class="customer-order-modal-summary">
-                    <div class="customer-order-modal-tile">
-                        <span id="mTileQuotes">0</span>
-                        <p>Total Quotations</p>
+                <!-- RIGHT COLUMN - Customer Info (Fixed) -->
+                <div class="customer-order-modal-right">
+                    <!-- Profile Header -->
+                    <div class="customer-order-modal-profile">
+                        <div class="customer-order-modal-avatar" id="modalAvatar">?</div>
+                        <div class="customer-order-modal-info">
+                            <h2 id="modalCustomerName">—</h2>
+                            <p><i class="fa-solid fa-envelope"></i> <span id="modalCustomerEmail">—</span></p>
+                            <p><i class="fa-solid fa-phone"></i> <span id="modalCustomerPhone">—</span></p>
+                            <p><i class="fa-solid fa-location-dot"></i> <span id="modalCustomerAddress">—</span></p>
+                        </div>
                     </div>
-                    <div class="customer-order-modal-tile">
-                        <span id="mTileTotal">₱0</span>
-                        <p>Total Amount</p>
-                    </div>
-                    <div class="customer-order-modal-tile">
-                        <span id="mTileConverted">0</span>
-                        <p>Converted to Order</p>
-                    </div>
-                    <div class="customer-order-modal-tile">
-                        <span id="mTileLastQuote">—</span>
-                        <p>Last Quotation</p>
-                    </div>
-                </div>
 
-                <!-- Quotations Tab -->
-                <div class="customer-order-modal-tabs">
-                    <button class="customer-order-modal-tab active">Quotation History</button>
-                </div>
-
-                <div id="quotesContainer">
-                    <div class="customer-order-modal-history" id="quotesList"></div>
-                    <p class="customer-order-modal-empty" id="quotesEmpty" style="display:none">No quotations found for this customer.</p>
+                    <!-- Summary Tiles -->
+                    <div class="customer-order-modal-summary">
+                        <div class="customer-order-modal-tile">
+                            <span id="mTileQuotes">0</span>
+                            <p>Quotations</p>
+                        </div>
+                        <div class="customer-order-modal-tile">
+                            <span id="mTileTotal">₱0</span>
+                            <p>Total Amount</p>
+                        </div>
+                        <div class="customer-order-modal-tile">
+                            <span id="mTileConverted">0</span>
+                            <p>Converted</p>
+                        </div>
+                        <div class="customer-order-modal-tile">
+                            <span id="mTileLastQuote">—</span>
+                            <p>Last Quote</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

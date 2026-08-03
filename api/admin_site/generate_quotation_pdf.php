@@ -70,7 +70,7 @@ try {
     /* ── 3. Quotation row ─────────────────────────────────────────────────── */
     $stmt = $pdo->prepare('
         SELECT id, quote_number, client_name, contact_person,
-               email, phone, subtotal, tax, discount, total, notes, created_at
+               email, phone, subtotal, tax, discount, total, notes, created_at, address
         FROM   quotations
         WHERE  id = ?
         LIMIT  1
@@ -149,35 +149,16 @@ try {
             <td class="total-value">' . number_format($grandTotal, 2) . '</td>
         </tr>';
 
-    /* ── 8. Notes block ───────────────────────────────────────────────────── */
-    $notesHtml = '';
-    $notesRaw  = trim($quote['notes'] ?? '');
-
-    if ($notesRaw !== '') {
-        $lines = preg_split('/\r\n|\r|\n/', $notesRaw);
-        $lines = array_values(array_filter(array_map('trim', $lines)));
-
-        if (!empty($lines)) {
-            $notesHtml .= '<div class="notes-wrap">';
-            $notesHtml .= '<div class="notes-heading">Special Notes and Instructions</div>';
-            $notesHtml .= '<table class="notes-table" cellpadding="0" cellspacing="0">';
-
-            $itemNumber = 1;
-            foreach ($lines as $line) {
-                $cleanLine = trim(preg_replace('/^\d+[\.\)]\s*/', '', $line));
-                if ($cleanLine === '') continue;
-
-                $notesHtml .= '
-                <tr>
-                    <td class="notes-num">' . $itemNumber . '.</td>
-                    <td class="notes-text">' . eq($cleanLine) . '</td>
-                </tr>';
-                $itemNumber++;
-            }
-
-            $notesHtml .= '</table></div>';
-        }
-    }
+    /* ── 8. Special Notes and Instructions (Hardcoded with line breaks) ── */
+    $specialNotes = [
+        'File Formats: Please submit your file in the following formats: PDF, TIFF, PNG or high-resolution JPEG for best results.',
+        'Color Specifications: Ensure your files are set to CMYK color mode to avoid any discrepancies in color printing.',
+        'Proof Approval: A digital proof and test print will be sent for your approval before the final print run. Please review carefully to avoid any errors.',
+        'Payment Terms: Full payment is due upon delivery of the product, with 50% required downpayment upon order confirmation.',
+        'Delivery & Lead Time: The delivery time may vary depending on the quantity of your order. Standard turnaround time will be provided once we confirm the details of your order. Please let us know if you have any specific deadlines, and we\'ll do our best to accommodate them.',
+        'Shipment and fees: Customers can pick up their orders at our designated pickup points in Laguna and Mandaluyong. Please confirm your preferred pickup location when placing the order. Shipping fees will be shouldered by the client and are based on the courier\'s delivery rates.',
+        'Additional Requests: For custom sizes or any specific finishing (e.g., lamination, binding), please mention your requirements when placing the order.'
+    ];
 
     /* ── 9. Admin user ────────────────────────────────────────────────────── */
     $adminName = 'Authorized Representative';
@@ -233,9 +214,6 @@ body {
 .lh-table  { width:100%; padding-bottom:14px; margin-bottom:20px; }
 .lh-logo   { width:110px; vertical-align:middle; }
 .lh-logo img { width:101%; height:180px; object-fit:cover; }
-.lh-text   { vertical-align:middle; padding-left:12px; }
-.lh-name   { font-size:25px; font-weight:700; color:#1a56db; letter-spacing:1px; }
-.lh-addr   { font-size:10px; color:#374151; margin-top:7px; line-height:1.75; }
 
 /* ─── Client / meta ─── */
 .meta-table { width:100%; margin-bottom:18px; }
@@ -294,23 +272,53 @@ body {
     background:#f3f4f6;
 }
 
-/* ─── Notes ─── */
-.notes-wrap    { margin-top:20px; margin-bottom:22px; width:100%; }
-.notes-heading { font-size:14px; font-weight:700; color:#000; margin-bottom:3px; }
-.notes-table   { width:100%; border-collapse:collapse; }
-.notes-num  { width:25px; font-size:9px; color:#000; text-align:right; vertical-align:top; padding-top:2px; }
-.notes-text { font-size:9px; color:#000; line-height:1.6; padding-left:10px; padding-bottom:5px; vertical-align:top; }
+/* ─── Special Notes ─── */
+.special-notes-wrap { 
+    margin-top: 20px; 
+    margin-bottom: 18px; 
+    width: 100%; 
+}
+.special-notes-heading { 
+    font-size: 14px; 
+    font-weight: 700; 
+    color: #000; 
+    margin-bottom: 4px; 
+}
+.special-notes-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+}
+.special-notes-num { 
+    width: 25px; 
+    font-size: 9px; 
+    color: #000; 
+    text-align: right; 
+    vertical-align: top; 
+    padding-top: 2px; 
+    font-weight: normal;
+}
+.special-notes-text { 
+    font-size: 9px; 
+    color: #000; 
+    line-height: 1.6; 
+    padding-left: 10px; 
+    padding-bottom: 4px; 
+    vertical-align: top; 
+    font-weight: normal;
+    text-align: left;
+}
 
 /* ─── Signature ─── */
-.sig-wrap      { margin-top:34px; }
-.sig-prepared  { font-size:12px; color:#000; font-weight:normal; }
-.sig-name-line { font-size:12px; font-weight:700; color:#000; min-width:190px; text-align:left; }
-.sig-company   { font-size:11px; color:#000; margin-top:3px; text-align:left; }
+.sig-wrap      { margin-top: 8px; }
+.sig-prepared  { font-size: 13px; color: #000; font-weight: 700; margin-bottom: 1px; }
+.sig-name      { font-size: 12px; font-weight: normal; color: #000; margin-bottom: 1px; }
+.sig-company   { font-size: 11px; color: #000; font-weight: normal; }
+
 </style>
 </head>
 <body>
 
-<!-- LETTERHEAD -->
+<!-- LETTERHEAD - ONLY IMAGE, NO TEXT -->
 <table class="lh-table" cellpadding="0" cellspacing="0">
     <tr>
         <td class="lh-logo">
@@ -325,6 +333,7 @@ body {
         <td class="meta-left">
             <div class="meta-line"><span class="meta-bold">To: </span>' . eq($quote['client_name']) . '</div>
             <div class="meta-line"><span class="meta-bold">Contact Person: </span>' . eq($quote['contact_person'] ?? '') . '</div>
+            ' . (!empty($quote['address']) ? '<div class="meta-line"><span class="meta-bold">Address: </span>' . eq($quote['address']) . '</div>' : '') . '
         </td>
         <td class="meta-right">
             <div class="meta-qnum">
@@ -352,13 +361,29 @@ body {
     </tbody>
 </table>
 
-<!-- NOTES -->
-' . $notesHtml . '
+<!-- SPECIAL NOTES AND INSTRUCTIONS -->
+<div class="special-notes-wrap">
+    <div class="special-notes-heading">Special Notes and Instructions</div>
+    <table class="special-notes-table" cellpadding="0" cellspacing="0">';
+
+    $noteNumber = 1;
+    foreach ($specialNotes as $note) {
+        $html .= '
+        <tr>
+            <td class="special-notes-num">' . $noteNumber . '.</td>
+            <td class="special-notes-text">' . eq($note) . '</td>
+        </tr>';
+        $noteNumber++;
+    }
+
+    $html .= '
+    </table>
+</div>
 
 <!-- SIGNATURE -->
 <div class="sig-wrap">
     <div class="sig-prepared">Prepared by:</div>
-    <div class="sig-name-line">' . eq($adminName) . '</div>
+    <div class="sig-name">' . eq($adminName) . '</div>
     <div class="sig-company">Anything Inside</div>
 </div>
 

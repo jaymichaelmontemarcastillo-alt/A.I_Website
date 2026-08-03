@@ -1,12 +1,6 @@
 <?php
-header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-header('Content-Disposition: attachment; filename="products_export_' . date('Y-m-d') . '.xlsx"');
-header('Cache-Control: max-age=0');
-//api/export_products.php
 session_start();
 require_once __DIR__ . '/../../../connect/config.php';
-
-// Include PhpSpreadsheet library (install via composer: composer require phpoffice/phpspreadsheet)
 require_once __DIR__ . '/../../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -14,6 +8,9 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+
+if (ob_get_level()) ob_end_clean();
+ob_start();
 
 try {
     $pdo = getDBConnection();
@@ -30,10 +27,10 @@ try {
             p.material_type,
             p.description,
             p.status,
-           GROUP_CONCAT(
-    CONCAT(m.material_name, ' (', pm.quantity, ' ' , m.unit, ')') 
-    SEPARATOR '; '
-) AS materials
+            GROUP_CONCAT(
+                CONCAT(m.material_name, ' (', COALESCE(pm.quantity, 0), ')')
+                SEPARATOR '; '
+            ) AS materials
         FROM products p
         LEFT JOIN product_types pt ON pt.id = p.product_type_id
         LEFT JOIN product_materials pm ON pm.product_id = p.id
@@ -103,12 +100,27 @@ try {
     ];
     $sheet->getStyle('A2:J' . ($row - 1))->applyFromArray($styleArray);
 
-    // Create writer
+    // Clear any output buffer
+    if (ob_get_level()) ob_end_clean();
+
+    // Send headers ONLY after all processing is complete
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="products_export_' . date('Y-m-d_H-i-s') . '.xlsx"');
+    header('Cache-Control: max-age=0, must-revalidate');
+    header('Pragma: public');
+
+    // Create writer and output
     $writer = new Xlsx($spreadsheet);
     $writer->save('php://output');
     exit;
+
 } catch (Exception $e) {
-    // If error, return JSON error
+    if (ob_get_level()) ob_end_clean();
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Export failed: ' . $e->getMessage()
+    ]);
+    exit;
 }

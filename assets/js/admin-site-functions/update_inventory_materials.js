@@ -83,6 +83,7 @@ window.matOpenEditItemModal = (
   const shopStockInput = document.getElementById("matEditShopStock");
   const phStockInput = document.getElementById("matEditPhStock");
   const unitCostInput = document.getElementById("matEditUnitCost");
+  const remarksInput = document.getElementById("matEditRemarks");
   const errorDiv = document.getElementById("matEditItemError");
 
   if (idInput) idInput.value = materialId;
@@ -91,6 +92,7 @@ window.matOpenEditItemModal = (
   if (shopStockInput) shopStockInput.value = shopStock;
   if (phStockInput) phStockInput.value = phStock;
   if (unitCostInput) unitCostInput.value = unitCost;
+  if (remarksInput) remarksInput.value = "";
   if (errorDiv) errorDiv.innerHTML = "";
 
   // Update total preview
@@ -141,6 +143,7 @@ const matUpdateItem = async () => {
     parseInt(document.getElementById("matEditPhStock")?.value) || 0;
   const unitCost =
     parseFloat(document.getElementById("matEditUnitCost")?.value) || 0;
+  const remarks = document.getElementById("matEditRemarks")?.value.trim() || "";
 
   const errorDiv = document.getElementById("matEditItemError");
   const confirmBtn = document.getElementById("matEditItemConfirmBtn");
@@ -207,6 +210,7 @@ const matUpdateItem = async () => {
         shop_stock: shopStock,
         ph_stock: phStock,
         unit_cost: unitCost,
+        remarks: remarks,
       }),
     });
 

@@ -142,7 +142,6 @@ try {
     $upd->execute([':stock' => $newStock, ':id' => $materialId]);
 
     // ── LOG THE CHANGE (Optional) ────────────────────────────
-    // Only if materials_logs table exists and has the right schema
     try {
         $logSql = "INSERT INTO materials_logs 
                    (material_id, location, change_type, quantity, previous_stock, new_stock, admin_id, note, created_at)
@@ -165,6 +164,13 @@ try {
     }
 
     $pdo->commit();
+
+    try {
+        require_once __DIR__ . '/../../activity_logger.php';
+        logActivity($pdo, $adminId, $_SESSION['admin_name'] ?? 'Admin', 'Updated stock for material "' . $material['material_name'] . '" in ' . $location . ' (' . $action . ')', $materialId, 'Inventory', 'Success');
+    } catch (Throwable $activityErr) {
+        error_log('activity log insert failed: ' . $activityErr->getMessage());
+    }
 
     echo json_encode([
         'success'        => true,

@@ -1,6 +1,7 @@
 /**
  * Orders Management - COMPLETE WORKING Version
  * Handles all dropdowns: Payment Method, Payment Status, Order Status
+ * Updated with stats card functionality
  */
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -235,39 +236,11 @@ function populateModal(order, items) {
     refRow.style.display = "none";
   }
 
-  // Proof of Payment
-  const proofUrl = order.resolved_proof;
-  const proofCard = document.getElementById("proofCard");
-  const proofContent = document.getElementById("proofContent");
+  // REMOVED: Proof of Payment section - no longer displayed
 
-  if (order.payment_method === "gcash") {
-    proofCard.style.display = "block";
-    if (proofUrl) {
-      proofContent.innerHTML = `
-        <a href="${proofUrl}" target="_blank" class="proof-link">
-          <img src="${proofUrl}" alt="Payment Proof" class="proof-image"
-            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22150%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22200%22 height=%22150%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2214%22 fill=%22%23999%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EImage unavailable%3C/text%3E%3C/svg%3E'">
-        </a>
-      `;
-    } else {
-      proofContent.innerHTML = `
-        <div class="proof-missing">
-          <i class="fa-solid fa-circle-exclamation"></i>
-          <span>No proof uploaded yet</span>
-        </div>
-      `;
-    }
-  } else {
-    proofCard.style.display = "none";
-  }
-
-  // Action Buttons - Show only for pending GCash payments with proof
+  // Action Buttons - Show only for pending GCash payments
   const actionCard = document.getElementById("actionCard");
-  if (
-    order.payment_status === "pending" &&
-    order.payment_method === "gcash" &&
-    proofUrl
-  ) {
+  if (order.payment_status === "pending" && order.payment_method === "gcash") {
     actionCard.style.display = "block";
   } else {
     actionCard.style.display = "none";
@@ -288,6 +261,8 @@ function fetchOrders(isPolling = false) {
         } else {
           window.currentOrders = response.data;
           applyFilters();
+          // Update stats when orders are loaded
+          updateStats(response.data);
         }
       } else {
         console.error(
@@ -374,6 +349,7 @@ function renderOrders(orders) {
     tbody.appendChild(row);
   });
 }
+
 function createTableRow(order) {
   const tr = document.createElement("tr");
   const recordId = order.quote_number || order.order_number;
@@ -387,12 +363,12 @@ function createTableRow(order) {
   const paymentMethod = order.payment_method || "pending";
   const paymentStatus = order.payment_status || "pending";
   const orderStatus = order.order_status || "pending";
-  // Alternative version with Font Awesome icons in dropdowns
+
   tr.innerHTML = `
-  <td style="text-align: center;"><strong>${escapeHtml(displayQuoteId.toString())}</strong></td>
-  <td>${escapeHtml(customerName)}</td>
-  <td>${escapeHtml(quoteNumber)}</td>
-  <td>${date}</td>
+  
+  <td title="${escapeHtml(customerName)}">${escapeHtml(customerName)}</td>
+  <td title="${escapeHtml(quoteNumber)}">${escapeHtml(quoteNumber)}</td>
+  <td class="date-td">${date}</td>
   <td><strong>₱${total.toFixed(2)}</strong></td>
   <td>
     <select class="method-dropdown styled-dropdown" data-order-id="${escapeHtml(recordId)}" data-field="payment_method">
@@ -421,11 +397,12 @@ function createTableRow(order) {
     </select>
   </td>
   <td>
-    <button class="action-icon" title="View Order" onclick="openOrderModal('${escapeHtml(recordId)}')">
+    <button class="action-icon view" title="View Order" onclick="openOrderModal('${escapeHtml(recordId)}')">
       <i class="fa-regular fa-eye"></i>
     </button>
   </td>
 `;
+
   // Add event listeners
   const statusDropdown = tr.querySelector(".status-dropdown");
   const paymentDropdown = tr.querySelector(".payment-dropdown");
@@ -456,16 +433,13 @@ function createTableRow(order) {
   if (methodDropdown) {
     methodDropdown.addEventListener("change", (e) => {
       if (e.target.value === "add_new") {
-        // Store the current value so we can restore it
         const currentValue = e.target.dataset.previousValue || "pending";
         e.target.value = currentValue;
 
-        // Open the add payment method modal
         if (typeof openAddPaymentModal === "function") {
           openAddPaymentModal();
         }
       } else {
-        // Store current value for reference
         e.target.dataset.previousValue = e.target.value;
 
         updateOrderField(
@@ -477,21 +451,18 @@ function createTableRow(order) {
       }
     });
 
-    // Store initial value
     methodDropdown.dataset.previousValue = methodDropdown.value;
   }
 
   return tr;
 }
+
 /* ═════════════════════════════════════════════════════════════ */
 /* UPDATE HANDLER - Unified function for all updates */
 /* ═════════════════════════════════════════════════════════════ */
 
 function updateOrderField(orderId, field, value, dropdownElement) {
-  // Store original value in case of failure
   const originalValue = dropdownElement.value;
-
-  // Disable dropdown during update
   dropdownElement.disabled = true;
 
   const payload = { order_number: orderId };
@@ -516,7 +487,6 @@ function updateOrderField(orderId, field, value, dropdownElement) {
       if (data.success) {
         showToast(`${field.replace("_", " ")} updated successfully`);
 
-        // Update the dropdown with the confirmed value from server
         if (data.updated_data) {
           const newValue = data.updated_data[field];
           if (newValue && dropdownElement.value !== newValue) {
@@ -527,36 +497,76 @@ function updateOrderField(orderId, field, value, dropdownElement) {
         // Refresh the orders list in background
         setTimeout(() => fetchOrders(true), 500);
 
-        // If modal is open, refresh it with updated data
         if (window.currentOrderNumber) {
           setTimeout(() => {
             openOrderModal(orderId);
           }, 1000);
         }
       } else {
-        // Revert to original value on failure
         dropdownElement.value = originalValue;
         showToast(data.message || `Failed to update ${field}`, true);
       }
     })
     .catch((err) => {
       console.error("Error:", err);
-      // Revert to original value on error
       dropdownElement.value = originalValue;
       showToast("Network error updating", true);
     })
     .finally(() => {
-      // Re-enable dropdown
       dropdownElement.disabled = false;
     });
 }
 
 function updateTableLive(newOrders) {
-  // Update the stored orders
   window.currentOrders = newOrders;
-
-  // Re-apply filters to refresh the display
   applyFilters();
+  // Update stats when table updates
+  updateStats(newOrders);
+}
+
+/* ═════════════════════════════════════════════════════════════ */
+/* STATS FUNCTIONS */
+/* ═════════════════════════════════════════════════════════════ */
+
+function updateStats(orders) {
+  if (!orders || orders.length === 0) {
+    document.getElementById("statTotal").textContent = "0";
+    document.getElementById("statPending").textContent = "0";
+    document.getElementById("statDelivered").textContent = "0";
+    document.getElementById("statRevenue").textContent = "₱0";
+    return;
+  }
+
+  // Calculate stats
+  const total = orders.length;
+
+  const pending = orders.filter(
+    (order) =>
+      order.order_status === "pending" ||
+      order.order_status === "processing" ||
+      order.order_status === "packed" ||
+      order.order_status === "shipped",
+  ).length;
+
+  const delivered = orders.filter(
+    (order) => order.order_status === "delivered",
+  ).length;
+
+  // Calculate revenue (sum of total_amount for delivered or paid orders)
+  let revenue = 0;
+  orders.forEach((order) => {
+    // Only count revenue for delivered orders or paid orders
+    if (order.order_status === "delivered" || order.payment_status === "paid") {
+      revenue += parseFloat(order.total_amount) || 0;
+    }
+  });
+
+  // Update DOM
+  document.getElementById("statTotal").textContent = total;
+  document.getElementById("statPending").textContent = pending;
+  document.getElementById("statDelivered").textContent = delivered;
+  document.getElementById("statRevenue").textContent =
+    `₱${Math.round(revenue).toLocaleString()}`;
 }
 
 /* ═════════════════════════════════════════════════════════════ */

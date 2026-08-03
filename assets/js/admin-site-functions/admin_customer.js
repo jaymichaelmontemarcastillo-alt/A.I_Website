@@ -32,7 +32,6 @@
       btnExport: document.getElementById("btnExport"),
     };
 
-    // Check for required elements
     const required = [
       "tbody",
       "searchInput",
@@ -118,10 +117,18 @@
       indicator.innerHTML = `<i class="fa-solid fa-search"></i> No customers found for "${escapeHtml(state.search)}"`;
       indicator.style.background = "#fee2e2";
       indicator.style.color = "#dc2626";
+      if (document.documentElement.getAttribute("data-theme") === "dark") {
+        indicator.style.background = "#3d1a1a";
+        indicator.style.color = "#f87171";
+      }
     } else {
       indicator.innerHTML = `<i class="fa-solid fa-search"></i> Found ${count} customer${count !== 1 ? "s" : ""} for "${escapeHtml(state.search)}"`;
       indicator.style.background = "#dbeafe";
       indicator.style.color = "#1a56db";
+      if (document.documentElement.getAttribute("data-theme") === "dark") {
+        indicator.style.background = "#1a2a4d";
+        indicator.style.color = "#60a5fa";
+      }
     }
     indicator.style.display = "flex";
   }
@@ -154,7 +161,6 @@
       state.page,
     );
 
-    // Show loading state
     if (dom.tbody) {
       dom.tbody.innerHTML = `
         <tr class="loading-row">
@@ -201,12 +207,10 @@
         throw new Error(data.error || "API returned success: false");
       }
 
-      // Update stats ONLY when not searching
       if (data.stats && (!state.search || state.search === "")) {
         updateStats(data.stats);
       }
 
-      // Render customers
       if (data.customers && Array.isArray(data.customers)) {
         console.log(`Rendering ${data.customers.length} customers`);
         renderTable(data.customers);
@@ -216,12 +220,10 @@
         renderTable([]);
       }
 
-      // Update pagination
       if (data.pagination) {
         renderPagination(data.pagination);
       }
 
-      // Show/hide search results info
       if (state.search && state.search !== "") {
         showSearchResultsCount(
           data.results_count || data.customers?.length || 0,
@@ -238,7 +240,7 @@
               <div style="font-size:24px;margin-bottom:12px">❌</div>
               <strong>Failed to load customers</strong><br>
               <small>${escapeHtml(error.message)}</small><br><br>
-              <button onclick="location.reload()" style="padding:8px 16px;cursor:pointer;background:#1a56db;color:white;border:none;border-radius:4px">
+              <button onclick="location.reload()" style="padding:8px 16px;cursor:pointer;background:#1a56db;color:white;border:none;border-radius:4px;font-family:Inter,sans-serif">
                 Retry
               </button>
             </td>
@@ -276,7 +278,7 @@
     if (!customers || customers.length === 0) {
       dom.tbody.innerHTML = `
         <tr>
-          <td colspan="7" style="text-align:center;padding:40px;color:#64748b">
+          <td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary)">
             <div style="font-size:32px;margin-bottom:8px">👥</div>
             <strong>No customers found</strong>
             ${state.search ? "<br><small>Try adjusting your search criteria</small>" : ""}
@@ -297,13 +299,13 @@
         <tr>
           <td>
             <div class="customer-cell">
-              <div class="avatar">${escapeHtml(getInitials(c.name))}</div>
+       
               <span>${escapeHtml(c.name || "Unknown")}</span>
             </div>
           </td>
-          <td>${escapeHtml(email || "—")}</td>
+          <td title="${escapeHtml(email)}">${escapeHtml(email || "—")}</td>
           <td>${escapeHtml(phone || "—")}</td>
-          <td><strong>${c.total_orders || 0}</strong></td>
+          <td style="text-align:center;"><strong>${c.total_orders || 0}</strong></td>
           <td title="${escapeHtml(c.address)}" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
             ${escapeHtml(c.address || "—")}
           </td>
@@ -319,7 +321,6 @@
 
     dom.tbody.innerHTML = html;
 
-    // Attach click handlers for view buttons
     dom.tbody.querySelectorAll(".view-customer").forEach((btn) => {
       btn.addEventListener("click", function (e) {
         e.stopPropagation();
@@ -377,11 +378,9 @@
       return;
     }
 
-    // Show overlay
     dom.modalOverlay.classList.add("open");
     document.body.classList.add("customer-order-modal-open");
 
-    // Show loading, hide body
     if (dom.modalLoading) {
       dom.modalLoading.style.display = "block";
       dom.modalLoading.innerHTML = `
@@ -393,7 +392,6 @@
     }
     if (dom.modalBody) dom.modalBody.style.display = "none";
 
-    // Build params
     const params = new URLSearchParams();
     if (email && email !== "—") params.set("email", email);
     if (phone && phone !== "—") params.set("phone", phone);
@@ -434,7 +432,7 @@
           dom.modalLoading.innerHTML = `
             <div class="customer-order-modal-loading">
               <p style="color:#dc2626"><i class="fa-solid fa-circle-exclamation"></i> ${escapeHtml(error.message)}</p>
-              <button onclick="location.reload()" style="margin-top:12px;padding:6px 16px;cursor:pointer;background:#1a56db;color:white;border:none;border-radius:4px">Retry</button>
+              <button onclick="location.reload()" style="margin-top:12px;padding:6px 16px;cursor:pointer;background:#1a56db;color:white;border:none;border-radius:4px;font-family:Inter,sans-serif">Retry</button>
             </div>
           `;
         }
@@ -445,20 +443,18 @@
   function populateModal(data) {
     const { info, quotations, summary } = data;
 
-    // Set profile info
+    // Right Column - Profile Info
     const nameEl = document.getElementById("modalCustomerName");
     const emailEl = document.getElementById("modalCustomerEmail");
     const phoneEl = document.getElementById("modalCustomerPhone");
     const addressEl = document.getElementById("modalCustomerAddress");
-    const avatarEl = document.getElementById("modalAvatar");
 
     if (nameEl) nameEl.textContent = info.name || "Unknown";
     if (emailEl) emailEl.textContent = info.email || "—";
     if (phoneEl) phoneEl.textContent = info.phone || "—";
     if (addressEl) addressEl.textContent = info.address || "—";
-    if (avatarEl) avatarEl.textContent = getInitials(info.name);
 
-    // Set summary tiles
+    // Right Column - Summary Tiles
     const quotesEl = document.getElementById("mTileQuotes");
     const totalEl = document.getElementById("mTileTotal");
     const convertedEl = document.getElementById("mTileConverted");
@@ -470,7 +466,7 @@
     if (lastQuoteEl)
       lastQuoteEl.textContent = formatDate(summary.last_quote_date);
 
-    // Render quotations list
+    // Left Column - Quotations List
     const quotesList = document.getElementById("quotesList");
     const quotesEmpty = document.getElementById("quotesEmpty");
 
@@ -490,7 +486,7 @@
                 <span class="customer-order-modal-card-amount">${formatCurrency(q.total)}</span>
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                   <span class="status-badge ${escapeHtml(q.status)}">${escapeHtml(q.status || "draft")}</span>
-                  ${q.expires_at ? `<span style="font-size:11px;color:#64748b">Expires ${formatDate(q.expires_at)}</span>` : ""}
+                  ${q.expires_at ? `<span style="font-size:11px;color:var(--text-secondary)">Expires ${formatDate(q.expires_at)}</span>` : ""}
                 </div>
               </div>
             </div>
@@ -515,7 +511,6 @@
     }
     document.body.classList.remove("customer-order-modal-open");
 
-    // Reset modal state for next open
     if (dom.modalLoading) {
       dom.modalLoading.style.display = "block";
       dom.modalLoading.innerHTML = `
@@ -529,24 +524,20 @@
   }
 
   function attachEventListeners() {
-    // Modal close
     if (dom.modalClose) {
       dom.modalClose.addEventListener("click", closeModal);
     }
 
-    // Click outside modal to close
     if (dom.modalOverlay) {
       dom.modalOverlay.addEventListener("click", (e) => {
         if (e.target === dom.modalOverlay) closeModal();
       });
     }
 
-    // Escape key to close
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") closeModal();
     });
 
-    // Search with debounce
     let searchTimer;
     if (dom.searchInput) {
       dom.searchInput.addEventListener("input", () => {
@@ -561,7 +552,6 @@
       });
     }
 
-    // Clear search
     if (dom.searchClear) {
       dom.searchClear.addEventListener("click", () => {
         if (dom.searchInput) {
@@ -575,7 +565,6 @@
       });
     }
 
-    // Filter pills
     if (dom.filterPills) {
       dom.filterPills.forEach((pill) => {
         pill.addEventListener("click", () => {
@@ -595,7 +584,6 @@
       });
     }
 
-    // Stat cards
     if (dom.statCards) {
       dom.statCards.forEach((card) => {
         card.addEventListener("click", () => {
@@ -619,7 +607,6 @@
       });
     }
 
-    // CSV Export
     if (dom.btnExport) {
       dom.btnExport.addEventListener("click", exportToCSV);
     }
@@ -706,14 +693,12 @@
     fetchCustomers();
   }
 
-  // Start the app
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
     init();
   }
 
-  // Export for debugging
   window.customerApp = {
     fetchCustomers,
     openModal,

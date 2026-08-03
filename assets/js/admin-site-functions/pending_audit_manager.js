@@ -50,6 +50,7 @@ class PendingAuditManager {
     }
   }
 
+  // Replace the showPendingAuditModalImmediately method
   async showPendingAuditModalImmediately(highlightId, highlightNumber) {
     // Create modal DOM elements immediately
     this.createModal();
@@ -58,12 +59,10 @@ class PendingAuditManager {
     const modal = document.getElementById("pendingAuditModal");
     if (modal) {
       modal.style.display = "flex";
+      // Save scroll position
+      document.body.dataset.scrollY = window.scrollY;
+      // Lock scroll with overflow only (position fixed can cause issues)
       document.body.style.overflow = "hidden";
-
-      // Prevent page scroll - lock body position
-      document.body.style.position = "fixed";
-      document.body.style.top = `-${window.scrollY}px`;
-      document.body.style.width = "100%";
     }
 
     // Load data in background
@@ -89,7 +88,6 @@ class PendingAuditManager {
         (q) => q.id == highlightId,
       );
       if (selectedQuotation) {
-        // Auto-select immediately without delay
         setTimeout(() => {
           this.selectQuotation(highlightId);
         }, 100);
@@ -516,9 +514,11 @@ class PendingAuditManager {
       matShowToast("Loading audit form...", "info");
     }
 
-    // Check if we can open audit modal
-    if (typeof window.matOpenAuditModal === "function") {
-      // Store the quotation ID for reference in the audit submission
+    // Check if audit modal exists on this page
+    const auditModal = document.getElementById("auditModal");
+
+    if (auditModal && typeof window.matOpenAuditModal === "function") {
+      // Store the quotation ID for reference
       window.currentAuditQuotationId = quotationId;
 
       // Get quotation details for pre-filling
@@ -531,6 +531,7 @@ class PendingAuditManager {
         if (result.success) {
           window.currentAuditQuotationNumber =
             result.data.quotation.quote_number;
+          window.currentAuditQuotationData = result.data;
         }
       } catch (err) {
         console.error("Error fetching quotation details:", err);
@@ -541,19 +542,11 @@ class PendingAuditManager {
 
       // Pre-fill with quotation info after modal opens
       setTimeout(() => {
-        const auditModal = document.getElementById("auditModal");
-        if (auditModal && auditModal.style.display === "flex") {
-          const itemNameInput = document.getElementById("auditItemName");
-          if (
-            itemNameInput &&
-            !itemNameInput.value &&
-            window.currentAuditQuotationNumber
-          ) {
-            itemNameInput.value = `Audit for ${window.currentAuditQuotationNumber}`;
-          }
-          const createdByInput = document.getElementById("createdBy");
-          if (createdByInput && !createdByInput.value) {
-            createdByInput.value = "Quotation System";
+        const auditModalEl = document.getElementById("auditModal");
+        if (auditModalEl && auditModalEl.style.display === "flex") {
+          // Pre-fill audit form with quotation data
+          if (window.currentAuditQuotationData) {
+            prefillAuditWithQuotationData(window.currentAuditQuotationData);
           }
         }
       }, 500);
@@ -565,16 +558,21 @@ class PendingAuditManager {
         );
       }
     } else {
-      // Fallback: show notification
+      // Audit modal doesn't exist on this page - redirect to Inventory
       if (typeof matShowToast === "function") {
-        matShowToast(
-          "Audit module not available. Please create audit manually from Inventory page.",
-          "error",
-        );
+        matShowToast("Redirecting to Inventory page for audit...", "info");
       }
+
+      // Store for redirect
+      sessionStorage.setItem("pending_audit_quotation_id", quotationId);
+      sessionStorage.setItem("pending_audit_timestamp", Date.now());
+
+      // Redirect to Inventory page
+      setTimeout(() => {
+        window.location.href = "../inventory/inventory.php";
+      }, 500);
     }
   }
-
   // Legacy method - kept for compatibility but no longer redirects
   async openAuditModalWithQuotation(quotationId, quoteNumber) {
     // This now calls the direct method
@@ -690,19 +688,25 @@ class PendingAuditManager {
     container.appendChild(row);
   }
 
+  // Replace the closeModal method in pending_audit_manager.js
   closeModal() {
     const modal = document.getElementById("pendingAuditModal");
     if (modal) {
       modal.style.display = "none";
-      // Restore body scroll
+      // Restore body scroll - clear ALL styles that might affect scrolling
       document.body.style.overflow = "";
       document.body.style.position = "";
       document.body.style.top = "";
       document.body.style.width = "";
+      document.body.style.height = "";
+      // If scroll position was saved, restore it
+      if (document.body.dataset.scrollY) {
+        window.scrollTo(0, parseInt(document.body.dataset.scrollY) || 0);
+        delete document.body.dataset.scrollY;
+      }
     }
     this.currentQuotationId = null;
   }
-
   escapeHtml(str) {
     if (!str) return "";
     return String(str)

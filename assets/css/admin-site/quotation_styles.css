@@ -1,6 +1,36 @@
-/* ============================================================
-   QUOTATION PAGE - GENERAL STYLES
-   ============================================================ */
+/* ============================================================ */
+/* QUOTATION PAGE - GENERAL STYLES */
+/* ============================================================ */
+
+:root {
+  --primary-blue: #0f3d5e;
+  --primary-accent: #3b82f6;
+  --primary-light: #60a5fa;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-tertiary: #f1f5f9;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --text-muted: #94a3b8;
+  --border: #e2e8f0;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --radius: 8px;
+  --radius-lg: 12px;
+}
+
+/* ============================================================ */
+/* DARK MODE */
+/* ============================================================ */
+body.dark-mode {
+  --bg-primary: #1e293b;
+  --bg-secondary: #0f172a;
+  --bg-tertiary: #1a2332;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --border: #334155;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
 
 /* Page Header & Layout */
 .quotations-page-header {
@@ -13,7 +43,7 @@
 .page-title {
   font-size: 28px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -31,6 +61,10 @@
   align-items: center;
   gap: 8px;
   transition: all 0.2s;
+}
+
+body.dark-mode .btn-create-quotation {
+  background: linear-gradient(135deg, #1e3a5f, #1e293b);
 }
 
 .btn-create-quotation:hover {
@@ -52,15 +86,15 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 0 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow);
 }
 
 .search-bar i {
-  color: #94a3b8;
+  color: var(--text-muted);
   margin-right: 8px;
 }
 
@@ -71,10 +105,11 @@
   padding: 10px 8px;
   font-size: 14px;
   background: transparent;
+  color: var(--text-primary);
 }
 
 .search-bar input::placeholder {
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 .filter-group {
@@ -86,31 +121,32 @@
 .filter-group label {
   font-size: 14px;
   font-weight: 500;
-  color: #475569;
+  color: var(--text-secondary);
 }
 
 .filter-group select {
   padding: 10px 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 14px;
-  background: #fff;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .filter-group select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px #dbeafe;
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 /* Table Wrapper */
 .quotations-table-wrapper {
-  background: #fff;
+  background: var(--bg-primary);
   border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  border: 1px solid #e2e8f0;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
   overflow: hidden;
 }
 
@@ -120,8 +156,8 @@
 }
 
 .quotations-table thead {
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  border-bottom: 2px solid #e2e8f0;
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--border);
 }
 
 .quotations-table th {
@@ -129,36 +165,36 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .quotations-table tbody tr {
-  border-bottom: 1px solid #f0f4f8;
+  border-bottom: 1px solid var(--border);
   transition: all 0.2s;
 }
 
 .quotations-table tbody tr:hover {
-  background-color: #f8fafc;
+  background-color: var(--bg-tertiary);
 }
 
 .quotations-table td {
   padding: 14px 12px;
   font-size: 14px;
-  color: #475569;
+  color: var(--text-secondary);
   vertical-align: middle;
 }
 
 /* Table Content Styling */
 .quotations-table td strong {
-  color: #0f172a;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
 .text-center {
   text-align: center;
-  color: #94a3b8;
+  color: var(--text-muted);
 }
 
 /* Action Buttons */
@@ -187,9 +223,18 @@
   color: #2563eb;
 }
 
+body.dark-mode .btn-edit {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
 .btn-edit:hover {
   background: #bfdbfe;
   transform: translateY(-1px);
+}
+
+body.dark-mode .btn-edit:hover {
+  background: rgba(59, 130, 246, 0.3);
 }
 
 .btn-pdf {
@@ -197,9 +242,18 @@
   color: #dc2626;
 }
 
+body.dark-mode .btn-pdf {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
 .btn-pdf:hover {
   background: #fecaca;
   transform: translateY(-1px);
+}
+
+body.dark-mode .btn-pdf:hover {
+  background: rgba(239, 68, 68, 0.3);
 }
 
 .btn-delete {
@@ -207,17 +261,27 @@
   color: #d97706;
 }
 
+body.dark-mode .btn-delete {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
 .btn-delete:hover {
   background: #fcd34d;
   transform: translateY(-1px);
+}
+
+body.dark-mode .btn-delete:hover {
+  background: rgba(251, 191, 36, 0.3);
 }
 
 /* Status Select */
 .status-select {
   padding: 4px 8px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
@@ -225,8 +289,8 @@
 
 .status-select:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 2px #dbeafe;
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
 /* Pagination */
@@ -235,13 +299,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px;
-  border-top: 1px solid #f0f4f8;
-  background: #f8fafc;
+  border-top: 1px solid var(--border);
+  background: var(--bg-tertiary);
 }
 
 .pagination-info {
   font-size: 14px;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .pagination-controls {
@@ -251,10 +315,11 @@
 
 .pagination-btn {
   padding: 8px 16px;
-  background: #fff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 13px;
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -263,9 +328,14 @@
 }
 
 .pagination-btn:hover:not(:disabled) {
-  background: #3b82f6;
+  background: var(--primary-accent);
   color: #fff;
-  border-color: #3b82f6;
+  border-color: var(--primary-accent);
+}
+
+body.dark-mode .pagination-btn:hover:not(:disabled) {
+  background: var(--primary-accent);
+  color: #fff;
 }
 
 .pagination-btn:disabled {

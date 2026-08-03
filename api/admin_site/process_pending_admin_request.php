@@ -3,6 +3,8 @@ session_start();
 header('Content-Type: application/json');
 
 require_once '../../connect/config.php';
+require_once '../../api/admin_site/activity_logger.php';
+
 $pdo = getDBConnection();
 
 /*
@@ -17,6 +19,12 @@ if (!isset($_SESSION['admin_id'])) {
     ]);
     exit;
 }
+
+// Get current admin's details for logging
+$stmt = $pdo->prepare("SELECT FullName FROM admins WHERE AdminID = ?");
+$stmt->execute([$_SESSION['admin_id']]);
+$currentAdmin = $stmt->fetch(PDO::FETCH_ASSOC);
+$currentAdminName = $currentAdmin ? $currentAdmin['FullName'] : 'Unknown';
 
 /*
 |--------------------------------------------------
@@ -86,7 +94,7 @@ try {
     |--------------------------------------------------
     */
     $stmt = $pdo->prepare("
-        SELECT username, email, password
+        SELECT request_id, username, email, password, submitted_at
         FROM pending_admins
         WHERE request_id = ?
         LIMIT 1
@@ -116,6 +124,18 @@ try {
 
         if ($stmt->fetch()) {
             $pdo->rollBack();
+            
+            // ❌ LOG FAILED ACTIVITY - Duplicate email
+            logActivity(
+                $pdo,
+                $_SESSION['admin_id'],
+                $currentAdminName,
+                "Failed to accept pending admin request for '{$pending['username']}' (Email: {$pending['email']}) - Email already exists as admin",
+                $requestId,
+                "Pending Admin Management",
+                "Failed"
+            );
+            
             echo json_encode([
                 'status' => 'error',
                 'message' => 'Email already exists as admin.'
@@ -134,6 +154,41 @@ try {
             $pending['email'],
             $pending['password']
         ]);
+        
+        // Format submission date for log
+        $submittedDate = date('Y-m-d h:i:s A', strtotime($pending['submitted_at']));
+        
+        // ✅ LOG SUCCESS - Accepted
+        logActivity(
+            $pdo,
+            $_SESSION['admin_id'],
+            $currentAdminName,
+            "Accepted pending admin request for '{$pending['username']}' (Email: {$pending['email']}, Submitted: {$submittedDate})",
+            $requestId,
+            "Pending Admin Management",
+            "Success"
+        );
+    }
+
+    /*
+    |--------------------------------------------------
+    | REJECT REQUEST
+    |--------------------------------------------------
+    */
+    if ($action === 'reject') {
+        // Format submission date for log
+        $submittedDate = date('Y-m-d h:i:s A', strtotime($pending['submitted_at']));
+        
+        // ✅ LOG SUCCESS - Rejected
+        logActivity(
+            $pdo,
+            $_SESSION['admin_id'],
+            $currentAdminName,
+            "Rejected pending admin request for '{$pending['username']}' (Email: {$pending['email']}, Submitted: {$submittedDate})",
+            $requestId,
+            "Pending Admin Management",
+            "Success"
+        );
     }
 
     /*
@@ -152,11 +207,23 @@ try {
             ? 'Admin approved successfully.'
             : 'Admin request rejected.'
     ]);
+    
 } catch (PDOException $e) {
 
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    
+    // ❌ LOG FAILED ACTIVITY - Database error
+    logActivity(
+        $pdo,
+        $_SESSION['admin_id'],
+        $currentAdminName,
+        "Pending admin request processing failed: " . $e->getMessage(),
+        $requestId,
+        "Pending Admin Management",
+        "Failed"
+    );
 
     echo json_encode([
         'status' => 'error',

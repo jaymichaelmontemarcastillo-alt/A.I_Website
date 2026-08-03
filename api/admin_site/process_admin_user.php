@@ -2,6 +2,7 @@
 session_start();
 header('Content-Type: application/json');
 require_once '../../connect/config.php';
+require_once '../../api/admin_site/activity_logger.php';
 
 $pdo = getDBConnection();
 
@@ -17,6 +18,12 @@ if (!isset($_SESSION['admin_id'])) {
     ]);
     exit;
 }
+
+// Get current admin's details for logging
+$stmt = $pdo->prepare("SELECT FullName FROM admins WHERE AdminID = ?");
+$stmt->execute([$_SESSION['admin_id']]);
+$currentAdmin = $stmt->fetch(PDO::FETCH_ASSOC);
+$currentAdminName = $currentAdmin ? $currentAdmin['FullName'] : 'Unknown';
 
 /*
 |--------------------------------------------------------------------------
@@ -92,6 +99,12 @@ if ($adminId === (int) $_SESSION['admin_id']) {
     exit;
 }
 
+// Get target admin details for logging
+$stmt = $pdo->prepare("SELECT FullName, Role, AccountStatus FROM admins WHERE AdminID = ?");
+$stmt->execute([$adminId]);
+$targetAdmin = $stmt->fetch(PDO::FETCH_ASSOC);
+$targetAdminName = $targetAdmin ? $targetAdmin['FullName'] : 'Unknown User';
+
 try {
 
     /*
@@ -112,8 +125,21 @@ try {
             exit;
         }
 
+        $oldRole = $targetAdmin['Role'] ?? 'Unknown';
+        
         $stmt = $pdo->prepare("UPDATE admins SET Role = ? WHERE AdminID = ?");
         $stmt->execute([$role, $adminId]);
+
+        // ✅ LOG ACTIVITY
+        logActivity(
+            $pdo,
+            $_SESSION['admin_id'],
+            $currentAdminName,
+            "Changed role of '{$targetAdminName}' from '{$oldRole}' to '{$role}'",
+            $adminId,
+            "User Management",
+            "Success"
+        );
 
         echo json_encode(['status' => 'success', 'message' => 'Role updated']);
         exit;
@@ -137,8 +163,21 @@ try {
             exit;
         }
 
+        $oldStatus = $targetAdmin['AccountStatus'] ?? 'Unknown';
+        
         $stmt = $pdo->prepare("UPDATE admins SET AccountStatus = ? WHERE AdminID = ?");
         $stmt->execute([$status, $adminId]);
+
+        // ✅ LOG ACTIVITY
+        logActivity(
+            $pdo,
+            $_SESSION['admin_id'],
+            $currentAdminName,
+            "Changed status of '{$targetAdminName}' from '{$oldStatus}' to '{$status}'",
+            $adminId,
+            "User Management",
+            "Success"
+        );
 
         echo json_encode(['status' => 'success', 'message' => 'Status updated']);
         exit;
@@ -154,6 +193,17 @@ try {
         $stmt = $pdo->prepare("DELETE FROM admins WHERE AdminID = ?");
         $stmt->execute([$adminId]);
 
+        // ✅ LOG ACTIVITY
+        logActivity(
+            $pdo,
+            $_SESSION['admin_id'],
+            $currentAdminName,
+            "Deleted user: '{$targetAdminName}' (ID: {$adminId})",
+            $adminId,
+            "User Management",
+            "Success"
+        );
+
         echo json_encode(['status' => 'success', 'message' => 'User deleted']);
         exit;
     }
@@ -161,6 +211,18 @@ try {
     // Should be unreachable due to the allow-list check above, kept as a safety net
     echo json_encode(['status' => 'error', 'message' => 'Unknown action']);
 } catch (PDOException $e) {
+    
+    // ❌ LOG FAILED ACTIVITY
+    logActivity(
+        $pdo,
+        $_SESSION['admin_id'],
+        $currentAdminName,
+        "User management action failed ({$action}): " . $e->getMessage(),
+        $adminId,
+        "User Management",
+        "Failed"
+    );
+    
     echo json_encode([
         'status' => 'error',
         'message' => $e->getMessage()

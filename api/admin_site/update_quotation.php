@@ -18,6 +18,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 require_once '../../connect/config.php';
+require_once '../../api/admin_site/activity_logger.php';
+
+// Start session for admin authentication
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 try {
     $conn = getDBConnection();
@@ -57,6 +63,21 @@ try {
         http_response_code(400);
         exit(json_encode(['success' => false, 'message' => 'At least one item is required.']));
     }
+
+    // Get admin details for logging
+    $adminId = $_SESSION['admin_id'] ?? null;
+    $adminName = 'Unknown';
+    if ($adminId) {
+        $stmt = $conn->prepare("SELECT FullName FROM admins WHERE AdminID = ?");
+        $stmt->execute([$adminId]);
+        $admin = $stmt->fetch(PDO::FETCH_ASSOC);
+        $adminName = $admin ? $admin['FullName'] : 'Unknown';
+    }
+
+    // Get old quotation data for logging
+    $oldStmt = $conn->prepare("SELECT client_name, contact_person, email, phone, address, subtotal, tax, discount, total FROM quotations WHERE id = ?");
+    $oldStmt->execute([$id]);
+    $oldQuotation = $oldStmt->fetch(PDO::FETCH_ASSOC);
 
     // Build & validate items
     $subtotal   = 0.0;
@@ -146,6 +167,51 @@ try {
 
         $conn->commit();
 
+        // ✅ LOG ACTIVITY - Success
+        $changes = [];
+        if ($oldQuotation) {
+            if ($oldQuotation['client_name'] !== $client_name) {
+                $changes[] = "client name: '{$oldQuotation['client_name']}' → '{$client_name}'";
+            }
+            if ($oldQuotation['contact_person'] !== $contact_person) {
+                $changes[] = "contact person: '{$oldQuotation['contact_person']}' → '{$contact_person}'";
+            }
+            if ($oldQuotation['email'] !== $email) {
+                $changes[] = "email: '{$oldQuotation['email']}' → '{$email}'";
+            }
+            if ($oldQuotation['phone'] !== $phone) {
+                $changes[] = "phone: '{$oldQuotation['phone']}' → '{$phone}'";
+            }
+            if ((float)$oldQuotation['subtotal'] !== $subtotal) {
+                $changes[] = "subtotal: ₱" . number_format($oldQuotation['subtotal'], 2) . " → ₱" . number_format($subtotal, 2);
+            }
+            if ((float)$oldQuotation['tax'] !== $tax) {
+                $changes[] = "tax: " . $oldQuotation['tax'] . "% → " . $tax . "%";
+            }
+            if ((float)$oldQuotation['discount'] !== $discount) {
+                $changes[] = "discount: ₱" . number_format($oldQuotation['discount'], 2) . " → ₱" . number_format($discount, 2);
+            }
+            if ((float)$oldQuotation['total'] !== $grandTotal) {
+                $changes[] = "total: ₱" . number_format($oldQuotation['total'], 2) . " → ₱" . number_format($grandTotal, 2);
+            }
+        }
+        
+        $actionDetails = "Updated quotation (ID: {$id}) for client '{$client_name}'";
+        if (!empty($changes)) {
+            $actionDetails .= " - Changes: " . implode(", ", $changes);
+        }
+        $actionDetails .= " - Items: " . count($cleanItems) . " item(s)";
+        
+        logActivity(
+            $conn,
+            $adminId,
+            $adminName,
+            $actionDetails,
+            $id,
+            "Quotation Management",
+            "Success"
+        );
+
         echo json_encode([
             'success' => true,
             'message' => 'Quotation updated successfully.',
@@ -158,6 +224,19 @@ try {
 } catch (Throwable $e) {
     if (isset($conn) && $conn->inTransaction()) {
         $conn->rollBack();
+    }
+
+    // ❌ LOG FAILED ACTIVITY
+    if (isset($adminId) && isset($adminName) && isset($conn)) {
+        logActivity(
+            $conn,
+            $adminId,
+            $adminName,
+            "Failed to update quotation (ID: {$id}): " . $e->getMessage(),
+            $id ?? null,
+            "Quotation Management",
+            "Failed"
+        );
     }
 
     error_log('update_quotation.php error: ' . $e->getMessage());

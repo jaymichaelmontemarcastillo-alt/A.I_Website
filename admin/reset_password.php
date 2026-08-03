@@ -14,7 +14,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <link rel="stylesheet" href="../assets/css/admin-site/admin_style.css">
-
     <style>
         .password-requirements {
             display: none;
@@ -143,8 +142,24 @@
                 transform: rotate(360deg);
             }
         }
-    </style>
 
+        /* Override button styles for warm yellow */
+        .sign-in-btn {
+            background: #d4a02b !important;
+            color: #1a2a3a !important;
+            box-shadow: 0 4px 14px rgba(212, 160, 43, 0.3) !important;
+        }
+
+        .sign-in-btn:hover {
+            background: #b88a24 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(212, 160, 43, 0.4) !important;
+        }
+
+        .sign-in-btn:active {
+            transform: scale(0.97) !important;
+        }
+    </style>
 </head>
 
 <body>

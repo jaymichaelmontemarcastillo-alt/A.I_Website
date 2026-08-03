@@ -26,6 +26,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const addBtn = $("#addBtn");
   const exportBtn = $("#exportBtn");
   const importBtn = $("#importBtn");
+  const deleteAllBtn = $("#deleteAllBtn");
 
   // Product Modal
   const productModal = $("#productModal");
@@ -66,6 +67,21 @@ document.addEventListener("DOMContentLoaded", function () {
   const progressFill = $("#progressFill");
   const progressStatus = $("#progressStatus");
   const importResult = $("#importResult");
+
+  // Import Error Modal
+  const importErrorModal = $("#importErrorModal");
+  const importErrorTitle = $("#importErrorTitle");
+  const importErrorMessage = $("#importErrorMessage");
+  const importErrorCloseBtn = $("#importErrorCloseBtn");
+  const importErrorCancelBtn = $("#importErrorCancelBtn");
+  const importErrorRetryBtn = $("#importErrorRetryBtn");
+
+  const deleteAllModal = $("#deleteAllModal");
+  const deleteAllCloseBtn = $("#deleteAllCloseBtn");
+  const deleteAllCancelBtn = $("#deleteAllCancelBtn");
+  const deleteAllConfirmBtn = $("#deleteAllConfirmBtn");
+  const deleteAllPassword = $("#deleteAllPassword");
+  const deleteAllFeedback = $("#deleteAllFeedback");
 
   // ==========================================
   // STATE
@@ -227,7 +243,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const status = p.stock_status || "in_stock";
       html += `
                 <tr data-id="${p.id}">
-                    <td><strong>${escape(p.name)}</strong></td>
+                    <td><p>${escape(p.name)}</p></td>
                     <td><span class="badge-type">${escape(p.product_type_name || "N/A")}</span></td>
                     <td class="tbl-price">₱${parseFloat(p.price).toFixed(2)}</td>
                     <td class="tbl-stock">${p.stock || 0}</td>
@@ -235,10 +251,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     <td>
                         <div class="tbl-actions">
                             <button class="btn-action edit" data-id="${p.id}">
-                                <i class="fa-solid fa-pen"></i> Edit
+                                <i class="fa-solid fa-pen"></i>
                             </button>
                             <button class="btn-action delete" data-id="${p.id}">
-                                <i class="fa-solid fa-trash"></i> Delete
+                                <i class="fa-solid fa-trash"></i> 
                             </button>
                         </div>
                     </td>
@@ -669,26 +685,59 @@ document.addEventListener("DOMContentLoaded", function () {
   // EXPORT
   // ==========================================
   function exportProducts() {
+    if (!exportBtn) return;
+
     exportBtn.disabled = true;
     exportBtn.innerHTML =
       '<i class="fa-solid fa-spinner fa-spin"></i> Exporting...';
 
-    const iframe = document.createElement("iframe");
-    iframe.style.display = "none";
-    iframe.src = `${API}/export_products.php`;
-    document.body.appendChild(iframe);
+    const downloadUrl = `${API}/export_products.php?ts=${Date.now()}`;
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.rel = "noopener";
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 
     setTimeout(() => {
       exportBtn.disabled = false;
       exportBtn.innerHTML = '<i class="fa-solid fa-file-export"></i> Export';
-      document.body.removeChild(iframe);
       toast("Export started! Download should begin shortly.", "success");
-    }, 3000);
+    }, 1200);
   }
 
   // ==========================================
   // IMPORT
   // ==========================================
+  function openImportErrorModal(errorType, message) {
+    const titleMap = {
+      column_mismatch:
+        '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> File Doesn\'t Match Expected Format',
+      invalid_type:
+        '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> File Doesn\'t Match Expected Format',
+      empty_file:
+        '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> File Doesn\'t Match Expected Format',
+    };
+    importErrorTitle.innerHTML =
+      titleMap[errorType] ||
+      '<i class="fa-solid fa-triangle-exclamation" style="color: var(--clr-danger);"></i> There Was a Problem';
+    importErrorMessage.textContent =
+      message || "Something went wrong during the import. Please try again.";
+    openModal(importErrorModal);
+  }
+
+  function closeImportErrorModal() {
+    closeModal(importErrorModal);
+  }
+
+  importErrorCloseBtn?.addEventListener("click", closeImportErrorModal);
+  importErrorCancelBtn?.addEventListener("click", closeImportErrorModal);
+  importErrorRetryBtn?.addEventListener("click", () => {
+    closeImportErrorModal();
+    openImportModal();
+  });
+
   function openImportModal() {
     importForm.reset();
     importProgress.style.display = "none";
@@ -787,13 +836,17 @@ document.addEventListener("DOMContentLoaded", function () {
               toast("Import completed successfully!", "success");
             }, 1500);
           } else {
-            progressStatus.textContent = "❌ " + data.message;
-            importResult.style.display = "block";
-            importResult.innerHTML = `
-                            <div class="import-result">
-                                <p class="error"><i class="fa-solid fa-circle-exclamation"></i> ${data.message}</p>
-                            </div>
-                        `;
+            // Backend returned a structured, user-friendly error.
+            // Log the technical detail for developers; show the friendly
+            // message to the user in a dedicated error modal.
+            console.error(
+              "❌ Import failed [" + (data.error_type || "general") + "]:",
+              data.technical_message || data.message,
+            );
+
+            closeImportModal();
+            openImportErrorModal(data.error_type, data.message);
+
             importSubmitBtn.disabled = false;
             importSubmitBtn.innerHTML =
               '<i class="fa-solid fa-upload"></i> Import Products';
@@ -802,17 +855,106 @@ document.addEventListener("DOMContentLoaded", function () {
       })
       .catch((err) => {
         clearInterval(interval);
-        console.error("❌ Import error:", err);
-        progressStatus.textContent = "❌ Network error during import";
-        importResult.style.display = "block";
-        importResult.innerHTML = `
-                    <div class="import-result">
-                        <p class="error"><i class="fa-solid fa-circle-exclamation"></i> Network error: ${err.message}</p>
-                    </div>
-                `;
+        console.error("❌ Import error (network or invalid response):", err);
+
+        closeImportModal();
+        openImportErrorModal(
+          "general",
+          "We couldn't complete the import due to a technical problem. Please check your connection and try again.",
+        );
+
         importSubmitBtn.disabled = false;
         importSubmitBtn.innerHTML =
           '<i class="fa-solid fa-upload"></i> Import Products';
+      });
+  }
+
+  // ==========================================
+  // DELETE ALL PRODUCTS
+  // ==========================================
+  function openDeleteAllModal() {
+    if (!deleteAllModal) return;
+    deleteAllPassword.value = "";
+    deleteAllFeedback.style.display = "none";
+    deleteAllFeedback.textContent = "";
+    deleteAllConfirmBtn.disabled = false;
+    deleteAllConfirmBtn.innerHTML =
+      '<i class="fa-solid fa-trash"></i> Delete All Products';
+    openModal(deleteAllModal);
+    deleteAllPassword.focus();
+  }
+
+  function closeDeleteAllModal() {
+    if (!deleteAllModal) return;
+    closeModal(deleteAllModal);
+    deleteAllPassword.value = "";
+    deleteAllFeedback.style.display = "none";
+    deleteAllFeedback.textContent = "";
+  }
+
+  function confirmDeleteAll() {
+    if (!deleteAllModal) return;
+
+    const password = deleteAllPassword.value.trim();
+    if (!password) {
+      deleteAllFeedback.style.display = "block";
+      deleteAllFeedback.className = "text-danger";
+      deleteAllFeedback.textContent = "Please enter your admin password.";
+      return;
+    }
+
+    deleteAllConfirmBtn.disabled = true;
+    deleteAllConfirmBtn.innerHTML =
+      '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+
+    fetch(`${API}/delete_all_products.php`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    })
+      .then((res) => res.text().then((text) => ({ res, text })))
+      .then(({ res, text }) => {
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          throw new Error(
+            `Server returned HTTP ${res.status} (non-JSON response)`,
+          );
+        }
+
+        if (data.success) {
+          deleteAllFeedback.style.display = "block";
+          deleteAllFeedback.className = "text-success";
+          deleteAllFeedback.textContent =
+            data.message || "All products deleted successfully.";
+          toast(
+            data.message || "All products deleted successfully.",
+            "success",
+          );
+          setTimeout(() => {
+            closeDeleteAllModal();
+            fetchProducts(1);
+          }, 800);
+        } else {
+          deleteAllFeedback.style.display = "block";
+          deleteAllFeedback.className = "text-danger";
+          deleteAllFeedback.textContent =
+            data.message || "Unable to delete all products.";
+          toast(data.message || "Unable to delete all products.", "error");
+        }
+      })
+      .catch((err) => {
+        deleteAllFeedback.style.display = "block";
+        deleteAllFeedback.className = "text-danger";
+        deleteAllFeedback.textContent =
+          "Unable to delete all products right now.";
+        toast("Network error deleting products: " + err.message, "error");
+      })
+      .finally(() => {
+        deleteAllConfirmBtn.disabled = false;
+        deleteAllConfirmBtn.innerHTML =
+          '<i class="fa-solid fa-trash"></i> Delete All Products';
       });
   }
 
@@ -1261,7 +1403,7 @@ document.addEventListener("DOMContentLoaded", function () {
           if (data.data.length === 0) {
             html += `
                             <tr>
-                                <td colspan="4" style="text-align:center;padding:40px;">
+                                <td colspan="4" style="text-align:center;padding:40px; border: solid red 1px;">
                                     <i class="fa-regular fa-tag" style="font-size:24px;color:#aaa;"></i>
                                     <p style="margin-top:8px;">No product types found</p>
                                 </td>
@@ -1372,6 +1514,9 @@ document.addEventListener("DOMContentLoaded", function () {
   stockFilter.addEventListener("change", () => fetchProducts(1));
 
   addBtn.addEventListener("click", openAddModal);
+  if (deleteAllBtn) {
+    deleteAllBtn.addEventListener("click", openDeleteAllModal);
+  }
 
   modalCloseBtn.addEventListener("click", closeProductModal);
   modalCancelBtn.addEventListener("click", closeProductModal);
@@ -1389,6 +1534,18 @@ document.addEventListener("DOMContentLoaded", function () {
   });
   deleteConfirmBtn.addEventListener("click", confirmDelete);
 
+  if (deleteAllCloseBtn)
+    deleteAllCloseBtn.addEventListener("click", closeDeleteAllModal);
+  if (deleteAllCancelBtn)
+    deleteAllCancelBtn.addEventListener("click", closeDeleteAllModal);
+  if (deleteAllModal) {
+    deleteAllModal.addEventListener("click", function (e) {
+      if (e.target === this) closeDeleteAllModal();
+    });
+  }
+  if (deleteAllConfirmBtn)
+    deleteAllConfirmBtn.addEventListener("click", confirmDeleteAll);
+
   importBtn.addEventListener("click", openImportModal);
   importCloseBtn.addEventListener("click", closeImportModal);
   importCancelBtn.addEventListener("click", closeImportModal);
@@ -1402,6 +1559,8 @@ document.addEventListener("DOMContentLoaded", function () {
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape") {
       if (deleteModal.classList.contains("show")) closeDeleteModal();
+      if (deleteAllModal && deleteAllModal.classList.contains("show"))
+        closeDeleteAllModal();
       if (productModal.classList.contains("show")) closeProductModal();
       if (importModal.classList.contains("show")) closeImportModal();
     }

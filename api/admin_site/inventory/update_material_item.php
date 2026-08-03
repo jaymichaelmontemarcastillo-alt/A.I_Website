@@ -43,6 +43,7 @@ try {
     $shopStock = (int) ($input['shop_stock'] ?? 0);
     $phStock = (int) ($input['ph_stock'] ?? 0);
     $unitCost = (float) ($input['unit_cost'] ?? 0);
+    $remarks = trim($input['remarks'] ?? '');
     $totalStock = $shopStock + $phStock;
     $totalCost = $totalStock * $unitCost;
 
@@ -72,7 +73,7 @@ try {
     }
 
     // Check if material exists
-    $checkStmt = $pdo->prepare('SELECT id, material_name, shop_stock, ph_stock, total_stock, unit_cost FROM materials WHERE id = ?');
+    $checkStmt = $pdo->prepare('SELECT id, material_name, shop_stock, ph_stock, total_stock, unit_cost, remarks FROM materials WHERE id = ?');
     $checkStmt->execute([$id]);
     $oldMaterial = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -90,7 +91,7 @@ try {
     // Update material item
     $stmt = $pdo->prepare('
         UPDATE materials 
-        SET material_name = ?, type = ?, shop_stock = ?, ph_stock = ?, total_stock = ?, total_cost = ?, unit_cost = ?, updated_at = NOW()
+        SET material_name = ?, type = ?, shop_stock = ?, ph_stock = ?, total_stock = ?, total_cost = ?, unit_cost = ?, remarks = ?, updated_at = NOW()
         WHERE id = ?
     ');
 
@@ -102,6 +103,7 @@ try {
         $totalStock,
         $totalCost,
         $unitCost,
+        $remarks,
         $id
     ]);
 
@@ -109,51 +111,71 @@ try {
         throw new Exception('Failed to update material item.');
     }
 
-    // Log the changes if stock changed (if materials_log table exists)
     $adminName = $_SESSION['admin_name'] ?? 'Admin';
+    $noteText = trim($remarks !== '' ? $remarks : (trim((string) ($oldMaterial['remarks'] ?? '')) !== '' ? (string) $oldMaterial['remarks'] : 'Material updated via edit modal'));
 
-    // Check if materials_log table exists
-    $tableCheck = $pdo->query("SHOW TABLES LIKE 'materials_log'");
-    $hasLogTable = $tableCheck->rowCount() > 0;
+    // Keep the materials_logs table as the main inventory log source.
+    try {
+        $logStmt = $pdo->prepare('
+            INSERT INTO materials_logs (
+                material_id, location, change_type, quantity, previous_stock, new_stock, admin_id, note, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ');
 
-    if ($hasLogTable) {
+        $changeType = 'adjust';
+        $quantity = 0;
         if ($oldMaterial['shop_stock'] != $shopStock) {
-            $logStmt = $pdo->prepare('
-                INSERT INTO materials_log (material_id, material_name, type, location, quantity_change, before_quantity, after_quantity, admin_name, note, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-            ');
-            $delta = $shopStock - $oldMaterial['shop_stock'];
+            $quantity = abs($shopStock - $oldMaterial['shop_stock']);
+            $changeType = ($shopStock > $oldMaterial['shop_stock']) ? 'add' : 'subtract';
             $logStmt->execute([
                 $id,
-                $materialName,
-                $delta > 0 ? 'add' : 'subtract',
                 'shop_stock',
-                abs($delta),
+                $changeType,
+                $quantity,
                 $oldMaterial['shop_stock'],
                 $shopStock,
-                $adminName,
-                'Stock updated via edit item'
+                $_SESSION['admin_id'],
+                $noteText,
             ]);
         }
 
         if ($oldMaterial['ph_stock'] != $phStock) {
-            $logStmt = $pdo->prepare('
-                INSERT INTO materials_log (material_id, material_name, type, location, quantity_change, before_quantity, after_quantity, admin_name, note, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
-            ');
-            $delta = $phStock - $oldMaterial['ph_stock'];
+            $quantity = abs($phStock - $oldMaterial['ph_stock']);
+            $changeType = ($phStock > $oldMaterial['ph_stock']) ? 'add' : 'subtract';
             $logStmt->execute([
                 $id,
-                $materialName,
-                $delta > 0 ? 'add' : 'subtract',
                 'ph_stock',
-                abs($delta),
+                $changeType,
+                $quantity,
                 $oldMaterial['ph_stock'],
                 $phStock,
-                $adminName,
-                'Stock updated via edit item'
+                $_SESSION['admin_id'],
+                $noteText,
             ]);
         }
+
+        if ($oldMaterial['shop_stock'] == $shopStock && $oldMaterial['ph_stock'] == $phStock) {
+            $logStmt->execute([
+                $id,
+                'total_stock',
+                'adjust',
+                0,
+                $oldMaterial['total_stock'],
+                $totalStock,
+                $_SESSION['admin_id'],
+                $noteText,
+            ]);
+        }
+    } catch (PDOException $logErr) {
+        error_log('material edit log insert failed: ' . $logErr->getMessage());
+    }
+
+    // Keep activity logs in sync for admin auditing.
+    try {
+        require_once __DIR__ . '/../../activity_logger.php';
+        logActivity($pdo, $_SESSION['admin_id'], $adminName, 'Updated material "' . $materialName . '"' . ($remarks !== '' ? ' — ' . $remarks : ''), $id, 'Inventory', 'Success');
+    } catch (Throwable $activityErr) {
+        error_log('activity log insert failed: ' . $activityErr->getMessage());
     }
 
     echo json_encode([
