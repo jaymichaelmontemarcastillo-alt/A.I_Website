@@ -2,7 +2,7 @@
 
 /**
  * api/admin_site/inventory/update_material_item.php
- * Updates an existing material item (name, type, stock, unit cost)
+ * Updates an existing material item (name, type, stock, unit cost, remarks)
  */
 
 ini_set('display_errors', 0);
@@ -29,23 +29,54 @@ try {
         throw new Exception('Database connection failed.');
     }
 
-    // Get JSON input
-    $input = json_decode(file_get_contents('php://input'), true);
+    // Get JSON input and fall back to form data if needed
+    $rawBody = file_get_contents('php://input');
+    $input = json_decode($rawBody, true);
 
-    if (!$input) {
+    if (!is_array($input) || empty($input)) {
+        $input = $_POST;
+    }
+
+    if (!is_array($input) || empty($input)) {
+        $input = $_REQUEST;
+    }
+
+    if (!is_array($input) || empty($input)) {
         throw new Exception('Invalid input data.');
     }
 
+    // Log the incoming data for debugging
+    error_log('UPDATE_MATERIAL_ITEM - Input: ' . json_encode($input));
+
     // Sanitize and validate inputs
     $id = (int) ($input['id'] ?? 0);
-    $materialName = trim($input['material_name'] ?? '');
-    $type = trim($input['type'] ?? '');
+    $materialName = trim((string) ($input['material_name'] ?? ''));
+    $type = trim((string) ($input['type'] ?? ''));
     $shopStock = (int) ($input['shop_stock'] ?? 0);
     $phStock = (int) ($input['ph_stock'] ?? 0);
     $unitCost = (float) ($input['unit_cost'] ?? 0);
-    $remarks = trim($input['remarks'] ?? '');
+    $costPerPack = (float) ($input['cost_per_pack'] ?? $input['total_cost'] ?? 0);
+    $piecesPerPack = (int) ($input['pieces_per_pack'] ?? $input['qty_per_pack'] ?? 1);
+    if ($piecesPerPack <= 0) {
+        $piecesPerPack = 1;
+    }
+
     $totalStock = $shopStock + $phStock;
-    $totalCost = $totalStock * $unitCost;
+    if ($costPerPack > 0) {
+        $totalCost = $costPerPack;
+        if ($unitCost == 0 && $piecesPerPack > 0) {
+            $unitCost = $costPerPack / $piecesPerPack;
+        }
+    } else {
+        $totalCost = $totalStock * $unitCost;
+        if ($unitCost > 0 && $piecesPerPack > 0) {
+            $costPerPack = $unitCost * $piecesPerPack;
+        }
+    }
+
+    $remarks = trim((string) ($input['remarks'] ?? $input['note'] ?? $input['remark'] ?? ''));
+
+    error_log('UPDATE_MATERIAL_ITEM - Remarks extracted: "' . $remarks . '"');
 
     // Validation
     if ($id <= 0) {
@@ -72,8 +103,8 @@ try {
         throw new Exception('Unit cost cannot be negative.');
     }
 
-    // Check if material exists
-    $checkStmt = $pdo->prepare('SELECT id, material_name, shop_stock, ph_stock, total_stock, unit_cost, remarks FROM materials WHERE id = ?');
+    // Check if material exists and get current data
+    $checkStmt = $pdo->prepare('SELECT * FROM materials WHERE id = ?');
     $checkStmt->execute([$id]);
     $oldMaterial = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
@@ -88,10 +119,21 @@ try {
         throw new Exception('Material "' . $materialName . '" already exists.');
     }
 
-    // Update material item
+    // ================================================================
+    // Update materials table with ALL fields including pieces_per_pack & total_cost
+    // ================================================================
     $stmt = $pdo->prepare('
         UPDATE materials 
-        SET material_name = ?, type = ?, shop_stock = ?, ph_stock = ?, total_stock = ?, total_cost = ?, unit_cost = ?, remarks = ?, updated_at = NOW()
+        SET material_name = ?, 
+            type = ?, 
+            shop_stock = ?, 
+            ph_stock = ?, 
+            total_stock = ?, 
+            total_cost = ?, 
+            pieces_per_pack = ?,
+            unit_cost = ?, 
+            remarks = ?,
+            updated_at = NOW()
         WHERE id = ?
     ');
 
@@ -101,81 +143,115 @@ try {
         $shopStock,
         $phStock,
         $totalStock,
-        $totalCost,
+        $costPerPack > 0 ? $costPerPack : $totalCost,
+        $piecesPerPack,
         $unitCost,
         $remarks,
         $id
     ]);
 
     if (!$result) {
-        throw new Exception('Failed to update material item.');
+        $errorInfo = $stmt->errorInfo();
+        throw new Exception('Failed to update material item: ' . $errorInfo[2]);
     }
+
+    // Verify the update was successful
+    $verifyStmt = $pdo->prepare('SELECT id, material_name, remarks FROM materials WHERE id = ?');
+    $verifyStmt->execute([$id]);
+    $verified = $verifyStmt->fetch(PDO::FETCH_ASSOC);
+    error_log('UPDATE_MATERIAL_ITEM - Verified remarks in materials table: "' . ($verified['remarks'] ?? 'NULL') . '"');
 
     $adminName = $_SESSION['admin_name'] ?? 'Admin';
-    $noteText = trim($remarks !== '' ? $remarks : (trim((string) ($oldMaterial['remarks'] ?? '')) !== '' ? (string) $oldMaterial['remarks'] : 'Material updated via edit modal'));
 
-    // Keep the materials_logs table as the main inventory log source.
+    // Use the actual remarks for the log; fall back to the existing material remark if present.
+    $noteText = trim($remarks) !== ''
+        ? $remarks
+        : (trim((string) ($oldMaterial['remarks'] ?? '')) !== '' ? (string) $oldMaterial['remarks'] : 'No remarks provided');
+
+    // ================================================================
+    // Log to materials_logs (separate from materials table)
+    // ================================================================
     try {
-        $logStmt = $pdo->prepare('
-            INSERT INTO materials_logs (
-                material_id, location, change_type, quantity, previous_stock, new_stock, admin_id, note, created_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
-        ');
+        // Check if materials_logs table has a note column
+        $logColumns = $pdo->query("SHOW COLUMNS FROM materials_logs");
+        $logCols = $logColumns->fetchAll(PDO::FETCH_COLUMN);
+        
+        if (in_array('note', $logCols)) {
+            $logStmt = $pdo->prepare('
+                INSERT INTO materials_logs (
+                    material_id, location, change_type, quantity, previous_stock, new_stock, admin_id, note, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            ');
 
-        $changeType = 'adjust';
-        $quantity = 0;
-        if ($oldMaterial['shop_stock'] != $shopStock) {
-            $quantity = abs($shopStock - $oldMaterial['shop_stock']);
-            $changeType = ($shopStock > $oldMaterial['shop_stock']) ? 'add' : 'subtract';
-            $logStmt->execute([
-                $id,
-                'shop_stock',
-                $changeType,
-                $quantity,
-                $oldMaterial['shop_stock'],
-                $shopStock,
-                $_SESSION['admin_id'],
-                $noteText,
-            ]);
-        }
+            // Log shop stock changes
+            if ($oldMaterial['shop_stock'] != $shopStock) {
+                $quantity = abs($shopStock - $oldMaterial['shop_stock']);
+                $changeType = ($shopStock > $oldMaterial['shop_stock']) ? 'add' : 'subtract';
+                $logStmt->execute([
+                    $id,
+                    'shop_stock',
+                    $changeType,
+                    $quantity,
+                    $oldMaterial['shop_stock'],
+                    $shopStock,
+                    $_SESSION['admin_id'],
+                    $noteText,
+                ]);
+            }
 
-        if ($oldMaterial['ph_stock'] != $phStock) {
-            $quantity = abs($phStock - $oldMaterial['ph_stock']);
-            $changeType = ($phStock > $oldMaterial['ph_stock']) ? 'add' : 'subtract';
-            $logStmt->execute([
-                $id,
-                'ph_stock',
-                $changeType,
-                $quantity,
-                $oldMaterial['ph_stock'],
-                $phStock,
-                $_SESSION['admin_id'],
-                $noteText,
-            ]);
-        }
+            // Log PH stock changes
+            if ($oldMaterial['ph_stock'] != $phStock) {
+                $quantity = abs($phStock - $oldMaterial['ph_stock']);
+                $changeType = ($phStock > $oldMaterial['ph_stock']) ? 'add' : 'subtract';
+                $logStmt->execute([
+                    $id,
+                    'ph_stock',
+                    $changeType,
+                    $quantity,
+                    $oldMaterial['ph_stock'],
+                    $phStock,
+                    $_SESSION['admin_id'],
+                    $noteText,
+                ]);
+            }
 
-        if ($oldMaterial['shop_stock'] == $shopStock && $oldMaterial['ph_stock'] == $phStock) {
-            $logStmt->execute([
-                $id,
-                'total_stock',
-                'adjust',
-                0,
-                $oldMaterial['total_stock'],
-                $totalStock,
-                $_SESSION['admin_id'],
-                $noteText,
-            ]);
+            // If no stock changes, log an adjustment if other fields changed
+            if ($oldMaterial['shop_stock'] == $shopStock && $oldMaterial['ph_stock'] == $phStock) {
+                $nameChanged = $oldMaterial['material_name'] !== $materialName;
+                $typeChanged = ($oldMaterial['type'] ?? '') !== $type;
+                $costChanged = (float)($oldMaterial['unit_cost'] ?? 0) !== $unitCost;
+                $remarksChanged = (trim($oldMaterial['remarks'] ?? '') !== $remarks);
+                
+                if ($nameChanged || $typeChanged || $costChanged || $remarksChanged || trim($remarks) !== '') {
+                    $logStmt->execute([
+                        $id,
+                        'total_stock',
+                        'adjust',
+                        0,
+                        $oldMaterial['total_stock'],
+                        $totalStock,
+                        $_SESSION['admin_id'],
+                        $noteText,
+                    ]);
+                }
+            }
+        } else {
+            error_log('UPDATE_MATERIAL_ITEM - materials_logs table does not have note column');
         }
     } catch (PDOException $logErr) {
-        error_log('material edit log insert failed: ' . $logErr->getMessage());
+        error_log('UPDATE_MATERIAL_ITEM - Log insert failed: ' . $logErr->getMessage());
     }
 
-    // Keep activity logs in sync for admin auditing.
+    // Activity log
     try {
         require_once __DIR__ . '/../../activity_logger.php';
-        logActivity($pdo, $_SESSION['admin_id'], $adminName, 'Updated material "' . $materialName . '"' . ($remarks !== '' ? ' — ' . $remarks : ''), $id, 'Inventory', 'Success');
+        $activityMsg = 'Updated material "' . $materialName . '"';
+        if (!empty($remarks)) {
+            $activityMsg .= ' — ' . $remarks;
+        }
+        logActivity($pdo, $_SESSION['admin_id'], $adminName, $activityMsg, $id, 'Inventory', 'Success');
     } catch (Throwable $activityErr) {
-        error_log('activity log insert failed: ' . $activityErr->getMessage());
+        error_log('UPDATE_MATERIAL_ITEM - Activity log failed: ' . $activityErr->getMessage());
     }
 
     echo json_encode([
@@ -188,11 +264,12 @@ try {
             'shop_stock' => $shopStock,
             'ph_stock' => $phStock,
             'total_stock' => $totalStock,
-            'unit_cost' => $unitCost
+            'unit_cost' => $unitCost,
+            'remarks' => $remarks
         ]
     ]);
 } catch (Exception $e) {
-    error_log('update_material_item.php ERROR: ' . $e->getMessage());
+    error_log('update_material_item.php ERROR: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
     http_response_code(400);
     echo json_encode([
         'success' => false,

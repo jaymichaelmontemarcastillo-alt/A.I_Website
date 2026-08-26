@@ -344,7 +344,7 @@ const matLoadMaterials = async () => {
   });
   const tbody = document.getElementById("materialsTableBody");
   if (!tbody) return;
-  tbody.innerHTML = matLoadingRow(8, "Loading materials…");
+  tbody.innerHTML = matLoadingRow(10, "Loading materials…");
 
   try {
     const data = await matFetch(`${MAT_API.materials}?${params}`);
@@ -358,7 +358,7 @@ const matLoadMaterials = async () => {
     });
   } catch (err) {
     console.error("❌ matLoadMaterials failed:", err);
-    tbody.innerHTML = matErrorRow(8, `Error: ${err.message}`);
+    tbody.innerHTML = matErrorRow(10, `Error: ${err.message}`);
   }
 };
 
@@ -405,39 +405,69 @@ const matRenderAlerts = (materials = []) => {
       ),
     );
 };
-
 const matRenderMaterialRows = (materials = []) => {
   const tbody = document.getElementById("materialsTableBody");
   if (!tbody) return;
   if (!materials.length) {
-    tbody.innerHTML = matLoadingRow(8, "No materials found.");
+    tbody.innerHTML = matEmptyStateRow(10);
     return;
   }
   tbody.innerHTML = materials
     .map((m) => {
       const badge = matStockBadge(m.stock_status, m.total_stock);
-      const costPerUnit = m.unit_cost
+      const costPerPack = m.total_cost && parseFloat(m.total_cost) > 0
+        ? parseFloat(m.total_cost).toFixed(2)
+        : "—";
+      const qtyPerPack = m.pieces_per_pack && parseInt(m.pieces_per_pack, 10) > 0
+        ? parseInt(m.pieces_per_pack, 10)
+        : "1";
+      const costPerUnit = m.unit_cost && parseFloat(m.unit_cost) > 0
         ? parseFloat(m.unit_cost).toFixed(4)
         : "—";
       return `<tr>
-                  <td><div class="mat-cell"><span>${matEsc(m.material_name)}</span></div></td>
-                  <td>${matEsc(m.type || "—")}</td>
-                  <td><strong>${m.shop_stock}</strong></td>
-                  <td><strong>${m.ph_stock}</strong></td>
-                  <td><strong>${m.total_stock}</strong></td>
-                  <td>${costPerUnit}</td>
-                  <td><span class="badge ${badge.cls}">${badge.label}</span></td>
-                  <td class="mat_table_action_col">
-                    <button class="btn-action mat-edit-item-btn" 
-                      data-id="${m.id}" 
-                      data-name="${matEsc(m.material_name)}" 
-                      data-type="${matEsc(m.type || "")}" 
-                      data-shop="${m.shop_stock}" 
-                      data-ph="${m.ph_stock}" 
-                      data-cost="${m.unit_cost}">
-                      <i class="fa-solid fa-pencil"></i>
-                    </button>
-                   </div>
+                  <td class="col-material-name" title="${matEsc(m.material_name)}">
+                    <div class="mat-cell">
+                      <span class="material-title">${matEsc(m.material_name)}</span>
+                    </div>
+                  </td>
+                  <td class="col-type" title="${matEsc(m.type || "—")}">
+                    <span class="material-type-text">${matEsc(m.type || "—")}</span>
+                  </td>
+                  <td class="col-num">${m.shop_stock}</td>
+                  <td class="col-num">${m.ph_stock}</td>
+                  <td class="col-num"><strong>${m.total_stock}</strong></td>
+                  <td class="col-num">${costPerPack}</td>
+                  <td class="col-num">${qtyPerPack}</td>
+                  <td class="col-num">${costPerUnit}</td>
+                  <td class="col-status">
+                    <span class="badge ${badge.cls}">
+                      <span class="badge-dot"></span>${badge.label}
+                    </span>
+                  </td>
+                  <td class="col-action mat_table_action_col">
+                    <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+                      <button class="btn-action mat-edit-item-btn" 
+                        title="Edit material"
+                        data-id="${m.id}" 
+                        data-name="${matEsc(m.material_name)}" 
+                        data-type="${matEsc(m.type || "")}" 
+                        data-shop="${m.shop_stock}" 
+                        data-ph="${m.ph_stock}" 
+                        data-cost="${m.unit_cost}"
+                        data-cost-pack="${m.total_cost || ""}"
+                        data-pieces-pack="${m.pieces_per_pack || ""}"
+                        data-remarks="${matEsc(m.remarks || "")}">
+                        <i class="fa-solid fa-pencil"></i>
+                      </button>
+                      <button class="btn-action mat-delete-item-btn"
+                        title="Delete material"
+                        data-id="${m.id}"
+                        data-name="${matEsc(m.material_name)}"
+                        style="color:#ef4444;">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </div>
+                  </td>
                 </tr>`;
     })
     .join("");
@@ -450,7 +480,30 @@ const matRenderMaterialRows = (materials = []) => {
       const shopStock = btn.dataset.shop;
       const phStock = btn.dataset.ph;
       const unitCost = btn.dataset.cost;
-      matOpenEditItemModal(id, name, type, shopStock, phStock, unitCost);
+      const remarks = btn.dataset.remarks || "";
+      const costPerPack = btn.dataset.costPack || "";
+      const piecesPerPack = btn.dataset.piecesPack || "";
+      matOpenEditItemModal(
+        id,
+        name,
+        type,
+        shopStock,
+        phStock,
+        unitCost,
+        remarks,
+        costPerPack,
+        piecesPerPack
+      );
+    });
+  });
+
+  tbody.querySelectorAll(".mat-delete-item-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.id;
+      const name = btn.dataset.name;
+      if (typeof matDeleteSingleMaterial === "function") {
+        matDeleteSingleMaterial(id, name);
+      }
     });
   });
 };
@@ -567,7 +620,7 @@ const matRenderLogRows = (logs = []) => {
   const tbody = document.getElementById("materialsLogsTableBody");
   if (!tbody) return;
   if (!logs.length) {
-    tbody.innerHTML = matLoadingRow(8, "No log entries found.");
+    tbody.innerHTML = `<tr><td colspan="9" class="loading-cell" style="text-align:center;padding:24px;color:#9ca3af;">No log entries found.</td></tr>`;
     return;
   }
   tbody.innerHTML = logs
@@ -870,7 +923,7 @@ const matStockBadge = (status, stock) => {
   if (status === "out_of_stock")
     return { cls: "badge-danger", label: "Out of Stock" };
   if (status === "low_stock")
-    return { cls: "badge-warning", label: `Low (${stock})` };
+    return { cls: "badge-warning", label: `Low Stock (${stock})` };
   return { cls: "badge-success", label: "In Stock" };
 };
 const matLocationBadge = (location) => {
@@ -896,8 +949,49 @@ const matSetText = (id, value) => {
   if (el) el.textContent = value;
 };
 const matGetVal = (id) => document.getElementById(id)?.value ?? "";
-const matLoadingRow = (cols, msg) =>
-  `<tr><td colspan="${cols}" class="loading-cell">${msg}</td></tr>`;
+
+const matSkeletonRows = (cols = 10, rows = 5) => {
+  let html = "";
+  for (let r = 0; r < rows; r++) {
+    html += `<tr class="skeleton-row">`;
+    for (let c = 0; c < cols; c++) {
+      let width = "70%";
+      if (c === 0) width = "85%";
+      else if (c === 1) width = "60%";
+      else if (c >= 2 && c <= 7) width = "45%";
+      else if (c === 8) width = "80px";
+      else if (c === 9) width = "36px";
+      
+      let alignStyle = "";
+      if (c >= 2 && c <= 7) alignStyle = `style="display:flex; justify-content:flex-end;"`;
+      else if (c >= 8) alignStyle = `style="display:flex; justify-content:center;"`;
+
+      html += `<td><div ${alignStyle}><div class="skeleton-block" style="width:${width};"></div></div></td>`;
+    }
+    html += `</tr>`;
+  }
+  return html;
+};
+
+const matEmptyStateRow = (cols = 10) => {
+  return `<tr>
+    <td colspan="${cols}">
+      <div class="mat-empty-state">
+        <div class="mat-empty-icon">
+          <i class="fa-solid fa-boxes-stacked"></i>
+        </div>
+        <h4 class="mat-empty-title">No materials found</h4>
+        <p class="mat-empty-desc">No materials match your current search or filter criteria. Try adjusting filters or add a new material item.</p>
+        <button class="btn-add-item" onclick="matOpenAddItemModal()">
+          <i class="fa-solid fa-plus"></i> Add New Material
+        </button>
+      </div>
+    </td>
+  </tr>`;
+};
+
+const matLoadingRow = (cols, msg) => matSkeletonRows(cols, 5);
+
 const matErrorRow = (cols, msg) =>
   `<tr><td colspan="${cols}" class="loading-cell error-cell">Error: ${matEsc(msg)}</td></tr>`;
 const matEsc = (str) =>
@@ -2653,114 +2747,152 @@ if (typeof document !== "undefined") {
   });
 }
 /* ══════════════════════════════════════════════════════════════
-   IMPORT/EXPORT
+   IMPORT / EXPORT
 ══════════════════════════════════════════════════════════════ */
+
+/**
+ * Open the Import modal and reset its state (clears any previously picked file).
+ */
 const matOpenImportModal = () => {
-  document.getElementById("matImportModal").style.display = "flex";
+  const modal     = document.getElementById("matImportModal");
+  const fileInput = document.getElementById("importCSVFile");
+  const hint      = document.getElementById("matImportFileHint");
+
+  if (fileInput) fileInput.value = "";   // clear previously selected file
+  if (hint)      hint.textContent = "";  // clear hint text
+
+  modal.style.display = "flex";
 };
+
+/**
+ * Close the Import modal.
+ */
 const matCloseImportModal = () => {
   document.getElementById("matImportModal").style.display = "none";
 };
+
+/**
+ * Show a live hint under the file input that describes the format of the
+ * chosen file. This function is attached to the input's "change" event
+ * after the DOM is fully loaded (see the DOMContentLoaded block below).
+ */
+const matOnImportFileChange = () => {
+  const fileInput = document.getElementById("importCSVFile");
+  const hint      = document.getElementById("matImportFileHint");
+  if (!fileInput || !hint) return;
+
+  const file = fileInput.files[0];
+  if (!file) { hint.textContent = ""; return; }
+
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  if (ext === "xlsx") {
+    hint.innerHTML = '<i class="fa-solid fa-file-excel" style="color:#16a34a;"></i>&nbsp;Excel file selected — will be imported as XLSX';
+  } else if (ext === "csv") {
+    hint.innerHTML = '<i class="fa-solid fa-file-csv" style="color:#0ea5e9;"></i>&nbsp;CSV file selected — will be imported as CSV';
+  } else {
+    hint.innerHTML = '<span style="color:#dc2626;"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;Unsupported format. Please choose a .csv or .xlsx file.</span>';
+  }
+};
+
+/**
+ * Download a sample CSV template the user can fill in and re-upload.
+ */
 const matDownloadSampleCSV = () => {
   const sampleData = [
-    [
-      "Type",
-      "Materials",
-      "Shop",
-      "PH",
-      "Total On Hand",
-      "Total Cost",
-      "Quantity per pack",
-      "Unit Cost",
-      "Remarks",
-    ],
-    [
-      "Ink",
-      "Sample Ink Black",
-      "5",
-      "10",
-      "15",
-      "95.00",
-      "1",
-      "95.0000",
-      "Test material",
-    ],
-    [
-      "Paper",
-      "Sample Photo Paper",
-      "20",
-      "30",
-      "50",
-      "135.00",
-      "20",
-      "6.7500",
-      "For testing",
-    ],
+    ["Type", "Materials", "Shop", "PH", "Total On Hand", "Total Cost", "Quantity per pack", "Unit Cost", "Remarks"],
+    ["Ink",   "Sample Ink Black",   "5",  "10", "15", "95.00",  "1",  "95.0000", "Test material"],
+    ["Paper", "Sample Photo Paper", "20", "30", "50", "135.00", "20", "6.7500",  "For testing"],
   ];
 
-  // FIX: Use UTF-8 without BOM
-  let csvContent = sampleData.map((row) => row.join(",")).join("\n");
-
-  // NO BOM - just plain UTF-8
-  const blob = new Blob([csvContent], {
-    type: "text/csv;charset=utf-8",
-  });
+  // Build plain UTF-8 CSV (no BOM)
+  const csvContent = sampleData.map((row) => row.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" });
 
   const link = document.createElement("a");
-  const url = URL.createObjectURL(blob);
-  link.href = url;
+  link.href = URL.createObjectURL(blob);
   link.setAttribute("download", "materials_sample.csv");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(link.href);
 };
 
-const matProcessImport = async () => {
+/**
+ * Validate the selected file, build a FormData payload, POST it to the
+ * import API endpoint, and display a toast notification with the result.
+ *
+ * Supported formats:
+ *   - CSV  (.csv) — sends field name "csv_file"
+ *   - XLSX (.xlsx) — sends field name "xlsx_file"
+ *
+ * @param {boolean} isRetry  Internal flag; set to true on automatic retry
+ *   after an InfinityFree bot-protection challenge intercepts the request.
+ */
+const matProcessImport = async (isRetry = false) => {
   const fileInput = document.getElementById("importCSVFile");
-  const file = fileInput.files[0];
+  const file      = fileInput.files[0];
+
+  // Guard: no file selected
   if (!file) {
-    matShowToast("Please select a file", "error");
+    matShowToast("Please select a CSV (.csv) or Excel (.xlsx) file", "error");
     return;
   }
 
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  // Guard: unsupported extension
+  if (ext !== "csv" && ext !== "xlsx") {
+    matShowToast(`Unsupported file type ".${ext}" — please upload a .csv or .xlsx file.`, "error");
+    return;
+  }
+
+  // Build FormData — use the field name that matches the file type so the
+  // PHP endpoint can identify which parser to use.
   const formData = new FormData();
-  formData.append("csv_file", file);
+  if (ext === "xlsx") {
+    formData.append("xlsx_file", file);  // XLSX field
+  } else {
+    formData.append("csv_file", file);   // CSV field
+  }
+  formData.append("file", file);         // generic fallback field
 
   try {
     const response = await fetch(MAT_API.import, {
       method: "POST",
+      credentials: "same-origin",
       body: formData,
     });
-    const text = await response.text();
+
+    let text = await response.text();
+    text = text.trim().replace(/^\uFEFF/, ""); // strip BOM if present
+
     let data;
     try {
       data = JSON.parse(text);
     } catch (e) {
-      throw new Error(
-        "Server returned invalid response: " + text.substring(0, 100),
-      );
+      // Handle InfinityFree / iFastNet bot-protection challenge page
+      if (text.includes("aes.js") || text.includes("__test=")) {
+        if (!isRetry) {
+          matShowToast("Authenticating with server security system...", "info");
+          await fetch(window.location.href, { credentials: "same-origin" }).catch(() => {});
+          await new Promise((r) => setTimeout(r, 800));
+          return matProcessImport(true); // retry once
+        }
+        throw new Error(
+          "InfinityFree Security System (iFastNet Bot Protection) blocked this request. " +
+          "Please refresh the page (F5) once and try again."
+        );
+      }
+      const preview = text ? text.substring(0, 150) : "EMPTY RESPONSE (0 BYTES)";
+      throw new Error("Server returned invalid response:\n" + preview);
     }
+
     if (data.success) {
       matShowToast(data.message, "success");
       matCloseImportModal();
       matReloadMaterials(true);
-      fileInput.value = "";
-    } else if (data.sheets) {
-      // Handle multi-sheet Excel files - display sheet selector
-      const sheetSelector = document.getElementById("matImportSheetSelector");
-      const sheetSelect = document.getElementById("matImportSheetSelect");
-      if (sheetSelector && sheetSelect) {
-        sheetSelect.innerHTML = "";
-        data.sheets.forEach((sheet, idx) => {
-          const option = document.createElement("option");
-          option.value = idx;
-          option.textContent = sheet;
-          sheetSelect.appendChild(option);
-        });
-        sheetSelector.style.display = "block";
-      }
-      matShowToast("Please select a sheet to import from", "info");
+      fileInput.value = ""; // reset the file input
     } else {
       matShowToast(data.message, "error");
     }
@@ -2769,8 +2901,9 @@ const matProcessImport = async () => {
   }
 };
 
+
 const matExportData = () => {
-  window.location.href = MAT_API.export;
+  window.location.href = MAT_API.export + "?t=" + new Date().getTime();
 };
 
 // ============================================================
@@ -2877,3 +3010,53 @@ const matConfirmDeleteAll = async () => {
         '<i class="fa-solid fa-trash"></i> Delete All Materials';
   }
 };
+
+// ============================================================
+// IMPORT FILE INPUT & DROPZONE — live format hint & drag-drop
+// ============================================================
+(function wireImportFileHint() {
+  const initImportEvents = () => {
+    const fileInput = document.getElementById("importCSVFile");
+    const dropzone  = document.getElementById("matDropzone");
+
+    if (fileInput) {
+      fileInput.addEventListener("change", matOnImportFileChange);
+    }
+
+    if (dropzone && fileInput) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.style.borderColor = '#2563eb';
+          dropzone.style.background  = '#eff6ff';
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.style.borderColor = '#cbd5e1';
+          dropzone.style.background  = '#f8fafc';
+        }, false);
+      });
+
+      dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+          fileInput.files = files;
+          matOnImportFileChange();
+        }
+      }, false);
+    }
+  };
+
+  if (document.readyState === "complete" || document.readyState === "interactive") {
+    initImportEvents();
+  } else {
+    document.addEventListener("DOMContentLoaded", initImportEvents);
+  }
+})();
+

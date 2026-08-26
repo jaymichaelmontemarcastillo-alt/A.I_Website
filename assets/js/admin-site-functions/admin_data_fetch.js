@@ -137,6 +137,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  window.addEventListener("storage", (e) => {
+    if (e.key === THEME_KEY || e.key === LEGACY_THEME_KEY) {
+      const isDark = e.newValue === "dark";
+      applyThemeMode(isDark);
+    }
+  });
+
+  window.addEventListener("pageshow", (e) => {
+    if (e.persisted) {
+      const isDark = getSavedTheme() === "dark";
+      applyThemeMode(isDark);
+    }
+  });
+
   if (openAccountModal && modal) {
     openAccountModal.addEventListener("click", () => {
       modal.classList.add("show");

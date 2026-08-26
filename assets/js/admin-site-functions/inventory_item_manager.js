@@ -11,6 +11,7 @@
   const API = {
     addItem: "../../api/admin_site/inventory/add_inventory_item.php",
     updateItem: "../../api/admin_site/inventory/update_material_item.php",
+    deleteItem: "../../api/admin_site/inventory/delete_material_item.php",
     getTypes: "../../api/admin_site/inventory/get_types.php",
   };
 
@@ -33,6 +34,8 @@
       addType: document.getElementById("matNewType"),
       addShopStock: document.getElementById("matNewShopStock"),
       addPhStock: document.getElementById("matNewPhStock"),
+      addCostPerPack: document.getElementById("matNewCostPerPack"),
+      addPiecesPerPack: document.getElementById("matNewPiecesPerPack"),
       addUnitCost: document.getElementById("matNewUnitCost"),
       addError: document.getElementById("matAddItemError"),
       addTotalValue: document.getElementById("matNewTotalValue"),
@@ -47,12 +50,21 @@
       editType: document.getElementById("matEditType"),
       editShopStock: document.getElementById("matEditShopStock"),
       editPhStock: document.getElementById("matEditPhStock"),
+      editCostPerPack: document.getElementById("matEditCostPerPack"),
+      editPiecesPerPack: document.getElementById("matEditPiecesPerPack"),
       editUnitCost: document.getElementById("matEditUnitCost"),
       editError: document.getElementById("matEditItemError"),
       editTotalValue: document.getElementById("matEditTotalValue"),
       editCloseBtn: document.getElementById("matEditItemCloseBtn"),
       editCancelBtn: document.getElementById("matEditItemCancelBtn"),
       editConfirmBtn: document.getElementById("matEditItemConfirmBtn"),
+      editDeleteBtn: document.getElementById("matEditItemDeleteBtn"),
+
+      // Delete Confirm Modal
+      delModal: document.getElementById("matDeleteConfirmModal"),
+      delName: document.getElementById("matDeleteConfirmName"),
+      delCancel: document.getElementById("matDeleteCancelBtn"),
+      delConfirm: document.getElementById("matDeleteConfirmBtn"),
     };
   }
 
@@ -97,6 +109,32 @@
       });
     }
 
+    // Add modal cost calculations
+    const calculateAddUnitCost = () => {
+      const costPack = parseFloat(elements.addCostPerPack?.value) || 0;
+      const pieces = parseInt(elements.addPiecesPerPack?.value) || 1;
+      if (costPack > 0 && pieces > 0 && elements.addUnitCost) {
+        elements.addUnitCost.value = (costPack / pieces).toFixed(4);
+      }
+    };
+    const calculateAddCostPack = () => {
+      const unitCost = parseFloat(elements.addUnitCost?.value) || 0;
+      const pieces = parseInt(elements.addPiecesPerPack?.value) || 1;
+      if (unitCost > 0 && pieces > 0 && elements.addCostPerPack) {
+        elements.addCostPerPack.value = (unitCost * pieces).toFixed(2);
+      }
+    };
+
+    if (elements.addCostPerPack) {
+      elements.addCostPerPack.addEventListener("input", calculateAddUnitCost);
+    }
+    if (elements.addPiecesPerPack) {
+      elements.addPiecesPerPack.addEventListener("input", calculateAddUnitCost);
+    }
+    if (elements.addUnitCost) {
+      elements.addUnitCost.addEventListener("input", calculateAddCostPack);
+    }
+
     // Edit Item Modal events
     if (elements.editCloseBtn) {
       elements.editCloseBtn.addEventListener("click", closeEditModal);
@@ -106,6 +144,9 @@
     }
     if (elements.editConfirmBtn) {
       elements.editConfirmBtn.addEventListener("click", submitEditItem);
+    }
+    if (elements.editDeleteBtn) {
+      elements.editDeleteBtn.addEventListener("click", confirmDeleteFromEditModal);
     }
     if (elements.editShopStock) {
       elements.editShopStock.addEventListener("input", updateEditTotalPreview);
@@ -117,6 +158,40 @@
       elements.editModal.addEventListener("click", function (e) {
         if (e.target === elements.editModal) closeEditModal();
       });
+    }
+
+    // Delete Confirm Modal events
+    if (elements.delCancel) {
+      elements.delCancel.addEventListener("click", closeDeleteModal);
+    }
+    if (elements.delConfirm) {
+      elements.delConfirm.addEventListener("click", executeDeleteMaterial);
+    }
+
+    // Edit modal cost calculations
+    const calculateEditUnitCost = () => {
+      const costPack = parseFloat(elements.editCostPerPack?.value) || 0;
+      const pieces = parseInt(elements.editPiecesPerPack?.value) || 1;
+      if (costPack > 0 && pieces > 0 && elements.editUnitCost) {
+        elements.editUnitCost.value = (costPack / pieces).toFixed(4);
+      }
+    };
+    const calculateEditCostPack = () => {
+      const unitCost = parseFloat(elements.editUnitCost?.value) || 0;
+      const pieces = parseInt(elements.editPiecesPerPack?.value) || 1;
+      if (unitCost > 0 && pieces > 0 && elements.editCostPerPack) {
+        elements.editCostPerPack.value = (unitCost * pieces).toFixed(2);
+      }
+    };
+
+    if (elements.editCostPerPack) {
+      elements.editCostPerPack.addEventListener("input", calculateEditUnitCost);
+    }
+    if (elements.editPiecesPerPack) {
+      elements.editPiecesPerPack.addEventListener("input", calculateEditUnitCost);
+    }
+    if (elements.editUnitCost) {
+      elements.editUnitCost.addEventListener("input", calculateEditCostPack);
     }
 
     // ESC key to close modals
@@ -144,6 +219,8 @@
     if (elements.addType) elements.addType.value = "";
     if (elements.addShopStock) elements.addShopStock.value = "0";
     if (elements.addPhStock) elements.addPhStock.value = "0";
+    if (elements.addCostPerPack) elements.addCostPerPack.value = "0";
+    if (elements.addPiecesPerPack) elements.addPiecesPerPack.value = "1";
     if (elements.addUnitCost) elements.addUnitCost.value = "0";
     if (elements.addError) elements.addError.innerHTML = "";
 
@@ -181,6 +258,8 @@
     const type = elements.addType?.value || "";
     const shopStock = parseInt(elements.addShopStock?.value) || 0;
     const phStock = parseInt(elements.addPhStock?.value) || 0;
+    const costPerPack = parseFloat(elements.addCostPerPack?.value) || 0;
+    const piecesPerPack = parseInt(elements.addPiecesPerPack?.value) || 1;
     const unitCost = parseFloat(elements.addUnitCost?.value) || 0;
 
     // Validation
@@ -228,6 +307,8 @@
           type: type,
           shop_stock: shopStock,
           ph_stock: phStock,
+          cost_per_pack: costPerPack,
+          pieces_per_pack: piecesPerPack,
           unit_cost: unitCost,
         }),
       });
@@ -274,18 +355,37 @@
     shopStock,
     phStock,
     unitCost,
+    remarks,
+    costPerPack,
+    piecesPerPack,
   ) {
     console.log("Opening Edit Item Modal for:", name);
 
     // Reload types for datalist
     loadTypesForDatalist();
 
+    const costPackVal = costPerPack && parseFloat(costPerPack) > 0
+      ? parseFloat(costPerPack)
+      : (parseFloat(unitCost || 0) * parseInt(piecesPerPack || 1, 10));
+    const piecesVal = piecesPerPack && parseInt(piecesPerPack, 10) > 0
+      ? parseInt(piecesPerPack, 10)
+      : 1;
+
     if (elements.editId) elements.editId.value = id;
     if (elements.editName) elements.editName.value = name || "";
     if (elements.editType) elements.editType.value = type || "";
     if (elements.editShopStock) elements.editShopStock.value = shopStock || 0;
     if (elements.editPhStock) elements.editPhStock.value = phStock || 0;
+    if (elements.editCostPerPack) elements.editCostPerPack.value = costPackVal || 0;
+    if (elements.editPiecesPerPack) elements.editPiecesPerPack.value = piecesVal;
     if (elements.editUnitCost) elements.editUnitCost.value = unitCost || 0;
+
+    // Set remarks field
+    const remarksInput = document.getElementById("matEditRemarks");
+    if (remarksInput) {
+      remarksInput.value = remarks || "";
+    }
+
     if (elements.editError) elements.editError.innerHTML = "";
 
     updateEditTotalPreview();
@@ -320,7 +420,13 @@
     const type = elements.editType?.value || "";
     const shopStock = parseInt(elements.editShopStock?.value) || 0;
     const phStock = parseInt(elements.editPhStock?.value) || 0;
+    const costPerPack = parseFloat(elements.editCostPerPack?.value) || 0;
+    const piecesPerPack = parseInt(elements.editPiecesPerPack?.value) || 1;
     const unitCost = parseFloat(elements.editUnitCost?.value) || 0;
+
+    // Get remarks from textarea
+    const remarksInput = document.getElementById("matEditRemarks");
+    const remarks = remarksInput?.value.trim() || "";
 
     // Validation
     if (!id) {
@@ -365,17 +471,22 @@
     }
 
     try {
+      const payload = {
+        id: id,
+        material_name: materialName,
+        type: type,
+        shop_stock: shopStock,
+        ph_stock: phStock,
+        cost_per_pack: costPerPack,
+        pieces_per_pack: piecesPerPack,
+        unit_cost: unitCost,
+        remarks: remarks,
+      };
+
       const response = await fetch(API.updateItem, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: id,
-          material_name: materialName,
-          type: type,
-          shop_stock: shopStock,
-          ph_stock: phStock,
-          unit_cost: unitCost,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const result = await response.json();
@@ -408,7 +519,97 @@
           '<i class="fa-solid fa-save"></i> Save Changes';
       }
     }
+  } // <-- FIX: Closing brace for submitEditItem
+
+  // Delete Confirmation Modal State
+  let deleteTargetId = null;
+  let deleteTargetName = "";
+
+  function openDeleteModal(id, name) {
+    deleteTargetId = parseInt(id, 10);
+    deleteTargetName = name || "this material";
+
+    if (elements.delName) {
+      elements.delName.textContent = deleteTargetName;
+    }
+    
+    if (elements.delModal) {
+      elements.delModal.style.display = "flex";
+      document.body.style.overflow = "hidden"; // Prevent background scrolling
+    }
   }
+
+  function closeDeleteModal() {
+    deleteTargetId = null;
+    deleteTargetName = "";
+    if (elements.delModal) {
+      elements.delModal.style.display = "none";
+      if (elements.editModal && elements.editModal.style.display !== "flex") {
+        document.body.style.overflow = ""; // Restore if edit modal isn't open
+      }
+    }
+  }
+
+  async function executeDeleteMaterial() {
+    if (!deleteTargetId) return;
+
+    const btn = elements.delConfirm;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Deleting...';
+
+    try {
+      const response = await fetch(API.deleteItem, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: deleteTargetId }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        closeDeleteModal();
+        showToast(result.message || "Material deleted successfully!", "success");
+
+        if (typeof matReloadMaterials === "function") {
+          matReloadMaterials(true);
+        }
+        if (typeof matReloadLogs === "function") {
+          matReloadLogs(true);
+        }
+        loadTypesForDatalist();
+      } else {
+        showToast(result.message || "Failed to delete material.", "error");
+      }
+    } catch (error) {
+      console.error("Error deleting material:", error);
+      showToast("Network error. Please try again.", "error");
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+  }
+  // Delete Material from Edit Modal
+  function confirmDeleteFromEditModal() {
+    const id = parseInt(elements.editId?.value) || 0;
+    const name = elements.editName?.value.trim() || "this material";
+
+    if (!id) return;
+    
+    // Close the edit modal first to avoid stacked modals
+    closeEditModal(); 
+    
+    // Open the confirmation modal
+    openDeleteModal(id, name);
+  }
+
+  // Delete Material globally (e.g. from row action buttons)
+  window.matDeleteSingleMaterial = function (id, name) {
+    if (!id) return;
+    openDeleteModal(id, name);
+  };
 
   // ==================== TOAST NOTIFICATION ====================
 

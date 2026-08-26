@@ -7,11 +7,16 @@ $role = strtolower($_SESSION['role'] ?? 'staff');
 $current_page = $current_page ?? '';
 ?>
 
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <aside class="sidebar" id="sidebar">
 
     <div class="sidebar-header">
-        <img src="../../assets/images/AI_Logo.jpg" class="logo-icon">
+        <img src="../../assets/images/AI_Logo.jpg" class="logo-icon" alt="Logo">
         <span class="logo-text">Anything Inside Admin</span>
+        <button id="mobileSidebarClose" class="mobile-sidebar-close" aria-label="Close Sidebar">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
         <button id="toggle-btn" class="sidebar-toggle" aria-label="Toggle Sidebar">
             <i class="fa-solid fa-chevron-left toggle-arrow"></i>
         </button>

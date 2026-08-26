@@ -1,7 +1,15 @@
 /* ============================================================
    DASHBOARD DARK MODE — Complete Patch
    Add this file AFTER your existing dashboard.css.
-   Also extend your :root / body.dark-mode blocks below.
+   Also extend your :root / [data-theme="dark"] blocks below.
+   ============================================================ */
+
+/* ══════════════════════════════════════
+   1. EXTEND ROOT & DARK VARIABLES
+   Merge these into your existing :root / body.dark-mode blocks.
+   They fill every gap the dashboard JS & CSS rely on.
+══════════════════════════════════════ */
+:root , body.dark-mode blocks below.
    ============================================================ */
 
 /* ══════════════════════════════════════
@@ -98,7 +106,7 @@
   --scrollbar-thumb: #d1d5db;
 }
 
-body.dark-mode {
+[data-theme="dark"], body.dark-mode{
   --bg-main: #000000;
   --bg-card: #1e293b;
   --bg-card-soft: #263045;
@@ -190,28 +198,28 @@ body.dark-mode {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
 }
 
-body.dark-mode .stat-card {
+[data-theme="dark"] .stat-card , body.dark-mode .stat-card {
   background: var(--bg-card);
   border-color: var(--border-color);
 }
 
-body.dark-mode .stat-card:hover {
+[data-theme="dark"] .stat-card:hover , body.dark-mode .stat-card:hover {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
 }
 
 /* ══════════════════════════════════════
    3. TABLE ROWS
 ══════════════════════════════════════ */
-body.dark-mode tbody td {
+[data-theme="dark"] tbody td , body.dark-mode tbody td {
   border-bottom-color: var(--border-color);
   color: var(--text-heading);
 }
 
-body.dark-mode tbody tr:hover td {
+[data-theme="dark"] tbody tr:hover td , body.dark-mode tbody tr:hover td {
   background: var(--bg-card-soft);
 }
 
-body.dark-mode thead th {
+[data-theme="dark"] thead th , body.dark-mode thead th {
   color: var(--text-secondary);
   border-bottom-color: var(--border-color);
 }
@@ -343,119 +351,119 @@ body.dark-mode thead th {
 /* ══════════════════════════════════════
    8. INSIGHT CARD & TABS
 ══════════════════════════════════════ */
-body.dark-mode .insight-card {
+[data-theme="dark"] .insight-card , body.dark-mode .insight-card {
   background: var(--bg-card);
   border-color: var(--border-color);
 }
 
-body.dark-mode .insight-header {
+[data-theme="dark"] .insight-header , body.dark-mode .insight-header {
   border-bottom-color: var(--border-color);
 }
 
-body.dark-mode .tab-btn {
+[data-theme="dark"] .tab-btn , body.dark-mode .tab-btn {
   border-color: var(--border-color);
   color: var(--text-secondary);
 }
-body.dark-mode .tab-btn:hover {
+[data-theme="dark"] .tab-btn:hover , body.dark-mode .tab-btn:hover {
   background: var(--bg-card-soft);
   color: var(--text-primary);
 }
-body.dark-mode .tab-btn.active {
+[data-theme="dark"] .tab-btn.active , body.dark-mode .tab-btn.active {
   background: var(--info);
   color: #fff;
   border-color: var(--info);
 }
 
-body.dark-mode .insight-list li {
+[data-theme="dark"] .insight-list li , body.dark-mode .insight-list li {
   border-bottom-color: var(--border-color);
   color: var(--text-heading);
 }
 
-body.dark-mode .item-name strong {
+[data-theme="dark"] .item-name strong , body.dark-mode .item-name strong {
   color: var(--text-primary);
 }
-body.dark-mode .item-name small {
+[data-theme="dark"] .item-name small , body.dark-mode .item-name small {
   color: var(--text-secondary);
 }
-body.dark-mode .item-val {
+[data-theme="dark"] .item-val , body.dark-mode .item-val {
   color: var(--text-primary);
 }
 
 /* ══════════════════════════════════════
    9. PAYMENT CARD
 ══════════════════════════════════════ */
-body.dark-mode .pay-stat {
+[data-theme="dark"] .pay-stat , body.dark-mode .pay-stat {
   border-bottom-color: var(--border-color);
 }
-body.dark-mode .pay-label {
+[data-theme="dark"] .pay-label , body.dark-mode .pay-label {
   color: var(--text-secondary);
 }
-body.dark-mode .pay-value {
+[data-theme="dark"] .pay-value , body.dark-mode .pay-value {
   color: var(--text-primary);
 }
-body.dark-mode .pay-method-label {
+[data-theme="dark"] .pay-method-label , body.dark-mode .pay-method-label {
   color: var(--text-heading);
 }
-body.dark-mode .pay-method-bar-wrap {
+[data-theme="dark"] .pay-method-bar-wrap , body.dark-mode .pay-method-bar-wrap {
   background: var(--border-color);
 }
-body.dark-mode .pay-methods-title {
+[data-theme="dark"] .pay-methods-title , body.dark-mode .pay-methods-title {
   color: var(--text-secondary);
 }
 
 /* ══════════════════════════════════════
    10. TABLE CARD & QUOTE PILLS
 ══════════════════════════════════════ */
-body.dark-mode .table-card {
+[data-theme="dark"] .table-card , body.dark-mode .table-card {
   background: var(--bg-card);
   border-color: var(--border-color);
 }
 
-body.dark-mode .q-pill {
+[data-theme="dark"] .q-pill , body.dark-mode .q-pill {
   background: var(--bg-card-soft);
   border-color: var(--border-color);
   color: var(--text-heading);
 }
-body.dark-mode .q-pill span {
+[data-theme="dark"] .q-pill span , body.dark-mode .q-pill span {
   color: var(--text-primary);
 }
 
-body.dark-mode .view-all-link {
+[data-theme="dark"] .view-all-link , body.dark-mode .view-all-link {
   color: var(--info);
 }
 
 /* ══════════════════════════════════════
    11. ACTIVITY LOG
 ══════════════════════════════════════ */
-body.dark-mode .activity-log-list li {
+[data-theme="dark"] .activity-log-list li , body.dark-mode .activity-log-list li {
   border-bottom-color: var(--border-color);
 }
-body.dark-mode .log-action {
+[data-theme="dark"] .log-action , body.dark-mode .log-action {
   color: var(--text-heading);
 }
-body.dark-mode .log-meta {
+[data-theme="dark"] .log-meta , body.dark-mode .log-meta {
   color: var(--text-secondary);
 }
 
 /* ══════════════════════════════════════
    12. CHART CARDS
 ══════════════════════════════════════ */
-body.dark-mode .chart-card {
+[data-theme="dark"] .chart-card , body.dark-mode .chart-card {
   background: var(--bg-card);
   border-color: var(--border-color);
 }
-body.dark-mode .chart-card h3 {
+[data-theme="dark"] .chart-card h3 , body.dark-mode .chart-card h3 {
   color: var(--text-heading);
 }
-body.dark-mode .chart-sub {
+[data-theme="dark"] .chart-sub , body.dark-mode .chart-sub {
   color: var(--text-secondary);
 }
 
 /* Donut legend */
-body.dark-mode .legend-item {
+[data-theme="dark"] .legend-item , body.dark-mode .legend-item {
   color: var(--text-heading);
 }
-body.dark-mode .legend-pct {
+[data-theme="dark"] .legend-pct , body.dark-mode .legend-pct {
   color: var(--text-secondary);
 }
 
@@ -474,8 +482,8 @@ body.dark-mode .legend-pct {
 /* ══════════════════════════════════════
    14. LOADING / EMPTY STATES
 ══════════════════════════════════════ */
-body.dark-mode .loading-row,
-body.dark-mode .loading-item {
+[data-theme="dark"] .loading-row, body.dark-mode .loading-row,
+[data-theme="dark"] .loading-item , body.dark-mode .loading-item {
   color: var(--text-secondary);
 }
 

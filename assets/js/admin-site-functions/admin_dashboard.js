@@ -259,7 +259,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const inventory = d.inventory_value;
     el("kpi-inventory-value").textContent = peso(inventory.total_value || 0);
     el("kpi-inventory-summary").textContent =
-      `${Number(inventory.products_count || 0).toLocaleString()} products + ${Number(inventory.materials_count || 0).toLocaleString()} materials`;
+      `${Number(inventory.materials_count || 0).toLocaleString()} materials in inventory`;
 
     // Store low stock data for modal
     const s = d.stock;

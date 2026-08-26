@@ -333,13 +333,37 @@ body.dark-mode #exportBtn:hover {
   box-shadow: var(--shadow-light);
 }
 
+#deleteAllBtn {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fca5a5;
+  font-weight: 600;
+}
+
+#deleteAllBtn:hover {
+  background: #fecaca;
+  color: #b91c1c;
+  transform: translateY(-1px);
+}
+
+body.dark-mode #deleteAllBtn {
+  background: rgba(220, 38, 38, 0.2);
+  color: #f87171;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+body.dark-mode #deleteAllBtn:hover {
+  background: rgba(220, 38, 38, 0.3);
+}
+
 .btn-delete {
-  background: var(--action-delete);
+  background: #ef4444;
   color: #fff;
+  border: none;
 }
 
 .btn-delete:hover {
-  background: var(--action-delete-hover);
+  background: #dc2626;
   transform: translateY(-1px);
 }
 
@@ -429,6 +453,8 @@ body.dark-mode #exportBtn:hover {
 
 body.dark-mode .filter-select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
 }
 
 .filter-select:hover {
@@ -454,36 +480,71 @@ body.dark-mode .filter-select {
   border: 1px solid var(--border);
   box-shadow: var(--shadow-light);
   overflow: hidden;
+  /* Match inventory scrolling setup */
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tbl {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  table-layout: fixed;
 }
 
 .tbl thead {
   background: var(--bg-light);
-  border-bottom: 1px solid var(--border);
 }
 
 .tbl th {
-  padding: 16px 20px;
+  padding: 14px 12px;
   text-align: left;
-  font-weight: 500;
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+  background: #fafafa;
+  border-bottom: 1px solid var(--border);
   white-space: nowrap;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.dark-mode .tbl th {
+  background: var(--surface2);
+  color: var(--muted);
 }
 
 .tbl td {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text-secondary);
+  padding: 16px 12px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
-  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body.dark-mode .tbl td {
+  color: var(--text-primary);
+  border-bottom-color: var(--border);
+}
+
+.tbl th:first-child,
+.tbl td:first-child {
+  padding-left: 24px;
+}
+
+.tbl th:last-child,
+.tbl td:last-child {
+  padding-right: 24px;
 }
 
 .tbl tbody tr {
@@ -495,92 +556,149 @@ body.dark-mode .filter-select {
   background: var(--hover-light);
 }
 
+body.dark-mode .tbl tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
 .tbl tbody tr:last-child td {
   border-bottom: none;
 }
 
-/* Column-specific */
-.tbl .col-price {
-  font-weight: 500;
-  color: var(--text-primary);
+/* Intelligent Column Widths & Strict Ellipsis Alignment */
+.col-name {
+  width: 35%;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-type {
+  width: 15%;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-num {
+  width: 15%;
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.col-status {
+  width: 15%;
+  text-align: left;
   white-space: nowrap;
 }
 
-.tbl .col-stock {
-  font-weight: 400;
+.col-action,
+.tbl th.col-action {
+  width: 100px;
+  text-align: right;
+  padding-right: 24px;
   white-space: nowrap;
+  overflow: visible !important;
+}
+
+.tbl td.col-action {
+  overflow: visible !important;
+  text-overflow: clip !important;
 }
 
 /* Status Badge */
 .badge-status {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 4px 14px;
-  border-radius: 20px;
+  padding: 5px 12px;
+  border-radius: 8px;
   font-size: 12px;
-  font-weight: 500;
-  line-height: 1.4;
+  font-weight: 600;
+  line-height: 1.2;
   white-space: nowrap;
 }
 
 .badge-status.in-stock {
-  background: var(--status-in-stock-bg);
-  color: var(--status-in-stock-text);
+  background: #dcfce7;
+  color: #15803d;
 }
 
 .badge-status.low-stock {
-  background: var(--status-low-stock-bg);
-  color: var(--status-low-stock-text);
+  background: #fef3c7;
+  color: #b45309;
 }
 
 .badge-status.out-of-stock {
-  background: var(--status-out-of-stock-bg);
-  color: var(--status-out-of-stock-text);
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
 .badge-status i {
   font-size: 10px;
 }
 
+/* Dark mode badge overrides if needed */
+body.dark-mode .badge-status.in-stock {
+  background: rgba(22, 163, 74, 0.2);
+  color: #4ade80;
+}
+body.dark-mode .badge-status.low-stock {
+  background: rgba(217, 119, 6, 0.2);
+  color: #fbbf24;
+}
+body.dark-mode .badge-status.out-of-stock {
+  background: rgba(220, 38, 38, 0.2);
+  color: #f87171;
+}
+
 /* Type Badge */
 .badge-type {
   display: inline-block;
-  padding: 3px 14px;
+  padding: 5px 12px;
   background: var(--bg-light);
-  border-radius: 20px;
+  border-radius: 8px;
   font-size: 12px;
+  font-weight: 600;
   color: var(--text-secondary);
   border: 1px solid var(--border);
   white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Action Buttons in Table - Icon Only, Solid Colors */
+/* Action Buttons in Table */
 .tbl-actions {
   display: flex;
   gap: 6px;
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: center;
 }
 
 .btn-action {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  font-size: 14px;
-  font-weight: 500;
-  font-family: "Inter", sans-serif;
-  border: none;
-  border-radius: var(--radius);
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: var(--transition);
+  font-size: 13px;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
-
 .btn-action i {
   font-size: 14px;
 }

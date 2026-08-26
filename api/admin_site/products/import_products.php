@@ -1,511 +1,439 @@
 <?php
-// import_products.php - Supports both CSV and Excel files
+/**
+ * import_products.php — Products Inventory Import Endpoint
+ *
+ * Consumes the unified enterprise import facade (ImportManager).
+ * Supports both CSV (.csv) and Excel (.xlsx) file uploads.
+ * Zero external dependencies — works natively on shared hosting (InfinityFree).
+ *
+ * Response JSON:
+ *   { success: bool, message: string, error_type?: string, technical_message?: string,
+ *     details?: { imported, updated, skipped, errors[] } }
+ */
+
+ob_start();
 error_reporting(E_ALL);
-ini_set('display_errors', 0); // Don't show errors in output
+ini_set('display_errors', 0);
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
-// ------------------------------------------------------------------
-// Structured error handling
-// ------------------------------------------------------------------
-// ImportException carries a "type" so the frontend can show a clear,
-// user-friendly modal instead of raw technical text. The real technical
-// detail is still logged server-side (error_log) and included in the
-// JSON as `technical_message` for developer debugging in the browser
-// console only - the UI never displays it directly to the end user.
-class ImportException extends Exception
-{
-    public $type;
+// Load ImportManager & dependencies
+$importManagerCandidates = [
+    __DIR__ . '/../shared/import_manager.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api/admin_site/shared/import_manager.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/Anything_Inside_Website/api/admin_site/shared/import_manager.php',
+];
 
-    public function __construct($message, $type = 'general')
-    {
-        parent::__construct($message);
-        $this->type = $type;
+$importManagerLoaded = false;
+foreach ($importManagerCandidates as $path) {
+    if (!empty($path) && file_exists($path)) {
+        require_once $path;
+        $importManagerLoaded = true;
+        break;
     }
 }
 
-// User-facing message shown per error type. Kept short, non-technical,
-// and actionable so the person knows what to do next.
-$friendlyMessages = [
-    'upload'          => "We couldn't upload your file. Please check your connection and try again.",
-    'invalid_type'    => "This file type isn't supported. Please upload an Excel file (.xlsx or .xls).",
-    'file_read'       => "We couldn't read this file. Please make sure it isn't corrupted or password-protected, then try again.",
-    'empty_file'      => "This file doesn't have any product data in it. Please add your products and try again.",
-    'column_mismatch' => 'This Excel file doesn\'t match the expected format. Please make sure it has a column named "Product Name" (or "Product", "Name", or "Item"), then try again.',
-    'database'        => "A technical problem occurred while saving your data. Please try again in a moment.",
-    'general'         => "Something went wrong during the import. Please try again.",
+if (!$importManagerLoaded) {
+    if (ob_get_length()) ob_clean();
+    echo json_encode([
+        'success'    => false,
+        'error_type' => 'server_error',
+        'message'    => 'Server Error: The core import component (import_manager.php) is missing.',
+    ]);
+    exit;
+}
+
+use AnythingInside\Import\ImportManager;
+use AnythingInside\Import\ImportException;
+use AnythingInside\Import\CsvParser;
+
+// Fatal error safety net
+register_shutdown_function(function (): void {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success'           => false,
+            'error_type'        => 'general',
+            'message'           => 'Fatal PHP error: ' . $error['message'],
+            'technical_message' => 'Fatal error in ' . basename($error['file']) . ' line ' . $error['line'],
+        ]);
+    }
+});
+
+// Load database configuration
+$configCandidates = [
+    __DIR__ . '/../../../connect/config.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/connect/config.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/Anything_Inside_Website/connect/config.php',
+];
+foreach ($configCandidates as $configPath) {
+    if (!empty($configPath) && file_exists($configPath)) {
+        require_once $configPath;
+        break;
+    }
+}
+
+// User friendly fallback messages
+const PROD_FRIENDLY_MESSAGES = [
+    'upload_error'    => "We couldn't upload your file. Please check your connection and try again.",
+    'invalid_type'    => 'This file type is not supported. Please upload a CSV (.csv) or Excel (.xlsx) file.',
+    'file_read'       => "We couldn't read this file. Make sure it isn't corrupted and try again.",
+    'empty_file'      => 'This file has no product data rows. Please add your products and try again.',
+    'column_mismatch' => 'No "Product Name" column was found. Make sure your file has a column called "Product Name", "Product", "Name", or "Item".',
+    'database'        => 'A database error occurred while saving products. Please try again.',
+    'general'         => 'Something went wrong during the product import. Please try again.',
 ];
 
-try {
-    // Include config
-    require_once __DIR__ . '/../../../connect/config.php';
+// Product column alias dictionary
+const PRODUCT_ALIAS_MAP = [
+    'product_code' => ['product code', 'code', 'sku', 'item code', 'product sku'],
+    'product_name' => ['product name', 'name', 'item name', 'product', 'item', 'product title'],
+    'price'        => ['price', 'selling price', 'unit price', 'retail price'],
+    'stock'        => ['stock', 'quantity', 'qty', 'on hand', 'inventory'],
+    'category'     => ['category', 'type', 'product type', 'product category', 'group'],
+    'brand'        => ['brand', 'brand name', 'manufacturer'],
+    'description'  => ['description', 'desc', 'details', 'product description'],
+    'materials'    => ['materials', 'material', 'components', 'ingredients'],
+];
 
+const PROD_EXTRA_FIELDS = [
+    'brand' => 'Brand',
+];
+
+function prod_clean_numeric(string $value): string
+{
+    return str_replace([',', '₱', '$', ' '], '', trim($value)) ?: '0';
+}
+
+function prod_generate_sku(string $productName): string
+{
+    $base = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $productName), 0, 8));
+    return ($base ?: 'PRD') . '-' . rand(100, 999);
+}
+
+function prod_resolve_type(PDO $pdo, string $typeName, int $defaultTypeId): int
+{
+    if ($typeName === '') {
+        return $defaultTypeId;
+    }
+
+    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $typeName)));
+    $stmt = $pdo->prepare('SELECT id FROM product_types WHERE name = ? OR slug = ? LIMIT 1');
+    $stmt->execute([$typeName, $slug]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($row) {
+        return (int) $row['id'];
+    }
+
+    $stmt = $pdo->prepare("INSERT INTO product_types (name, slug, status) VALUES (?, ?, 'active')");
+    $stmt->execute([$typeName, $slug]);
+    return (int) $pdo->lastInsertId();
+}
+
+function prod_upsert(PDO $pdo, array $data): string
+{
+    $existing = null;
+
+    if ($data['sku'] !== '') {
+        $stmt = $pdo->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
+        $stmt->execute([$data['sku']]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if (!$existing) {
+        $stmt = $pdo->prepare('SELECT id FROM products WHERE name = ? LIMIT 1');
+        $stmt->execute([$data['product_name']]);
+        $existing = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    if ($existing) {
+        $stmt = $pdo->prepare('
+            UPDATE products
+            SET sku             = :sku,
+                product_type_id = :type_id,
+                price           = :price,
+                stock           = :stock,
+                description     = :description,
+                extra_data      = :extra_data,
+                updated_at      = NOW()
+            WHERE id = :id
+        ');
+        $stmt->execute([
+            ':sku'         => $data['sku'],
+            ':type_id'     => $data['type_id'],
+            ':price'       => $data['price'],
+            ':stock'       => $data['stock'],
+            ':description' => $data['description'],
+            ':extra_data'  => $data['extra_data'],
+            ':id'          => $existing['id'],
+        ]);
+        return 'update';
+    }
+
+    $stmt = $pdo->prepare('
+        INSERT INTO products
+            (name, sku, product_type_id, price, stock, description,
+             unit, status, image, material_type, extra_data, created_at, updated_at)
+        VALUES
+            (:name, :sku, :type_id, :price, :stock, :description,
+             :unit, :status, :image, :material_type, :extra_data, NOW(), NOW())
+    ');
+    $stmt->execute([
+        ':name'          => $data['product_name'],
+        ':sku'           => $data['sku'],
+        ':type_id'       => $data['type_id'],
+        ':price'         => $data['price'],
+        ':stock'         => $data['stock'],
+        ':description'   => $data['description'],
+        ':unit'          => 'piece',
+        ':status'        => 'active',
+        ':image'         => 'default-product.png',
+        ':material_type' => 'assembled_product',
+        ':extra_data'    => $data['extra_data'],
+    ]);
+    return 'insert';
+}
+
+function prod_link_materials(PDO $pdo, int $productId, string $materialsStr): void
+{
+    $pdo->prepare('DELETE FROM product_materials WHERE product_id = ?')->execute([$productId]);
+
+    foreach (explode(';', $materialsStr) as $entry) {
+        $entry = trim($entry);
+        if ($entry === '') continue;
+
+        if (preg_match('/^(.+?)\s*\(([\d.]+)\s*[^)]*\)$/', $entry, $m)) {
+            $materialName = trim($m[1]);
+            $quantity     = (float) $m[2];
+        } else {
+            $materialName = $entry;
+            $quantity     = 1.0;
+        }
+
+        $stmt = $pdo->prepare('SELECT id FROM materials WHERE material_name = ? LIMIT 1');
+        $stmt->execute([$materialName]);
+        $material = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$material) {
+            $stmt = $pdo->prepare(
+                "INSERT INTO materials (material_name, type, unit_cost, total_stock)
+                 VALUES (?, 'imported', 0, 0)"
+            );
+            $stmt->execute([$materialName]);
+            $materialId = (int) $pdo->lastInsertId();
+        } else {
+            $materialId = (int) $material['id'];
+        }
+
+        $stmt = $pdo->prepare(
+            'INSERT INTO product_materials (product_id, material_id, quantity) VALUES (?, ?, ?)'
+        );
+        $stmt->execute([$productId, $materialId, $quantity]);
+    }
+}
+
+// Main execution
+try {
     if (!function_exists('getDBConnection')) {
-        throw new ImportException('getDBConnection function not found', 'database');
+        throw new ImportException('Database configuration is missing.', 'database');
     }
 
     $pdo = getDBConnection();
     if (!$pdo) {
-        throw new ImportException('Database connection failed', 'database');
+        throw new ImportException('Database connection failed.', 'database');
     }
 
-    // Ensure the products table has the extra_data column for storing
-    // unrecognized Excel columns. Only adds it if it doesn't already exist.
-    $colCheck = $pdo->query("SHOW COLUMNS FROM products LIKE 'extra_data'");
-    if ($colCheck->rowCount() === 0) {
-        $pdo->exec("ALTER TABLE products ADD COLUMN extra_data JSON NULL");
-    }
-
-    // Check if file was uploaded
-    if (!isset($_FILES['excel_file']) || $_FILES['excel_file']['error'] !== UPLOAD_ERR_OK) {
-        $errorMessages = [
-            UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive',
-            UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive',
-            UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded',
-            UPLOAD_ERR_NO_FILE => 'No file was uploaded',
-            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder',
-            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk',
-            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload',
-        ];
-        $errorCode = $_FILES['excel_file']['error'] ?? UPLOAD_ERR_NO_FILE;
-        $errorMsg = $errorMessages[$errorCode] ?? 'Unknown upload error';
-        throw new ImportException('Upload error: ' . $errorMsg, 'upload');
-    }
-
-    $file = $_FILES['excel_file']['tmp_name'];
-    $originalName = $_FILES['excel_file']['name'];
-    $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
-
-    // Validate file extension
-    if (!in_array($extension, ['xlsx', 'xls', 'csv'])) {
-        throw new ImportException('Only .xlsx, .xls, and .csv files are allowed. Got: ' . $extension, 'invalid_type');
-    }
-
-    if ($extension === 'csv' && !is_uploaded_file($file)) {
-        throw new ImportException('Uploaded file could not be verified.', 'upload');
-    }
-
-    // Get data from file (supports both CSV and Excel)
-    $rows = [];
-
-    if ($extension === 'csv') {
-        // Handle CSV file
-        if (($handle = fopen($file, 'r')) !== false) {
-            while (($data = fgetcsv($handle, 1000, ',')) !== false) {
-                $rows[] = $data;
-            }
-            fclose($handle);
+    // Ensure extra_data column exists
+    try {
+        $check = $pdo->query("SHOW COLUMNS FROM products LIKE 'extra_data'");
+        if ($check && $check->rowCount() === 0) {
+            $pdo->exec('ALTER TABLE products ADD COLUMN extra_data JSON NULL');
         }
-    } else {
-        // Handle Excel file - try to load PhpSpreadsheet
-        try {
-            // Check if vendor/autoload.php exists
-            $vendorPath = __DIR__ . '/../../../vendor/autoload.php';
-            if (!file_exists($vendorPath)) {
-                throw new ImportException('vendor/autoload.php not found. Please run: composer require phpoffice/phpspreadsheet', 'file_read');
-            }
+    } catch (Throwable $ignored) {}
 
-            require_once $vendorPath;
-
-            // Use fully-qualified class names instead of top-level "use" imports,
-            // since "use" statements are compile-time only and cannot legally
-            // appear inside a try block / conditional branch (causes a parse error).
-            $reader = null;
-
-            if ($extension === 'xlsx') {
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
-            } elseif ($extension === 'xls') {
-                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
-            }
-
-            if ($reader) {
-                $spreadsheet = $reader->load($file);
-                $sheet = $spreadsheet->getActiveSheet();
-                $rows = $sheet->toArray();
-            } else {
-                // Fallback to IOFactory
-                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file);
-                $sheet = $spreadsheet->getActiveSheet();
-                $rows = $sheet->toArray();
-            }
-        } catch (ImportException $e) {
-            throw $e;
-        } catch (Throwable $e) {
-            // If PhpSpreadsheet fails (corrupt file, wrong format, etc.),
-            // try to read it as CSV as a last-resort fallback.
-            $rows = [];
-            if (($handle = fopen($file, 'r')) !== false) {
-                while (($data = fgetcsv($handle, 1000, ',')) !== false) {
-                    $rows[] = $data;
-                }
-                fclose($handle);
-            }
-            if (empty($rows)) {
-                error_log('Import file_read failure: ' . $e->getMessage());
-                throw new ImportException('Failed to read file: ' . $e->getMessage(), 'file_read');
-            }
+    // 1. Identify upload field from request
+    $fileKey = null;
+    foreach (['csv_file', 'xlsx_file', 'excel_file', 'file', 'import_file'] as $key) {
+        if (isset($_FILES[$key]) && ($_FILES[$key]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $fileKey = $key;
+            break;
         }
     }
 
-    if (empty($rows) || count($rows) < 2) {
-        throw new ImportException('File is empty or has no data rows. Found ' . count($rows) . ' rows.', 'empty_file');
+    if ($fileKey === null) {
+        throw new ImportException('No product file was selected.', 'upload_error');
     }
 
-    // ------------------------------------------------------------------
-    // Dynamic header-based column mapping
-    // ------------------------------------------------------------------
-    // Headers are read from row 0 and matched (case-insensitive, trimmed)
-    // against a set of known aliases. This lets the Excel file have its
-    // columns in ANY order - we map by header name, not by position.
-    // Any header that isn't recognized is preserved (not discarded) and
-    // its values are stored per-row in the `extra_data` JSON column.
+    // 2. Parse file using unified engine with smart multi-sheet tab resolution
+    $cleanRows = ImportManager::parseUploadedFile(
+        $_FILES[$fileKey],
+        ImportManager::MAX_FILE_SIZE,
+        PRODUCT_ALIAS_MAP,
+        ['product', 'products', 'item', 'items']
+    );
 
-    // Keep the raw header row untouched (no filtering/reindexing) so that
-    // column indexes stay perfectly aligned with each data row's indexes.
-    $rawHeaderRow = $rows[0];
-    $headers = [];
-    foreach ($rawHeaderRow as $idx => $h) {
-        $headers[$idx] = ($h === null) ? '' : trim($h);
-    }
+    // 3. Map headers
+    $headerRow = $cleanRows[0];
+    $mapping   = CsvParser::mapColumns($headerRow, PRODUCT_ALIAS_MAP);
 
-    // Normalizes a header for comparison: trim, collapse inner whitespace,
-    // lowercase. E.g. " Product   Code " -> "product code"
-    function normalizeHeaderName($h)
-    {
-        $h = trim((string) $h);
-        $h = preg_replace('/\s+/', ' ', $h);
-        return strtolower($h);
-    }
-
-    // Canonical field => accepted header aliases (already normalized/lowercase).
-    $aliasMap = [
-        'product_code' => ['product code', 'code', 'sku', 'item code'],
-        'product_name' => ['product name', 'name', 'item name', 'product', 'item'],
-        'price'        => ['price', 'selling price', 'unit price'],
-        'stock'        => ['stock', 'quantity', 'qty'],
-        'category'     => ['category', 'type', 'product type', 'product category'],
-        'brand'        => ['brand'],
-        'description'  => ['description', 'desc', 'details'],
-        // Kept for backward compatibility with the existing materials feature.
-        'materials'    => ['materials', 'material', 'components'],
-    ];
-
-    // Canonical fields that don't have a dedicated products table column.
-    // Their values are still recognized (not treated as "unknown"), but are
-    // routed into extra_data using a clean, human-readable key.
-    $noColumnFields = [
-        'brand' => 'Brand',
-    ];
-
-    $colMap = [];       // canonical_field => column index
-    $unknownCols = [];  // column index => original header text
-
-    foreach ($headers as $index => $header) {
-        if ($header === '') {
-            continue; // blank header cell, skip entirely
-        }
-
-        $normalized = normalizeHeaderName($header);
-        $matchedField = null;
-
-        foreach ($aliasMap as $field => $aliases) {
-            if (isset($colMap[$field])) {
-                continue; // already mapped to an earlier column
-            }
-            if (in_array($normalized, $aliases, true)) {
-                $matchedField = $field;
-                break;
-            }
-        }
-
-        if ($matchedField !== null) {
-            $colMap[$matchedField] = $index;
+    if (!isset($mapping['map']['product_name'])) {
+        $fallback = CsvParser::firstIdentifierColumn($headerRow);
+        if ($fallback !== null) {
+            $mapping['map']['product_name'] = $fallback;
         } else {
-            $unknownCols[$index] = $header;
+            throw new ImportException(
+                'No "Product Name" column was found in the file headers.',
+                'column_mismatch'
+            );
         }
     }
 
-    // Validate required columns
-    if (!isset($colMap['product_name'])) {
-        throw new ImportException(
-            'Could not find a "Product Name" column. Found headers: ' . implode(', ', array_filter($headers)),
-            'column_mismatch'
-        );
+    $colMap    = $mapping['map'];
+    $extraCols = $mapping['extra'];
+    $dataRows  = array_slice($cleanRows, 1);
+
+    if (empty($dataRows)) {
+        throw new ImportException('The file contains headers but no product rows.', 'empty_file');
     }
 
-    $pdo->beginTransaction();
-
-    $imported = 0;
-    $updated = 0;
-    $errors = [];
-    $skipped = 0;
-
-    // Get or create default product type
-    $defaultTypeId = null;
+    // 4. Ensure default product type exists
     $stmt = $pdo->prepare("SELECT id FROM product_types WHERE name = 'Uncategorized' LIMIT 1");
     $stmt->execute();
     $defaultType = $stmt->fetch(PDO::FETCH_ASSOC);
+
     if ($defaultType) {
-        $defaultTypeId = $defaultType['id'];
+        $defaultTypeId = (int) $defaultType['id'];
     } else {
         $stmt = $pdo->prepare("INSERT INTO product_types (name, slug, status) VALUES ('Uncategorized', 'uncategorized', 'active')");
         $stmt->execute();
-        $defaultTypeId = $pdo->lastInsertId();
+        $defaultTypeId = (int) $pdo->lastInsertId();
     }
 
-    // Helper: clean a numeric string (strips currency symbols, commas,
-    // stray spaces) before casting, so "₱1,250.00" or " 20 " convert correctly.
-    function cleanNumeric($val)
-    {
-        $val = trim((string) $val);
-        $val = str_replace([',', '₱', '$', ' '], '', $val);
-        return $val === '' ? 0 : $val;
-    }
+    // 5. Database transaction
+    $pdo->beginTransaction();
 
-    // Process each row
-    for ($i = 1; $i < count($rows); $i++) {
-        $row = $rows[$i];
+    $totalImported = 0;
+    $totalUpdated  = 0;
+    $totalSkipped  = 0;
+    $errors        = [];
 
-        // Skip completely empty rows
-        $rowData = array_map(function ($v) {
-            return trim((string) ($v ?? ''));
-        }, $row);
-        if (empty(array_filter($rowData, function ($val) {
-            return $val !== '' && $val !== null;
-        }))) {
-            $skipped++;
+    foreach ($dataRows as $rowIndex => $row) {
+        $get = function (string $field) use ($row, $colMap): string {
+            if (!isset($colMap[$field])) return '';
+            return trim((string) ($row[$colMap[$field]] ?? ''));
+        };
+
+        $productName = $get('product_name');
+        if ($productName === '') {
+            $totalSkipped++;
             continue;
         }
 
         try {
-            // Get values from columns using the dynamic header map
-            $productName = isset($colMap['product_name']) ? trim($row[$colMap['product_name']] ?? '') : '';
-            if (empty($productName)) {
-                $errors[] = "Row " . ($i + 1) . ": Skipped - Product name is required";
-                $skipped++;
-                continue;
+            $sku          = $get('product_code');
+            $price        = (float) prod_clean_numeric($get('price') ?: '0');
+            $stock        = (int)   prod_clean_numeric($get('stock') ?: '0');
+            $description  = $get('description');
+            $typeName     = $get('category');
+            $materialsStr = $get('materials');
+
+            if ($sku === '') {
+                $sku = prod_generate_sku($productName);
             }
 
-            $productType = isset($colMap['category']) ? trim($row[$colMap['category']] ?? '') : '';
-            $sku = isset($colMap['product_code']) ? trim($row[$colMap['product_code']] ?? '') : '';
-            $price = isset($colMap['price']) ? floatval(cleanNumeric($row[$colMap['price']] ?? 0)) : 0;
-            $stock = isset($colMap['stock']) ? intval(cleanNumeric($row[$colMap['stock']] ?? 0)) : 0;
-            $materialsStr = isset($colMap['materials']) ? trim($row[$colMap['materials']] ?? '') : '';
-            $description = isset($colMap['description']) ? trim($row[$colMap['description']] ?? '') : '';
+            $typeId = prod_resolve_type($pdo, $typeName, $defaultTypeId);
 
-            // Build extra_data JSON from recognized-but-columnless fields
-            // (e.g. Brand) plus any header that wasn't recognized at all.
             $extraData = [];
-            foreach ($noColumnFields as $field => $label) {
+            foreach (PROD_EXTRA_FIELDS as $field => $label) {
                 if (isset($colMap[$field])) {
-                    $val = trim($row[$colMap[$field]] ?? '');
-                    if ($val !== '') {
-                        $extraData[$label] = $val;
-                    }
+                    $val = trim((string) ($row[$colMap[$field]] ?? ''));
+                    if ($val !== '') $extraData[$label] = $val;
                 }
             }
-            foreach ($unknownCols as $colIndex => $originalHeader) {
-                $val = isset($row[$colIndex]) ? trim((string) $row[$colIndex]) : '';
-                if ($val !== '') {
-                    $extraData[$originalHeader] = $val;
-                }
+
+            foreach ($extraCols as $colIndex => $originalHeader) {
+                $val = trim((string) ($row[$colIndex] ?? ''));
+                if ($val !== '') $extraData[$originalHeader] = $val;
             }
+
             $extraDataJson = !empty($extraData) ? json_encode($extraData, JSON_UNESCAPED_UNICODE) : null;
 
-            // Generate SKU if not provided
-            if (empty($sku)) {
-                $sku = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $productName), 0, 8)) . '-' . rand(100, 999);
-            }
+            $action = prod_upsert($pdo, [
+                'product_name' => $productName,
+                'sku'          => $sku,
+                'type_id'      => $typeId,
+                'price'        => $price,
+                'stock'        => $stock,
+                'description'  => $description,
+                'extra_data'   => $extraDataJson,
+            ]);
 
-            // Get or create product type
-            $typeId = $defaultTypeId;
-            if (!empty($productType)) {
-                $stmt = $pdo->prepare("SELECT id FROM product_types WHERE name = ? OR slug = ?");
-                $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $productType)));
-                $stmt->execute([$productType, $slug]);
-                $type = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                if ($type) {
-                    $typeId = $type['id'];
-                } else {
-                    $stmt = $pdo->prepare("INSERT INTO product_types (name, slug, status) VALUES (?, ?, 'active')");
-                    $stmt->execute([$productType, $slug]);
-                    $typeId = $pdo->lastInsertId();
-                }
-            }
-
-            // Check if product already exists by SKU or Name
-            $existing = null;
-            if (!empty($sku)) {
-                $stmt = $pdo->prepare("SELECT id FROM products WHERE sku = ?");
-                $stmt->execute([$sku]);
-                $existing = $stmt->fetch(PDO::FETCH_ASSOC);
-            }
-
-            if (!$existing) {
-                $stmt = $pdo->prepare("SELECT id FROM products WHERE name = ?");
-                $stmt->execute([$productName]);
-                $existing = $stmt->fetch(PDO::FETCH_ASSOC);
-            }
-
-            $defaultImage = 'default-product.png';
-            $defaultUnit = 'piece';
-            $defaultStatus = 'active';
-
-            if ($existing) {
-                // Update existing product
-                $stmt = $pdo->prepare("
-                    UPDATE products 
-                    SET sku = ?, 
-                        product_type_id = ?, 
-                        price = ?,
-                        stock = ?,
-                        description = ?,
-                        extra_data = ?,
-                        updated_at = NOW()
-                    WHERE id = ?
-                ");
-                $stmt->execute([
-                    $sku,
-                    $typeId,
-                    $price,
-                    $stock,
-                    $description,
-                    $extraDataJson,
-                    $existing['id']
-                ]);
-                $productId = $existing['id'];
-                $updated++;
+            if ($action === 'insert') {
+                $productId = (int) $pdo->lastInsertId();
+                $totalImported++;
             } else {
-                // Insert new product
-                $stmt = $pdo->prepare("
-                    INSERT INTO products (
-                        name, 
-                        sku, 
-                        product_type_id, 
-                        price, 
-                        stock, 
-                        description,
-                        unit, 
-                        status, 
-                        image,
-                        material_type,
-                        extra_data,
-                        created_at,
-                        updated_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'assembled_product', ?, NOW(), NOW())
-                ");
-                $stmt->execute([
-                    $productName,
-                    $sku,
-                    $typeId,
-                    $price,
-                    $stock,
-                    $description,
-                    $defaultUnit,
-                    $defaultStatus,
-                    $defaultImage,
-                    $extraDataJson
-                ]);
-                $productId = $pdo->lastInsertId();
-                $imported++;
+                $stmt2 = $pdo->prepare('SELECT id FROM products WHERE name = ? LIMIT 1');
+                $stmt2->execute([$productName]);
+                $row2      = $stmt2->fetch(PDO::FETCH_ASSOC);
+                $productId = $row2 ? (int) $row2['id'] : 0;
+                $totalUpdated++;
             }
 
-            // Process materials if available
-            if (!empty($materialsStr)) {
-                // Parse materials: "Material Name (quantity); Material Name (quantity)"
-                $materialsList = explode(';', $materialsStr);
-
-                // Delete existing materials
-                $pdo->prepare("DELETE FROM product_materials WHERE product_id = ?")->execute([$productId]);
-
-                foreach ($materialsList as $materialStr) {
-                    $materialStr = trim($materialStr);
-                    if (empty($materialStr)) continue;
-
-                    // Extract material name and quantity
-                    if (preg_match('/^(.+?)\s*\(([\d.]+)\s*([^)]*)\)$/', $materialStr, $matches)) {
-                        $materialName = trim($matches[1]);
-                        $quantity = floatval($matches[2]);
-                    } else {
-                        $materialName = $materialStr;
-                        $quantity = 1;
-                    }
-
-                    // Find or create material
-                    $stmt = $pdo->prepare("SELECT id FROM materials WHERE material_name = ?");
-                    $stmt->execute([$materialName]);
-                    $material = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                    if ($material) {
-                        $materialId = $material['id'];
-                    } else {
-                        $stmt = $pdo->prepare("INSERT INTO materials (material_name, type, unit_cost, total_stock) VALUES (?, 'imported', 0, 0)");
-                        $stmt->execute([$materialName]);
-                        $materialId = $pdo->lastInsertId();
-                    }
-
-                    // Link material to product
-                    $stmt = $pdo->prepare("INSERT INTO product_materials (product_id, material_id, quantity) VALUES (?, ?, ?)");
-                    $stmt->execute([$productId, $materialId, $quantity]);
-                }
+            if ($materialsStr !== '' && $productId > 0) {
+                prod_link_materials($pdo, $productId, $materialsStr);
             }
-        } catch (Exception $e) {
-            // Row-level errors never abort the whole import - record the
-            // reason and continue with the next row.
-            $errors[] = "Row " . ($i + 1) . ": " . $e->getMessage();
-            $skipped++;
+
+        } catch (Exception $rowError) {
+            $errors[] = 'Row ' . ($rowIndex + 2) . ' ("' . $productName . '"): ' . $rowError->getMessage();
+            $totalSkipped++;
         }
     }
 
     $pdo->commit();
 
-    $summary = "Import completed! Added: $imported, Updated: $updated, Skipped: $skipped, Errors: " . count($errors);
+    $origExt = strtolower(pathinfo($_FILES[$fileKey]['name'] ?? '', PATHINFO_EXTENSION));
+    $formatLabel = ($origExt === 'xlsx') ? 'Excel (.xlsx)' : 'CSV (.csv)';
 
+    if (ob_get_length()) ob_clean();
     echo json_encode([
         'success' => true,
-        'message' => $summary,
+        'message' => "{$formatLabel} import completed — Added: {$totalImported}, Updated: {$totalUpdated}, Skipped: {$totalSkipped}",
         'details' => [
-            'imported' => $imported,
-            'updated' => $updated,
-            'skipped' => $skipped,
-            'errors' => $errors
-        ]
-    ]);
+            'imported' => $totalImported,
+            'updated'  => $totalUpdated,
+            'skipped'  => $totalSkipped,
+            'errors'   => $errors,
+        ],
+    ], JSON_UNESCAPED_UNICODE);
+
 } catch (ImportException $e) {
-    if (isset($pdo) && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    error_log('Import failed [' . $e->type . ']: ' . $e->getMessage());
+    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
+    if (ob_get_length()) ob_clean();
     echo json_encode([
-        'success' => false,
-        'error_type' => $e->type,
-        'message' => $friendlyMessages[$e->type] ?? $friendlyMessages['general'],
-        'technical_message' => $e->getMessage()
+        'success'           => false,
+        'error_type'        => $e->errorType,
+        'message'           => PROD_FRIENDLY_MESSAGES[$e->errorType] ?? $e->getMessage(),
+        'technical_message' => $e->technicalMessage,
     ]);
 } catch (PDOException $e) {
-    if (isset($pdo) && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    error_log('Import database error: ' . $e->getMessage());
+    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
+    if (ob_get_length()) ob_clean();
     echo json_encode([
-        'success' => false,
-        'error_type' => 'database',
-        'message' => $friendlyMessages['database'],
-        'technical_message' => $e->getMessage()
+        'success'           => false,
+        'error_type'        => 'database',
+        'message'           => PROD_FRIENDLY_MESSAGES['database'],
+        'technical_message' => $e->getMessage(),
     ]);
 } catch (Throwable $e) {
-    // Catches anything unexpected (PHP fatal-level errors, type errors, etc.)
-    // so the response is always valid JSON instead of a raw PHP error page
-    // that would break JSON.parse() on the frontend.
-    if (isset($pdo) && $pdo->inTransaction()) {
-        $pdo->rollBack();
-    }
-    error_log('Import unexpected error: ' . $e->getMessage());
+    if (isset($pdo) && $pdo->inTransaction()) $pdo->rollBack();
+    if (ob_get_length()) ob_clean();
     echo json_encode([
-        'success' => false,
-        'error_type' => 'general',
-        'message' => $friendlyMessages['general'],
-        'technical_message' => $e->getMessage()
+        'success'           => false,
+        'error_type'        => 'general',
+        'message'           => PROD_FRIENDLY_MESSAGES['general'],
+        'technical_message' => $e->getMessage(),
     ]);
 }

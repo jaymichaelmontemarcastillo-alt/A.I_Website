@@ -33,48 +33,114 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                         <i class="fa-solid fa-download"></i> Export
                     </button>
                     <?php if ($isAdminRole): ?>
-                    <button class="btn-delete-all" onclick="matOpenDeleteAllModal()" style="background: #dc2626; color: #fff; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 14px;">
-                        <i class="fa-solid fa-trash"></i> Delete All
+                    <button class="btn-delete-all" onclick="matOpenDeleteAllModal()" style="background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; transition: all 0.2s ease;" onmouseover="this.style.background='#fecaca';" onmouseout="this.style.background='#fee2e2';">
+                        <i class="fa-solid fa-trash" style="font-size: 12px;"></i> Delete All
                     </button>
                     <?php endif; ?>
                 </div>
             </div>
 
-            <!-- Import CSV Modal -->
+            <!-- Import Materials Modal (CSV & XLSX supported) -->
             <div id="matImportModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:99999; align-items:center; justify-content:center;">
-                <div style="background:#fff; border-radius:10px; max-width:500px; width:90%; padding:24px;">
-                    <h3 style="margin:0 0 16px 0;"><i class="fa-solid fa-file-import"></i> Import Materials</h3>
-                    <p style="margin-bottom:16px; color:#666;">Upload CSV or Excel file (.xlsx, .xls) with columns: Type, Materials, Shop, PH, Total On Hand, Total Cost, Quantity per pack, Unit Cost, Remarks</p>
-                    <p style="margin-bottom:16px; color:#666; font-size: 0.9rem; background: #f0f9ff; padding: 8px; border-radius: 5px; border-left: 3px solid #2563eb;"><i class="fa-solid fa-info-circle" style="color: #2563eb;"></i> For Excel files with multiple sheets, only sheets matching the required columns will be accepted.</p>
-                    <button onclick="matDownloadSampleCSV()" style="margin-bottom:16px; padding:6px 12px; background:#f3f4f6; border:1px solid #ddd; border-radius:5px; cursor:pointer;">
-                        <i class="fa-solid fa-download"></i> Download Sample CSV
-                    </button>
-                    <input type="file" id="importCSVFile" accept=".csv,.xlsx,.xls" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; margin-bottom:16px;">
-                    <div id="matImportSheetSelector" style="display:none; margin-bottom:16px;">
-                        <label style="display:block; margin-bottom:6px; font-weight:600; font-size:0.9rem;">Select Sheet:</label>
-                        <select id="matImportSheetSelect" style="width:100%; padding:8px; border:1px solid #ddd; border-radius:5px;"></select>
+                <div style="background:#fff; border-radius:12px; max-width:540px; width:90%; padding:24px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);">
+
+                    <!-- Header -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                        <h3 style="margin:0; font-size:1.15rem; font-weight:700; color:#111827; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-file-import" style="color:#2563eb;"></i> Import Materials &amp; Stock
+                        </h3>
+                        <button onclick="matCloseImportModal()" style="background:none; border:none; color:#9ca3af; cursor:pointer; font-size:1.1rem;"><i class="fa-solid fa-xmark"></i></button>
                     </div>
-                    <div id="matImportSheetError" style="display:none; color:#dc2626; font-size:0.9rem; margin-bottom:12px; padding:8px; background:#fee2e2; border-radius:5px;"></div>
-                    <div style="display:flex; gap:10px; justify-content:flex-end;">
-                        <button onclick="matCloseImportModal()" style="padding:8px 16px; border:1px solid #ddd; border-radius:5px; background:#fff; cursor:pointer;">Cancel</button>
-                        <button onclick="matProcessImport()" style="padding:8px 20px; border:none; border-radius:5px; background:#2563eb; color:#fff; cursor:pointer;"><i class="fa-solid fa-upload"></i> Import</button>
+                    <p style="margin:0 0 16px 0; color:#4b5563; font-size:0.875rem;">
+                        Upload a CSV or Excel file containing your inventory items and stock levels.
+                    </p>
+
+                    <!-- Supported formats notice -->
+                    <div style="display:flex; gap:10px; margin-bottom:16px;">
+                        <!-- CSV badge -->
+                        <div style="flex:1; padding:10px 12px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-file-csv" style="color:#0ea5e9; font-size:1.2rem;"></i>
+                            <div>
+                                <div style="font-weight:600; font-size:0.85rem; color:#0369a1;">.CSV</div>
+                                <div style="font-size:0.75rem; color:#6b7280;">Comma/Semicolon separated</div>
+                            </div>
+                        </div>
+                        <!-- XLSX badge -->
+                        <div style="flex:1; padding:10px 12px; background:#f0fdf4; border:1px solid #86efac; border-radius:8px; display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-file-excel" style="color:#16a34a; font-size:1.2rem;"></i>
+                            <div>
+                                <div style="font-weight:600; font-size:0.85rem; color:#15803d;">.XLSX</div>
+                                <div style="font-size:0.75rem; color:#6b7280;">Excel spreadsheet</div>
+                            </div>
+                        </div>
                     </div>
+
+                    <!-- Drag & drop dropzone container -->
+                    <div id="matDropzone" style="border:2px dashed #cbd5e1; border-radius:10px; padding:20px; text-align:center; background:#f8fafc; cursor:pointer; transition:all 0.2s ease; margin-bottom:12px;" onclick="document.getElementById('importCSVFile').click();">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size:2rem; color:#3b82f6; margin-bottom:8px;"></i>
+                        <div style="font-weight:600; font-size:0.9rem; color:#1e293b;">Click to browse or drag &amp; drop file here</div>
+                        <div style="font-size:0.78rem; color:#64748b; margin-top:4px;">Supports .csv and .xlsx up to 10MB</div>
+                        <input
+                            type="file"
+                            id="importCSVFile"
+                            accept=".csv,.xlsx"
+                            style="display:none;"
+                        >
+                    </div>
+
+                    <!-- Live file-type hint shown after user picks a file -->
+                    <div id="matImportFileHint" style="margin:0 0 16px; font-size:0.85rem; color:#475569; min-height:20px;"></div>
+
+                    <!-- Sample template download -->
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding-top:12px; border-top:1px solid #e2e8f0;">
+                        <button onclick="matDownloadSampleCSV()" style="padding:7px 12px; background:#f1f5f9; border:1px solid #cbd5e1; border-radius:6px; cursor:pointer; font-size:0.82rem; color:#334155; display:inline-flex; align-items:center; gap:6px;">
+                            <i class="fa-solid fa-download" style="color:#64748b;"></i> Download Sample CSV
+                        </button>
+
+                        <div style="display:flex; gap:8px;">
+                            <button onclick="matCloseImportModal()" style="padding:8px 16px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; cursor:pointer; font-size:0.875rem; color:#475569;">Cancel</button>
+                            <button onclick="matProcessImport()" style="padding:8px 20px; border:none; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; font-size:0.875rem; font-weight:500; display:inline-flex; align-items:center; gap:6px;">
+                                <i class="fa-solid fa-upload"></i> Import File
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
+
             <!-- Delete All Materials Modal -->
-            <div id="matDeleteAllModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:99999; align-items:center; justify-content:center;">
-                <div style="background:#fff; border-radius:10px; max-width:450px; width:90%; padding:24px;">
-                    <h3 style="margin:0 0 16px 0; color:#dc2626;"><i class="fa-solid fa-triangle-exclamation"></i> Delete All Materials</h3>
-                    <p style="margin:0 0 16px 0; color:#666;">This will permanently delete every material from the inventory. This action cannot be undone.</p>
-                    <div style="margin-bottom:16px;">
-                        <label for="matDeleteAllPassword" style="display:block; margin-bottom:6px; font-weight:600; font-size:0.9rem;">Admin Password <span style="color:#dc2626;">*</span></label>
-                        <input type="password" id="matDeleteAllPassword" placeholder="Enter your admin password" autocomplete="current-password" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:5px; box-sizing:border-box;">
+            <div id="matDeleteAllModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.55); backdrop-filter:blur(4px); z-index:99999; align-items:center; justify-content:center; font-family:'Inter', sans-serif;">
+                <div style="background:#fff; border-radius:16px; max-width:440px; width:90%; padding:24px; box-shadow:0 20px 50px rgba(0,0,0,0.18); border:1px solid #f1f5f9; position:relative;">
+                    <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                        <div style="width:44px; height:44px; border-radius:12px; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <h3 style="margin:0; font-size:1.1rem; font-weight:700; color:#0f172a; font-family:'Inter', sans-serif;">Delete All Materials</h3>
+                            <span style="font-size:0.78rem; color:#ef4444; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">Irreversible Action</span>
+                        </div>
                     </div>
-                    <div id="matDeleteAllFeedback" style="display:none; margin-bottom:12px; padding:8px; border-radius:5px; font-size:0.9rem;"></div>
+                    
+                    <p style="margin:0 0 18px 0; color:#64748b; font-size:0.875rem; line-height:1.5; font-family:'Inter', sans-serif;">
+                        This will permanently erase every material item and stock record from the inventory. This action cannot be undone.
+                    </p>
+
+                    <div style="margin-bottom:18px;">
+                        <label for="matDeleteAllPassword" style="display:block; margin-bottom:6px; font-weight:600; font-size:0.85rem; color:#334155; font-family:'Inter', sans-serif;">
+                            Admin Password <span style="color:#ef4444;">*</span>
+                        </label>
+                        <input type="password" id="matDeleteAllPassword" placeholder="Enter your admin password" autocomplete="current-password" 
+                            style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:10px; box-sizing:border-box; font-family:'Inter', sans-serif; font-size:0.9rem; color:#1e293b; outline:none; transition:all 0.2s ease; background:#f8fafc;"
+                            onfocus="this.style.borderColor='#ef4444'; this.style.backgroundColor='#fff'; this.style.boxShadow='0 0 0 3px rgba(239, 68, 68, 0.15)';"
+                            onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
+                    </div>
+
+                    <div id="matDeleteAllFeedback" style="display:none; margin-bottom:16px; padding:10px 14px; border-radius:10px; font-size:0.85rem; font-family:'Inter', sans-serif;"></div>
+
                     <div style="display:flex; gap:10px; justify-content:flex-end;">
-                        <button onclick="matCloseDeleteAllModal()" style="padding:8px 16px; border:1px solid #ddd; border-radius:5px; background:#fff; cursor:pointer;">Cancel</button>
-                        <button onclick="matConfirmDeleteAll()" id="matDeleteAllConfirmBtn" style="padding:8px 20px; border:none; border-radius:5px; background:#dc2626; color:#fff; cursor:pointer;"><i class="fa-solid fa-trash"></i> Delete All Materials</button>
+                        <button onclick="matCloseDeleteAllModal()" style="padding:10px 18px; border:1px solid #e2e8f0; border-radius:10px; background:#f1f5f9; color:#475569; cursor:pointer; font-family:'Inter', sans-serif; font-weight:600; font-size:0.875rem; transition:all 0.2s ease;" onmouseover="this.style.background='#e2e8f0';" onmouseout="this.style.background='#f1f5f9';">Cancel</button>
+                        <button onclick="matConfirmDeleteAll()" id="matDeleteAllConfirmBtn" style="padding:10px 20px; border:none; border-radius:10px; background:#ef4444; color:#fff; cursor:pointer; font-family:'Inter', sans-serif; font-weight:600; font-size:0.875rem; display:inline-flex; align-items:center; gap:8px; box-shadow:0 4px 12px rgba(239, 68, 68, 0.25); transition:all 0.2s ease;" onmouseover="this.style.background='#dc2626';" onmouseout="this.style.background='#ef4444';"><i class="fa-solid fa-trash"></i> Delete All Materials</button>
                     </div>
                 </div>
             </div>
@@ -96,7 +162,7 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                 <div style="background:#fff;
                             border-radius:12px;
                             width:100%;
-                            max-width:500px;
+                            max-width:680px;
                             box-shadow:0 20px 60px rgba(0,0,0,0.25);
                             overflow:hidden;
                             display:flex;
@@ -104,7 +170,7 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
 
                     <!-- Header -->
                     <div style="display:flex; align-items:center; justify-content:space-between;
-                                padding:18px 20px; border-bottom:1px solid #e5e7eb; flex-shrink:0;">
+                                padding:18px 22px; border-bottom:1px solid #e5e7eb; flex-shrink:0;">
                         <h3 style="margin:0; font-size:1.1rem; font-weight:700; color:#111;">
                             <i class="fa-solid fa-plus-circle" style="color:#10b981;"></i> Add New Material
                         </h3>
@@ -115,11 +181,11 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                         </button>
                     </div>
 
-                    <!-- Body -->
-                    <div style="padding:20px; flex:1;">
+                    <!-- Body (2-Column Landscape Grid) -->
+                    <div style="padding:22px; flex:1; display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; align-items:start;">
 
-                        <!-- Material Name -->
-                        <div style="margin-bottom:16px;">
+                        <!-- Material Name (Col 1) -->
+                        <div>
                             <label for="matNewMaterialName" style="display:block; font-size:0.78rem; font-weight:600;
                                       margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                                 Material Name <span style="color:#ef4444;">*</span>
@@ -131,8 +197,8 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                                        box-sizing:border-box; outline:none;">
                         </div>
 
-                        <!-- Type - Datalist Input -->
-                        <div style="margin-bottom:16px;">
+                        <!-- Type - Datalist Input (Col 2) -->
+                        <div>
                             <label for="matNewType" style="display:block; font-size:0.78rem; font-weight:600;
                                       margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                                 Type <span style="color:#ef4444;">*</span>
@@ -145,12 +211,12 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                                        box-sizing:border-box; outline:none;">
                             <datalist id="matTypeOptions"></datalist>
                             <span style="font-size:0.7rem; color:#6b7280; margin-top:4px; display:block;">
-                                <i class="fa-solid fa-info-circle"></i> Start typing to filter existing types, or enter a new type
+                                <i class="fa-solid fa-info-circle"></i> Start typing to filter existing types
                             </span>
                         </div>
 
-                        <!-- Shop Stock -->
-                        <div style="margin-bottom:16px;">
+                        <!-- Shop Stock (Col 1) -->
+                        <div>
                             <label for="matNewShopStock" style="display:block; font-size:0.78rem; font-weight:600;
                                       margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                                 Shop Stock
@@ -162,8 +228,8 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                                        box-sizing:border-box; outline:none;">
                         </div>
 
-                        <!-- PH Stock -->
-                        <div style="margin-bottom:16px;">
+                        <!-- PH Stock (Col 2) -->
+                        <div>
                             <label for="matNewPhStock" style="display:block; font-size:0.78rem; font-weight:600;
                                       margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                                 PH Stock
@@ -175,26 +241,57 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                                        box-sizing:border-box; outline:none;">
                         </div>
 
-                        <!-- Unit Cost -->
-                        <div style="margin-bottom:16px;">
-                            <label for="matNewUnitCost" style="display:block; font-size:0.78rem; font-weight:600;
+                        <!-- Cost Per Pack (Col 1) -->
+                        <div>
+                            <label for="matNewCostPerPack" style="display:block; font-size:0.78rem; font-weight:600;
                                       margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
-                                Unit Cost (₱)
+                                Cost/Pack (₱)
                             </label>
-                            <input type="number" id="matNewUnitCost" value="0" min="0" step="0.01"
+                            <input type="number" id="matNewCostPerPack" value="0" min="0" step="0.01" placeholder="0"
                                 style="display:block; width:100%; padding:10px 12px;
                                        border:1px solid #d1d5db; border-radius:8px;
                                        font-size:0.9rem; background:#f9fafb; color:#111;
                                        box-sizing:border-box; outline:none;">
                         </div>
 
-                        <!-- Preview Total Stock -->
-                        <div id="matNewTotalPreview" style="margin-top:12px; padding:10px; background:#f0fdf4; border-radius:8px; text-align:center;">
-                            <span style="font-size:0.85rem; color:#166534;">Total Stock: <strong id="matNewTotalValue">0</strong></span>
+                        <!-- Quantity Per Pack (Col 2) -->
+                        <div>
+                            <label for="matNewPiecesPerPack" style="display:block; font-size:0.78rem; font-weight:600;
+                                      margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
+                                Qty/Pack
+                            </label>
+                            <input type="number" id="matNewPiecesPerPack" value="1" min="1" step="1" placeholder="1"
+                                style="display:block; width:100%; padding:10px 12px;
+                                       border:1px solid #d1d5db; border-radius:8px;
+                                       font-size:0.9rem; background:#f9fafb; color:#111;
+                                       box-sizing:border-box; outline:none;">
                         </div>
 
-                        <!-- Error Message -->
-                        <div id="matAddItemError" style="margin-top:12px; color:#dc2626; font-size:0.82rem; min-height:20px;"></div>
+                        <!-- Unit Cost (Col 1) -->
+                        <div>
+                            <label for="matNewUnitCost" style="display:block; font-size:0.78rem; font-weight:600;
+                                      margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
+                                Unit Cost (₱)
+                            </label>
+                            <input type="number" id="matNewUnitCost" value="0" min="0" step="0.0001"
+                                style="display:block; width:100%; padding:10px 12px;
+                                       border:1px solid #d1d5db; border-radius:8px;
+                                       font-size:0.9rem; background:#f9fafb; color:#111;
+                                       box-sizing:border-box; outline:none;">
+                        </div>
+
+                        <!-- Preview Total Stock (Col 2) -->
+                        <div>
+                            <label style="display:block; font-size:0.78rem; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
+                                Total Stock Preview
+                            </label>
+                            <div id="matNewTotalPreview" style="padding:10px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; text-align:center; height:41px; box-sizing:border-box; display:flex; align-items:center; justify-content:center;">
+                                <span style="font-size:0.88rem; color:#166534; font-weight:600;">Total Stock: <strong id="matNewTotalValue">0</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Error Message (Full Width) -->
+                        <div id="matAddItemError" style="grid-column:1 / -1; color:#dc2626; font-size:0.82rem; min-height:20px;"></div>
                     </div>
 
                     <!-- Footer -->
@@ -398,30 +495,30 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                             <option value="name_asc">Name A–Z</option>
                             <option value="name_desc">Name Z–A</option>
                         </select>
-                        <div class="top-btn" style="display: flex; gap: 12px;">
-                            <button class="btn-add-item" onclick="matOpenAddItemModal()">
-                                <i class="fa-solid fa-plus"></i> Add New Item
-                            </button>
-                        </div>
+                        <button class="btn-add-item" onclick="matOpenAddItemModal()">
+                            <i class="fa-solid fa-plus"></i> Add New Item
+                        </button>
                     </div>
                 </div>
                 <div class="table-scroll">
                     <table class="mat-table">
                         <thead>
                             <tr>
-                                <th>Material</th>
-                                <th>Type</th>
-                                <th>Shop Stock</th>
-                                <th>PH Stock</th>
-                                <th>Total Stock</th>
-                                <th>Unit Cost</th>
-                                <th>Status</th>
-                                <th>Action</th>
+                                <th class="col-material-name">Material</th>
+                                <th class="col-type">Type</th>
+                                <th class="col-num">Shop Stock</th>
+                                <th class="col-num">PH Stock</th>
+                                <th class="col-num">Total Stock</th>
+                                <th class="col-num">Cost/Pack</th>
+                                <th class="col-num">QTY/Pack</th>
+                                <th class="col-num">Unit Cost</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-action">Action</th>
                             </tr>
                         </thead>
                         <tbody id="materialsTableBody">
                             <tr>
-                                <td colspan="8" class="loading-cell">Loading materials…</td>
+                                <td colspan="10" class="loading-cell">Loading materials…</td>
                             </tr>
                         </tbody>
                     </table>
@@ -502,7 +599,7 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
             <div style="background:#fff;
                 border-radius:12px;
                 width:100%;
-                max-width:500px;
+                max-width:680px;
                 box-shadow:0 20px 60px rgba(0,0,0,0.25);
                 overflow:hidden;
                 display:flex;
@@ -510,7 +607,7 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
 
                 <!-- Header -->
                 <div style="display:flex; align-items:center; justify-content:space-between;
-                    padding:18px 20px; border-bottom:1px solid #e5e7eb; flex-shrink:0;">
+                    padding:18px 22px; border-bottom:1px solid #e5e7eb; flex-shrink:0;">
                     <h3 style="margin:0; font-size:1.1rem; font-weight:700; color:#111;">
                         <i class="fa-solid fa-pen-to-square" style="color:#2563eb;"></i> Edit Material
                     </h3>
@@ -521,13 +618,13 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                     </button>
                 </div>
 
-                <!-- Body -->
-                <div style="padding:20px; flex:1;">
+                <!-- Body (2-Column Landscape Grid) -->
+                <div style="padding:22px; flex:1; display:grid; grid-template-columns:1fr 1fr; gap:14px 20px; align-items:start;">
 
                     <input type="hidden" id="matEditItemId">
 
-                    <!-- Material Name -->
-                    <div style="margin-bottom:16px;">
+                    <!-- Material Name (Col 1) -->
+                    <div>
                         <label for="matEditMaterialName" style="display:block; font-size:0.78rem; font-weight:600;
                           margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                             Material Name <span style="color:#ef4444;">*</span>
@@ -539,8 +636,8 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                            box-sizing:border-box; outline:none;">
                     </div>
 
-                    <!-- Type - Datalist Input -->
-                    <div style="margin-bottom:16px;">
+                    <!-- Type - Datalist Input (Col 2) -->
+                    <div>
                         <label for="matEditType" style="display:block; font-size:0.78rem; font-weight:600;
                           margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                             Type <span style="color:#ef4444;">*</span>
@@ -552,12 +649,12 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                            font-size:0.9rem; background:#f9fafb; color:#111;
                            box-sizing:border-box; outline:none;">
                         <span style="font-size:0.7rem; color:#6b7280; margin-top:4px; display:block;">
-                            <i class="fa-solid fa-info-circle"></i> Start typing to filter existing types, or enter a new type
+                            <i class="fa-solid fa-info-circle"></i> Start typing to filter existing types
                         </span>
                     </div>
 
-                    <!-- Shop Stock -->
-                    <div style="margin-bottom:16px;">
+                    <!-- Shop Stock (Col 1) -->
+                    <div>
                         <label for="matEditShopStock" style="display:block; font-size:0.78rem; font-weight:600;
                           margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                             Shop Stock
@@ -569,8 +666,8 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                            box-sizing:border-box; outline:none;">
                     </div>
 
-                    <!-- PH Stock -->
-                    <div style="margin-bottom:16px;">
+                    <!-- PH Stock (Col 2) -->
+                    <div>
                         <label for="matEditPhStock" style="display:block; font-size:0.78rem; font-weight:600;
                           margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                             PH Stock
@@ -582,63 +679,128 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                            box-sizing:border-box; outline:none;">
                     </div>
 
-                    <!-- Unit Cost -->
-                    <div style="margin-bottom:16px;">
-                        <label for="matEditUnitCost" style="display:block; font-size:0.78rem; font-weight:600;
+                    <!-- Cost Per Pack (Col 1) -->
+                    <div>
+                        <label for="matEditCostPerPack" style="display:block; font-size:0.78rem; font-weight:600;
                           margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
-                            Unit Cost (₱)
+                            Cost/Pack (₱)
                         </label>
-                        <input type="number" id="matEditUnitCost" value="0" min="0" step="0.01"
+                        <input type="number" id="matEditCostPerPack" value="0" min="0" step="0.01" placeholder="0"
                             style="display:block; width:100%; padding:10px 12px;
                            border:1px solid #d1d5db; border-radius:8px;
                            font-size:0.9rem; background:#f9fafb; color:#111;
                            box-sizing:border-box; outline:none;">
                     </div>
 
-                    <!-- Remarks -->
-                    <div style="margin-bottom:16px;">
+                    <!-- Quantity Per Pack (Col 2) -->
+                    <div>
+                        <label for="matEditPiecesPerPack" style="display:block; font-size:0.78rem; font-weight:600;
+                          margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
+                            Qty/Pack
+                        </label>
+                        <input type="number" id="matEditPiecesPerPack" value="1" min="1" step="1" placeholder="1"
+                            style="display:block; width:100%; padding:10px 12px;
+                           border:1px solid #d1d5db; border-radius:8px;
+                           font-size:0.9rem; background:#f9fafb; color:#111;
+                           box-sizing:border-box; outline:none;">
+                    </div>
+
+                    <!-- Unit Cost (Col 1) -->
+                    <div>
+                        <label for="matEditUnitCost" style="display:block; font-size:0.78rem; font-weight:600;
+                          margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
+                            Unit Cost (₱)
+                        </label>
+                        <input type="number" id="matEditUnitCost" value="0" min="0" step="0.0001"
+                            style="display:block; width:100%; padding:10px 12px;
+                           border:1px solid #d1d5db; border-radius:8px;
+                           font-size:0.9rem; background:#f9fafb; color:#111;
+                           box-sizing:border-box; outline:none;">
+                    </div>
+
+                    <!-- Preview Total Stock (Col 2) -->
+                    <div>
+                        <label style="display:block; font-size:0.78rem; font-weight:600; margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
+                            Total Stock Preview
+                        </label>
+                        <div id="matEditTotalPreview" style="padding:10px 12px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; text-align:center; height:41px; box-sizing:border-box; display:flex; align-items:center; justify-content:center;">
+                            <span style="font-size:0.88rem; color:#166534; font-weight:600;">Total Stock: <strong id="matEditTotalValue">0</strong></span>
+                        </div>
+                    </div>
+
+                    <!-- Remarks (Full Width) -->
+                    <div style="grid-column:1 / -1;">
                         <label for="matEditRemarks" style="display:block; font-size:0.78rem; font-weight:600;
                           margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em; color:#111;">
                             Remarks
                         </label>
-                        <textarea id="matEditRemarks" rows="3" placeholder="Add a note for this material update..."
+                        <textarea id="matEditRemarks" rows="2" placeholder="Add a note for this material update..."
                             style="display:block; width:100%; padding:10px 12px;
                            border:1px solid #d1d5db; border-radius:8px;
                            font-size:0.9rem; background:#f9fafb; color:#111;
                            box-sizing:border-box; outline:none; resize:vertical;"></textarea>
                     </div>
 
-                    <!-- Preview Total Stock -->
-                    <div id="matEditTotalPreview" style="margin-top:12px; padding:10px; background:#f0fdf4; border-radius:8px; text-align:center;">
-                        <span style="font-size:0.85rem; color:#166534;">Total Stock: <strong id="matEditTotalValue">0</strong></span>
-                    </div>
-
-                    <!-- Error Message -->
-                    <div id="matEditItemError" style="margin-top:12px; color:#dc2626; font-size:0.82rem; min-height:20px;"></div>
+                    <!-- Error Message (Full Width) -->
+                    <div id="matEditItemError" style="grid-column:1 / -1; color:#dc2626; font-size:0.82rem; min-height:20px;"></div>
                 </div>
 
                 <!-- Footer -->
-                <div style="display:flex; justify-content:flex-end; gap:10px;
+                <div style="display:flex; align-items:center; justify-content:space-between;
                     padding:14px 20px; border-top:1px solid #e5e7eb;
                     background:#f9fafb; flex-shrink:0;">
-                    <button id="matEditItemCancelBtn" type="button"
-                        style="padding:9px 18px; border:1px solid #d1d5db; border-radius:8px;
-                       background:#fff; color:#374151; font-size:0.875rem;
-                       font-weight:600; cursor:pointer;">
-                        Cancel
-                    </button>
-                    <button id="matEditItemConfirmBtn" type="button"
-                        style="padding:9px 18px; border:none; border-radius:8px;
-                       background:#2563eb; color:#fff; font-size:0.875rem;
+                    <button id="matEditItemDeleteBtn" type="button"
+                        style="padding:9px 16px; border:1px solid #fee2e2; border-radius:8px;
+                       background:#fef2f2; color:#dc2626; font-size:0.875rem;
                        font-weight:600; cursor:pointer; display:inline-flex;
-                       align-items:center; gap:7px;">
-                        <i class="fa-solid fa-save"></i> Save Changes
+                       align-items:center; gap:6px;">
+                        <i class="fa-solid fa-trash"></i> Delete
                     </button>
+                    <div style="display:flex; gap:10px;">
+                        <button id="matEditItemCancelBtn" type="button"
+                            style="padding:9px 18px; border:1px solid #d1d5db; border-radius:8px;
+                           background:#fff; color:#374151; font-size:0.875rem;
+                           font-weight:600; cursor:pointer;">
+                            Cancel
+                        </button>
+                        <button id="matEditItemConfirmBtn" type="button"
+                            style="padding:9px 18px; border:none; border-radius:8px;
+                           background:#2563eb; color:#fff; font-size:0.875rem;
+                           font-weight:600; cursor:pointer; display:inline-flex;
+                           align-items:center; gap:7px;">
+                            <i class="fa-solid fa-save"></i> Save Changes
+                        </button>
+                    </div>
                 </div>
 
             </div>
         </div>
     </main>
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         DELETE SINGLE MATERIAL CONFIRMATION MODAL
+         ═══════════════════════════════════════════════════════════════ -->
+    <div id="matDeleteConfirmModal" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.72); z-index:100005; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
+        <div style="background:#fff; border-radius:12px; width:100%; max-width:400px; box-shadow:0 24px 80px rgba(0,0,0,0.25); overflow:hidden; border:1px solid #e5e7eb; animation: modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);">
+            <div style="padding:24px; text-align:center;">
+                <div style="width:48px; height:48px; border-radius:50%; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin:0 auto 16px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 style="margin:0 0 8px; font-size:1.125rem; font-weight:700; color:#111;">Delete Material</h3>
+                <p style="margin:0; font-size:0.875rem; color:#4b5563; line-height:1.5;">
+                    Are you sure you want to delete <strong id="matDeleteConfirmName" style="color:#111;"></strong>? This action cannot be undone.
+                </p>
+            </div>
+            <div style="display:flex; gap:12px; padding:16px 24px; background:#f8fafc; border-top:1px solid #e5e7eb;">
+                <button id="matDeleteCancelBtn" type="button" style="flex:1; padding:10px; border:1px solid #d1d5db; border-radius:8px; background:#fff; color:#374151; font-size:0.875rem; font-weight:600; cursor:pointer;">
+                    Cancel
+                </button>
+                <button id="matDeleteConfirmBtn" type="button" style="flex:1; padding:10px; border:none; border-radius:8px; background:#ef4444; color:#fff; font-size:0.875rem; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;">
+                    <i class="fa-solid fa-trash"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
 
     <div id="matLogDetailsModal" style="display:none; position:fixed; inset:0; background:rgba(15, 23, 42, 0.72); z-index:100002; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;">
         <div style="background:#fff; border-radius:16px; width:100%; max-width:560px; box-shadow:0 24px 80px rgba(0,0,0,0.25); overflow:hidden; border:1px solid #e5e7eb;">
@@ -894,8 +1056,8 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
 </div>
 
 <!-- Materials JS loaded LAST — all DOM elements guaranteed to exist -->
-<script src="../../assets/js/admin-site-functions/admin_materials.js"></script>
-<script src="../../assets/js/admin-site-functions/inventory_item_manager.js"></script>
-<script src="../../assets/js/admin-site-functions/update_inventory_materials.js"></script>
-<script src="../../assets/js/admin-site-functions/pending_audit_manager.js"></script>
-<script src="../../assets/js/admin-site-functions/overhead_audit_helper.js"></script>
+<script src="../../assets/js/admin-site-functions/admin_materials.js?v=<?php echo time(); ?>"></script>
+<script src="../../assets/js/admin-site-functions/inventory_item_manager.js?v=<?php echo time(); ?>"></script>
+<script src="../../assets/js/admin-site-functions/update_inventory_materials.js?v=<?php echo time(); ?>"></script>
+<script src="../../assets/js/admin-site-functions/pending_audit_manager.js?v=<?php echo time(); ?>"></script>
+<script src="../../assets/js/admin-site-functions/overhead_audit_helper.js?v=<?php echo time(); ?>"></script>

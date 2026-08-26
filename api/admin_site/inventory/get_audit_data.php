@@ -70,13 +70,27 @@ try {
         exit;
     }
 
+    // Ensure remarks column exists in bom_audit table
+    try {
+        $pdo->exec("ALTER TABLE bom_audit ADD COLUMN remarks TEXT DEFAULT NULL");
+    } catch (Exception $ex) {
+        // Ignore if already exists
+    }
+
     // Parse JSON fields
-    $audit['items'] = json_decode($audit['items'], true) ?? [];
-    $audit['materials'] = json_decode($audit['materials'], true) ?? [];
-    $audit['rejects'] = json_decode($audit['rejects'], true) ?? [];
-    $audit['signatures'] = json_decode($audit['signatures'], true) ?? [];
+    $audit['items'] = json_decode($audit['items'] ?? '[]', true) ?? [];
+    $audit['materials'] = json_decode($audit['materials'] ?? '[]', true) ?? [];
+    $audit['rejects'] = json_decode($audit['rejects'] ?? '[]', true) ?? [];
+    $audit['signatures'] = json_decode($audit['signatures'] ?? '[]', true) ?? [];
     
-    // Build overhead_data from the individual flat columns
+    // Parse overhead_data (can be JSON array of overhead items or object)
+    $overheadParsed = !empty($audit['overhead_data']) ? json_decode($audit['overhead_data'], true) : null;
+    if (is_array($overheadParsed)) {
+        $overheadRows = $overheadParsed;
+    } else {
+        $overheadRows = [];
+    }
+
     $overheadData = [
         'shop_rent' => floatval($audit['overhead_shop_rent'] ?? 0),
         'fixed_salaries' => floatval($audit['overhead_fixed_salaries'] ?? 0),
@@ -96,8 +110,9 @@ try {
     // Ensure working_hours is set
     $workingHours = floatval($audit['working_hours'] ?? 250);
     
-    // Audit name
+    // Audit name & remarks
     $auditName = $audit['audit_name'] ?? '';
+    $remarks = $audit['remarks'] ?? '';
 
     // Build quotation object
     $quotation = [
@@ -129,11 +144,13 @@ try {
     $auditData = [
         'id' => (int)$audit['id'],
         'audit_name' => $auditName,
+        'remarks' => $remarks,
         'items' => $audit['items'],
         'materials' => $audit['materials'],
         'rejects' => $audit['rejects'],
         'signatures' => $audit['signatures'],
         'overhead_data' => $overheadData,
+        'overhead_rows' => $overheadRows,
         'electricity_data' => $electricityData,
         'working_hours' => $workingHours,
         'total_material_cost' => floatval($audit['total_material_cost'] ?? 0),

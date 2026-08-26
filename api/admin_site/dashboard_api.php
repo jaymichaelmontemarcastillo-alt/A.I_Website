@@ -155,7 +155,7 @@ function getKPI(PDO $pdo): array
     ")->fetch(PDO::FETCH_ASSOC);
 
     $inventoryValue = [
-        'total_value'      => (float)($productValue['total_products_value'] ?? 0) + (float)($materialValue['total_materials_value'] ?? 0),
+        'total_value'      => (float)($materialValue['total_materials_value'] ?? 0),
         'products_count'   => (int)($productValue['product_count'] ?? 0),
         'materials_count'  => (int)($materialValue['material_count'] ?? 0),
     ];

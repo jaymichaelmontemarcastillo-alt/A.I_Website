@@ -7,6 +7,7 @@ include '../includes/header.php';
     <link rel="stylesheet" href="../../assets/css/admin-site/quotations.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/admin_inventory.css">
     <link rel="stylesheet" href="../../assets/css/admin-site/quotation-audit-modal.css">
+    <link rel="stylesheet" href="../../assets/css/admin-site/pdf-progress-modal.css">
     <div class="admin-wrapper">
         <?php
         $current_page = 'Quotation';
@@ -286,6 +287,8 @@ include '../includes/header.php';
                     </button>
                 </div>
             </div>
+        </div>
+    </div>
 
     <!-- APPROVAL CONFIRMATION MODAL (For generating Delivery Receipt) -->
     <div id="ApprovalModal" class="approval-overlay" style="display:none;">
@@ -311,12 +314,74 @@ include '../includes/header.php';
         </div>
     </div>
 
+    <!-- PDF PROGRESS CIRCLE BAR MODAL -->
+    <div id="pdfProgressModal" class="pdf-progress-overlay">
+        <div class="pdf-progress-card">
+            <div class="pdf-progress-header">
+                <div class="pdf-progress-icon-wrap">
+                    <i class="fa-solid fa-file-pdf pdf-anim-icon"></i>
+                </div>
+                <h3 id="pdfProgressTitle" class="pdf-progress-title">Generating PDF Document</h3>
+                <p id="pdfProgressSubtitle" class="pdf-progress-subtitle">Please wait while your document is being prepared...</p>
+            </div>
+            
+            <div class="pdf-progress-circle-container">
+                <svg class="pdf-progress-svg" viewBox="0 0 120 120">
+                    <circle class="pdf-progress-bg" cx="60" cy="60" r="50"></circle>
+                    <circle class="pdf-progress-bar" id="pdfCircleBar" cx="60" cy="60" r="50"></circle>
+                </svg>
+                <div class="pdf-progress-percentage">
+                    <span id="pdfProgressPercent">0%</span>
+                    <span class="pdf-progress-label">Progress</span>
+                </div>
+            </div>
+
+            <div class="pdf-progress-status-container">
+                <div class="pdf-status-step active" id="pdfStep1">
+                    <i class="fa-solid fa-spinner fa-spin"></i> <span>Processing document data</span>
+                </div>
+                <div class="pdf-status-step pending" id="pdfStep2">
+                    <i class="fa-regular fa-circle"></i> <span>Rendering PDF template</span>
+                </div>
+                <div class="pdf-status-step pending" id="pdfStep3">
+                    <i class="fa-regular fa-circle"></i> <span>Finalizing & opening document</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QUOTATION DOWNLOAD MODAL -->
+    <div id="QuotationDownloadModal" class="QuotationModal" style="z-index: 999999 !important;">
+        <div class="modal-content download-modal-content">
+            <div class="download-modal-header">
+                <h2><i class="fa-solid fa-cloud-arrow-down"></i> Download Quotation</h2>
+                <button class="close-download-btn" onclick="document.getElementById('QuotationDownloadModal').style.display='none'; document.getElementById('QuotationDownloadModal').classList.remove('show');">&times;</button>
+            </div>
+            <div class="download-modal-body">
+                <p>Choose your preferred format to export this quotation.</p>
+                <div class="download-options">
+                    <button class="dl-opt-btn pdf-btn" onclick="quotationManager.executeDownload('pdf')">
+                        <i class="fa-solid fa-file-pdf"></i>
+                        <span>Export as PDF</span>
+                    </button>
+                    <button class="dl-opt-btn docx-btn" onclick="quotationManager.executeDownload('docx')">
+                        <i class="fa-solid fa-file-word"></i>
+                        <span>Export as Word</span>
+                    </button>
+                </div>
+            </div>
+            <div class="download-modal-footer">
+                <button class="cancel-dl-btn" onclick="document.getElementById('QuotationDownloadModal').style.display='none'; document.getElementById('QuotationDownloadModal').classList.remove('show');">Cancel</button>
+            </div>
+        </div>
+    </div>
 
 </body>
 <script src="../../assets/js/admin-site-functions/overhead_audit_helper.js"></script>
 <script src="../../assets/js/admin-site-functions/admin_materials.js"></script>
-<script src="../../assets/js/admin-site-functions/admin_data_fetch/fetch_quotations.js"></script>
-<script src="../../assets/js/admin-site-functions/quotation_view_manager.js"></script>
+<script src="../../assets/js/admin-site-functions/admin_data_fetch/fetch_quotations.js?v=<?php echo time(); ?>"></script>
+<script src="../../assets/js/admin-site-functions/quotation_view_manager.js?v=<?php echo time(); ?>"></script>
 <script src="../../assets/js/admin-site-functions/quotation_audit_integration.js"></script>
+<script src="../../assets/js/admin-site-functions/inventory_audit_download.js?v=<?php echo time(); ?>"></script>
 
 </html>

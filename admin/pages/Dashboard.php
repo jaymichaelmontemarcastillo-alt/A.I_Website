@@ -71,7 +71,7 @@ $current_page = 'Dashboard';
 
                     <div class="stat-card">
                         <div class="stat-text">
-                            <p>Products & Materials Value</p>
+                            <p>Inventory Value</p>
                             <h3 id="kpi-inventory-value">
                                 <span class="skeleton skeleton-text" style="width:110px"></span>
                             </h3>

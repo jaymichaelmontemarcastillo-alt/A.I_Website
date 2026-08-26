@@ -34,12 +34,12 @@ Electricity word remove from Overhead Cost
 
   remove Company Name, Work Email. 
   Tell Us More-> Tell us your idea and we'll help you build from there.
-  Attach Reference (Optional)
+  Attach Reference (Optional) <-- this is from the homepage modal>
 
   Modal will direct to Email.
   
 
-Let Us Create gift sets, 
+  Let Us Create gift sets, 
   custom merchandise, and curated bundles 
   without the stress.
 
@@ -48,4 +48,56 @@ Let Us Create gift sets,
   Remove logo sa baba. 
 
   
+
+  Overhead Cost Prompt
+
+  Lets proceed in the Quotation Page and its js and api's. 
+
+The the Edit Iventory Modal (Image attached).
+
+Changed the Electricity in the dropdown, just make it Overhead Cost. 
+Also, remove the dropdown and make the Overhead Cost section displayed like the other content in the left column of the modal. 
+
+Inside the Overhead Cost section, remove all the content, this following. 
+
+Electricity Cost
+Shop
+0
+Production
+0
+Overhead Category Cost
+Category	Monthly Cost
+Shop Rent	
+0
+Fixed Salaries (Admin/Finance)	
+0
+Shop Utilities (Internet + Base Power)	
+0
+Subscriptions	
+0
+Machine Depreciation (Fixed)	
+0
+Maintenance & Repair Fund Allocation	
+0
+Marketing & Promo Materials	
+0
+TOTAL MONTHLY OVERHEAD	₱0.00
+Working Hours	
+250
+Overhead Per Hour	₱0.00 / hour
+
+
+And replace them with this inputs with the same deisign. 
+
+Quatity, Item, Percentage, and Total. 
+
+
+
+
+Even though i uploaded all the files correctly in the infinity free file manager. 
+This bug still experience by the admins. 
+
+When they open a darkmode in the Orders Page, and then navigate to other page example Products, when they turn off the darkmode in the differnet page and back to orders page again, some parts of the page is still in the darkmode, even the setting Darkmode is still open even i turn it off in the other page. 
+
+
 -->

@@ -74,6 +74,13 @@ try {
         throw new Exception('Database connection failed');
     }
 
+    // Ensure remarks column exists BEFORE starting transaction (DDL statements cause implicit commit in MySQL)
+    try {
+        $pdo->exec("ALTER TABLE bom_audit ADD COLUMN remarks TEXT DEFAULT NULL");
+    } catch (Exception $ex) {
+        // Ignore if already exists
+    }
+
     $pdo->beginTransaction();
 
     // Check if audit exists
@@ -99,7 +106,11 @@ try {
         $totalAmountDue += floatval($item['total_amount'] ?? 0);
     }
 
-    // Extract overhead values
+    // Extract remarks
+    $remarks = trim($input['remarks'] ?? '');
+
+    // Extract overhead values & calculate total overhead
+    $totalOverhead = 0;
     $shopRent = floatval($overhead['shop_rent'] ?? 0);
     $fixedSalaries = floatval($overhead['fixed_salaries'] ?? 0);
     $shopUtilities = floatval($overhead['shop_utilities'] ?? 0);
@@ -107,10 +118,20 @@ try {
     $machineDepreciation = floatval($overhead['machine_depreciation'] ?? 0);
     $maintenanceRepair = floatval($overhead['maintenance_repair'] ?? 0);
     $marketing = floatval($overhead['marketing_promo'] ?? $overhead['marketing'] ?? 0);
-    
-    // Calculate total overhead
-    $totalOverhead = $shopRent + $fixedSalaries + $shopUtilities + $subscriptions +
-        $machineDepreciation + $maintenanceRepair + $marketing;
+
+    if (is_array($overhead) && !empty($overhead)) {
+        // If passed as array of rows [{item, quantity, percentage, total}]
+        if (array_keys($overhead) === range(0, count($overhead) - 1)) {
+            foreach ($overhead as $ovRow) {
+                $totalOverhead += floatval($ovRow['total'] ?? 0);
+            }
+        } else {
+            $totalOverhead = $shopRent + $fixedSalaries + $shopUtilities + $subscriptions +
+                $machineDepreciation + $maintenanceRepair + $marketing;
+        }
+    } else {
+        $totalOverhead = floatval($input['total_overhead'] ?? 0);
+    }
 
     // Calculate overhead per hour if not provided
     if ($overheadPerHour <= 0 && $workingHours > 0) {
@@ -119,7 +140,7 @@ try {
 
     $totalCostWithOverhead = $totalMaterialCost + $totalRejectCost + $totalOverhead;
 
-    // Calculate profit
+    // Calculate profit (Total Sales - Total Cost)
     if (isset($input['manual_profit'])) {
         $profit = floatval($input['manual_profit']);
     } else {
@@ -137,6 +158,7 @@ try {
     $stmt = $pdo->prepare("
         UPDATE bom_audit SET
             audit_name = :audit_name,
+            remarks = :remarks,
             items = :items,
             materials = :materials,
             rejects = :rejects,
@@ -169,6 +191,7 @@ try {
     $stmt->execute([
         ':audit_id' => $auditId,
         ':audit_name' => $auditName,
+        ':remarks' => $remarks,
         ':items' => $itemsJson,
         ':materials' => $materialsJson,
         ':rejects' => $rejectsJson,

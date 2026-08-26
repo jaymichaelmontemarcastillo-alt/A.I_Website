@@ -68,12 +68,12 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                     <table class="tbl">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Type</th>
-                                <th>Price</th>
-                                <th>Stock</th>
-                                <th>Status</th>
-                                <th>Actions</th>
+                                <th class="col-name">Name</th>
+                                <th class="col-type">Type</th>
+                                <th class="col-num">Price</th>
+                                <th class="col-num">Stock</th>
+                                <th class="col-status">Status</th>
+                                <th class="col-action">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="tableBody">
@@ -216,22 +216,31 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
     ========================================== -->
     <?php if ($isAdminRole): ?>
     <div id="deleteAllModal" class="modal-overlay">
-        <div class="modal-box modal-box-sm">
-            <div class="modal-head">
-                <h2><i class="fa-solid fa-triangle-exclamation" style="color: var(--clr-danger);"></i> Delete All Products</h2>
-                <button class="modal-close" id="deleteAllCloseBtn"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div class="modal-body">
-                <p id="deleteAllMsg" style="margin: 16px 0; font-size: 15px; color: var(--clr-text-secondary);">This will permanently delete every product from the table. This action cannot be undone.</p>
-                <div class="form-group">
-                    <label for="deleteAllPassword">Admin Password <span class="req">*</span></label>
-                    <input type="password" id="deleteAllPassword" name="password" placeholder="Enter your admin password" autocomplete="current-password">
+        <div class="modal-box modal-box-sm" style="border-radius: 16px; padding: 24px; font-family: 'Inter', sans-serif;">
+            <div style="display:flex; align-items:center; gap:12px; margin-bottom:16px;">
+                <div style="width:44px; height:44px; border-radius:12px; background:#fee2e2; color:#ef4444; display:flex; align-items:center; justify-content:center; font-size:1.2rem; flex-shrink:0;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
-                <div id="deleteAllFeedback" style="display:none; margin-top:8px; font-size:13px;"></div>
+                <div>
+                    <h2 style="margin:0; font-size:1.1rem; font-weight:700; color:#0f172a; font-family:'Inter', sans-serif;">Delete All Products</h2>
+                    <span style="font-size:0.78rem; color:#ef4444; font-weight:600; text-transform:uppercase; letter-spacing:0.04em;">Irreversible Action</span>
+                </div>
+                <button class="modal-close" id="deleteAllCloseBtn" style="margin-left:auto;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div class="modal-foot">
-                <button type="button" class="btn btn-cancel" id="deleteAllCancelBtn">Cancel</button>
-                <button type="button" class="btn btn-delete" id="deleteAllConfirmBtn">
+            <div class="modal-body" style="padding:0;">
+                <p id="deleteAllMsg" style="margin:0 0 18px 0; color:#64748b; font-size:0.875rem; line-height:1.5;">This will permanently erase every product from the database. This action cannot be undone.</p>
+                <div class="form-group" style="margin-bottom:18px;">
+                    <label for="deleteAllPassword" style="font-weight:600; font-size:0.85rem; color:#334155;">Admin Password <span class="req" style="color:#ef4444;">*</span></label>
+                    <input type="password" id="deleteAllPassword" name="password" placeholder="Enter your admin password" autocomplete="current-password"
+                        style="width:100%; padding:10px 14px; border:1px solid #cbd5e1; border-radius:10px; font-family:'Inter', sans-serif; font-size:0.9rem; color:#1e293b; outline:none; transition:all 0.2s ease; background:#f8fafc;"
+                        onfocus="this.style.borderColor='#ef4444'; this.style.backgroundColor='#fff'; this.style.boxShadow='0 0 0 3px rgba(239, 68, 68, 0.15)';"
+                        onblur="this.style.borderColor='#cbd5e1'; this.style.backgroundColor='#f8fafc'; this.style.boxShadow='none';">
+                </div>
+                <div id="deleteAllFeedback" style="display:none; margin-bottom:16px; padding:10px 14px; border-radius:10px; font-size:0.85rem;"></div>
+            </div>
+            <div class="modal-foot" style="padding-top:12px; border-top:1px solid #f1f5f9; display:flex; gap:10px; justify-content:flex-end;">
+                <button type="button" class="btn btn-cancel" id="deleteAllCancelBtn" style="border-radius:10px; font-weight:600;">Cancel</button>
+                <button type="button" class="btn btn-delete" id="deleteAllConfirmBtn" style="border-radius:10px; background:#ef4444; font-weight:600; box-shadow:0 4px 12px rgba(239, 68, 68, 0.25);">
                     <i class="fa-solid fa-trash"></i> Delete All Products
                 </button>
             </div>
@@ -250,13 +259,31 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
             </div>
             <form id="importForm" enctype="multipart/form-data">
                 <div class="modal-body">
+
+                    <!-- Supported formats -->
                     <div class="import-info">
+                        <div style="display:flex; gap:10px; margin-bottom:14px;">
+                            <div style="flex:1; padding:10px 12px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:8px; display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-file-csv" style="color:#0ea5e9; font-size:1.1rem;"></i>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.85rem; color:#0369a1;">.CSV</div>
+                                    <div style="font-size:0.75rem; color:#6b7280;">Comma-separated values</div>
+                                </div>
+                            </div>
+                            <div style="flex:1; padding:10px 12px; background:#f0fdf4; border:1px solid #86efac; border-radius:8px; display:flex; align-items:center; gap:8px;">
+                                <i class="fa-solid fa-file-excel" style="color:#16a34a; font-size:1.1rem;"></i>
+                                <div>
+                                    <div style="font-weight:600; font-size:0.85rem; color:#15803d;">.XLSX</div>
+                                    <div style="font-size:0.75rem; color:#6b7280;">Excel spreadsheet</div>
+                                </div>
+                            </div>
+                        </div>
                         <div class="info-box">
                             <i class="fa-solid fa-info-circle"></i>
                             <div>
                                 <p><strong>Instructions:</strong></p>
                                 <ul>
-                                    <li>Upload an Excel or CSV file (.xlsx, .xls, or .csv)</li>
+                                    <li>Upload a CSV (.csv) or Excel (.xlsx) file</li>
                                     <li>Required columns: <strong>Product Type</strong> and <strong>Product Name</strong></li>
                                     <li>Existing products will be <strong>updated</strong> (matched by SKU or Name)</li>
                                     <li>New products will be <strong>created</strong></li>
@@ -267,9 +294,15 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
                     </div>
 
                     <div class="form-group">
-                        <label for="excelFile">Select Excel File <span class="req">*</span></label>
-                        <input type="file" id="excelFile" name="excel_file" accept=".xlsx,.xls,.csv" required>
-                        <p class="form-help">Supported formats: .xlsx, .xls, .csv</p>
+                        <label for="importFile">Select or Drop File <span class="req">*</span></label>
+                        <div id="productDropzone" style="border:2px dashed #cbd5e1; border-radius:10px; padding:20px; text-align:center; background:#f8fafc; cursor:pointer; transition:all 0.2s ease; margin-bottom:8px;" onclick="document.getElementById('importFile').click();">
+                            <i class="fa-solid fa-cloud-arrow-up" style="font-size:2rem; color:#3b82f6; margin-bottom:8px;"></i>
+                            <div style="font-weight:600; font-size:0.9rem; color:#1e293b;">Click to browse or drag &amp; drop file here</div>
+                            <div style="font-size:0.78rem; color:#64748b; margin-top:4px;">Supports .csv and .xlsx up to 10MB</div>
+                            <input type="file" id="importFile" name="import_file" accept=".csv,.xlsx" style="display:none;" required>
+                        </div>
+                        <!-- Live hint shown after the user picks a file -->
+                        <p id="importFileHint" class="form-help" style="min-height:18px; margin-top:4px;"></p>
                     </div>
 
                     <div id="importProgress" style="display:none;" class="progress-wrap">
@@ -315,7 +348,7 @@ $isAdminRole = isset($_SESSION['role']) && strtolower($_SESSION['role']) === 'ad
         </div>
     </div>
 
-    <script src="../../assets/js/admin-site-functions/admin_products.js"></script>
+    <script src="../../assets/js/admin-site-functions/admin_products.js?v=<?php echo time(); ?>"></script>
 </body>
 
 </html>

@@ -1,240 +1,300 @@
 <?php
-// api/admin_site/inventory/import_materials.php
-header('Content-Type: application/json');
-error_reporting(0);
+/**
+ * import_materials.php — Materials Inventory Import Endpoint
+ *
+ * Consumes the unified enterprise import facade (ImportManager).
+ * Supports both CSV (.csv) and Excel (.xlsx) file uploads.
+ * Zero external dependencies — works natively on shared hosting (InfinityFree).
+ *
+ * Response JSON:
+ *   { success: bool, message: string, details?: { imported, updated, skipped, errors[] } }
+ */
 
-require_once '../../../connect/config.php';
-require_once '../../../vendor/autoload.php';
+ob_start();
+error_reporting(E_ALL);
+ini_set('display_errors', 0);
 
-use PhpOffice\PhpSpreadsheet\IOFactory;
+header('Content-Type: application/json; charset=utf-8');
 
-if (ob_get_level()) ob_end_clean();
+// Load ImportManager & dependencies
+$importManagerCandidates = [
+    __DIR__ . '/../shared/import_manager.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api/admin_site/shared/import_manager.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/Anything_Inside_Website/api/admin_site/shared/import_manager.php',
+];
+
+$importManagerLoaded = false;
+foreach ($importManagerCandidates as $path) {
+    if (!empty($path) && file_exists($path)) {
+        require_once $path;
+        $importManagerLoaded = true;
+        break;
+    }
+}
+
+if (!$importManagerLoaded) {
+    if (ob_get_length()) ob_clean();
+    echo json_encode([
+        'success' => false,
+        'message' => 'Server Error: The core import component (import_manager.php) is missing.',
+    ]);
+    exit;
+}
+
+use AnythingInside\Import\ImportManager;
+use AnythingInside\Import\ImportException;
+use AnythingInside\Import\CsvParser;
+
+// Fatal error safety net
+register_shutdown_function(function (): void {
+    $error = error_get_last();
+    if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Fatal server error: ' . $error['message'] . ' in ' . basename($error['file']) . ' on line ' . $error['line'],
+        ]);
+    }
+});
+
+// Load database configuration
+$configCandidates = [
+    __DIR__ . '/../../../connect/config.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/connect/config.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/Anything_Inside_Website/connect/config.php',
+];
+foreach ($configCandidates as $configPath) {
+    if (!empty($configPath) && file_exists($configPath)) {
+        require_once $configPath;
+        break;
+    }
+}
+
+// Column alias dictionary for materials inventory
+const MATERIAL_ALIAS_MAP = [
+    'type'            => ['type', 'category', 'group'],
+    'material_name'   => ['materials', 'material', 'material name', 'item', 'item name', 'name'],
+    'shop_stock'      => ['shop', 'shop stock', 'shop qty', 'shop location', 'shop quantity'],
+    'ph_stock'        => ['ph', 'ph stock', 'ph qty', 'ph location', 'ph quantity', 'p.h.'],
+    'total_stock'     => ['total on hand', 'total stock', 'total', 'on hand', 'quantity', 'qty', 'total quantity'],
+    'total_cost'      => ['total cost', 'total price', 'cost per pack', 'cost'],
+    'pieces_per_pack' => ['quantity per pack', 'qty per pack', 'pieces per pack', 'pack qty', 'pcs per pack', 'pack size'],
+    'unit_cost'       => ['unit cost', 'cost per unit', 'unit price', 'price per unit'],
+    'remarks'         => ['remarks', 'notes', 'note', 'comment', 'comments'],
+];
+
+/** Strip currency symbols, commas, and spaces from numeric strings */
+function mat_clean_number(string $value): string
+{
+    return str_replace([',', '₱', '$', ' '], '', trim($value)) ?: '0';
+}
 
 $response = ['success' => false, 'message' => ''];
 
 try {
-    session_start();
-
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     if (empty($_SESSION['admin_id'])) {
-        throw new Exception('Unauthorized');
+        throw new Exception('Unauthorized. Please log in as an admin and try again.');
     }
-
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-        throw new Exception('Method not allowed');
+        throw new Exception('Method not allowed.');
     }
 
-    if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] !== UPLOAD_ERR_OK) {
-        throw new Exception('Please select a valid file');
+    // 1. Identify upload field from request
+    $fileKey = null;
+    foreach (['csv_file', 'xlsx_file', 'excel_file', 'file'] as $key) {
+        if (isset($_FILES[$key]) && ($_FILES[$key]['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE) {
+            $fileKey = $key;
+            break;
+        }
     }
 
-    $file = $_FILES['csv_file']['tmp_name'];
-    $fileExtension = strtolower(pathinfo($_FILES['csv_file']['name'], PATHINFO_EXTENSION));
+    if ($fileKey === null) {
+        throw new Exception('No file was selected. Please select a CSV (.csv) or Excel (.xlsx) file.');
+    }
 
-    // Expected columns for validation
-    $expectedHeaders = [
-        'Type', 'Materials', 'Shop', 'PH', 'Total On Hand',
-        'Total Cost', 'Quantity per pack', 'Unit Cost', 'Remarks'
-    ];
+    // 2. Parse file using unified engine with smart multi-sheet tab resolution
+    $cleanRows = ImportManager::parseUploadedFile(
+        $_FILES[$fileKey],
+        ImportManager::MAX_FILE_SIZE,
+        MATERIAL_ALIAS_MAP,
+        ['material', 'materials', 'inventory', 'stock']
+    );
 
-    // Normalize header names for comparison
-    $normalizeHeader = function($h) {
-        return strtolower(trim($h));
-    };
+    // 3. Header mapping & validation
+    $headerRow = $cleanRows[0];
+    $mapping   = CsvParser::mapColumns($headerRow, MATERIAL_ALIAS_MAP);
 
-    // Check if headers match expected format
-    $headersMatch = function($headers) use ($expectedHeaders, $normalizeHeader) {
-        if (count($headers) < 5) return false; // Minimum required columns
-
-        $normalizedHeaders = array_map($normalizeHeader, $headers);
-        $normalizedExpected = array_map($normalizeHeader, $expectedHeaders);
-
-        // Check if at least the first 5 columns match
-        for ($i = 0; $i < 5; $i++) {
-            if (!isset($normalizedHeaders[$i]) || !in_array($normalizedHeaders[$i], $normalizedExpected)) {
-                return false;
-            }
+    if (!isset($mapping['map']['material_name'])) {
+        $fallback = CsvParser::firstIdentifierColumn($headerRow);
+        if ($fallback !== null) {
+            $mapping['map']['material_name'] = $fallback;
+        } else {
+            $found = implode(', ', array_filter(array_map('trim', $headerRow)));
+            throw new Exception(
+                'Could not find a "Material Name" column. Found headers: ' . ($found ?: 'none') . '. ' .
+                'Make sure your file includes a column named "Materials", "Material Name", or "Item".'
+            );
         }
-        return true;
-    };
+    }
 
-    // ============================================================
-    // Handle Excel or CSV
-    // ============================================================
-    $rows = [];
-    $allSheets = [];
-    $validSheets = [];
+    $colMap   = $mapping['map'];
+    $dataRows = array_slice($cleanRows, 1);
 
-    if ($fileExtension === 'xlsx' || $fileExtension === 'xls') {
-        // ----- Load Excel file and check all sheets -----
-        $spreadsheet = IOFactory::load($file);
-        $sheetNames = $spreadsheet->getSheetNames();
+    if (empty($dataRows)) {
+        throw new Exception('The file contains headers but no material data rows.');
+    }
 
-        foreach ($sheetNames as $idx => $sheetName) {
-            $worksheet = $spreadsheet->getSheet($idx);
-            $sheetRows = $worksheet->toArray();
-
-            // Remove empty trailing rows
-            $sheetRows = array_filter($sheetRows, function ($row) {
-                return !empty(array_filter($row));
-            });
-
-            if (!empty($sheetRows)) {
-                $headers = array_shift($sheetRows);
-
-                // Check if this sheet has matching columns
-                if ($headersMatch($headers)) {
-                    $validSheets[] = $sheetName;
-                    if (count($validSheets) === 1) {
-                        // Store first valid sheet's data
-                        $rows = $sheetRows;
-                    }
-                }
-            }
-        }
-
-        // If multiple valid sheets found, return list for user selection
-        if (count($validSheets) > 1) {
-            $response['sheets'] = $validSheets;
-            echo json_encode($response);
-            exit;
-        }
-
-        if (empty($rows)) {
-            throw new Exception('No sheets with matching columns found in Excel file');
-        }
-    } else {
-        // ----- Load CSV file -----
-        $content = file_get_contents($file);
-
-        if (substr($content, 0, 3) === "\xEF\xBB\xBF") {
-            $content = substr($content, 3);
-        }
-
-        $encoding = mb_detect_encoding($content, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
-        if ($encoding && $encoding !== 'UTF-8') {
-            $content = mb_convert_encoding($content, 'UTF-8', $encoding);
-        }
-
-        $tempHandle = fopen('php://memory', 'r+');
-        fwrite($tempHandle, $content);
-        rewind($tempHandle);
-
-        while (($data = fgetcsv($tempHandle, 10000, ',')) !== false) {
-            $data = array_map(function ($field) {
-                return trim(preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $field));
-            }, $data);
-            if (!empty(array_filter($data))) {
-                $rows[] = $data;
-            }
-        }
-        fclose($tempHandle);
-
-        if (count($rows) < 2) {
-            throw new Exception('File contains no data rows');
-        }
-
-        $headers = array_shift($rows);
-        if (!$headersMatch($headers)) {
-            throw new Exception('CSV columns do not match the required format. Expected: Type, Materials, Shop, PH, Total On Hand, Total Cost, Quantity per pack, Unit Cost, Remarks');
-        }
+    // 4. Database Transaction Execution
+    if (!function_exists('getDBConnection')) {
+        throw new Exception('Database configuration error: getDBConnection not found.');
     }
 
     $pdo = getDBConnection();
-    $pdo->exec("SET NAMES utf8mb4");
+    if (!$pdo) {
+        throw new Exception('Database connection failed.');
+    }
+
+    $pdo->exec('SET NAMES utf8mb4');
     $pdo->beginTransaction();
 
-    $imported = 0;
-    $updated = 0;
+    $totalImported = 0;
+    $totalUpdated  = 0;
+    $totalSkipped  = 0;
+    $errors        = [];
 
-    // Process rows
-    foreach ($rows as $rowIndex => $row) {
-        if (empty(array_filter($row))) continue;
+    foreach ($dataRows as $rowIndex => $row) {
+        $get = function (string $field) use ($row, $colMap): string {
+            if (!isset($colMap[$field])) {
+                return '';
+            }
+            return trim((string) ($row[$colMap[$field]] ?? ''));
+        };
 
-        $type = trim($row[0] ?? '');
-        $materialName = trim($row[1] ?? '');
-
-        if (empty($materialName)) continue;
-
-        $shopStock = (int) ($row[2] ?? 0);
-        $phStock = (int) ($row[3] ?? 0);
-        $totalStock = (int) ($row[4] ?? 0);
-
-        if ($totalStock <= 0) {
-            $totalStock = $shopStock + $phStock;
+        $materialName = $get('material_name');
+        if ($materialName === '') {
+            $totalSkipped++;
+            continue;
         }
 
-        $totalCost = (float) ($row[5] ?? 0);
-        $piecesPerPack = (int) ($row[6] ?? 1);
+        try {
+            $shopStock     = (int)   mat_clean_number($get('shop_stock')      ?: '0');
+            $phStock       = (int)   mat_clean_number($get('ph_stock')        ?: '0');
+            $totalStock    = (int)   mat_clean_number($get('total_stock')     ?: '0');
+            $totalCost     = (float) mat_clean_number($get('total_cost')      ?: '0');
+            $piecesPerPack = max(1, (int) mat_clean_number($get('pieces_per_pack') ?: '1'));
+            $unitCost      = (float) mat_clean_number($get('unit_cost')       ?: '0');
 
-        if ($piecesPerPack <= 0) $piecesPerPack = 1;
+            if ($totalStock <= 0) {
+                $totalStock = $shopStock + $phStock;
+            }
+            if ($unitCost <= 0 && $totalCost > 0) {
+                $unitCost = $totalCost / $piecesPerPack;
+            }
 
-        $unitCost = (float) ($row[7] ?? 0);
+            $type    = $get('type');
+            $remarks = $get('remarks');
 
-        if ($unitCost <= 0 && $totalCost > 0) {
-            $unitCost = $totalCost / $piecesPerPack;
-        }
+            // Upsert record
+            $stmt = $pdo->prepare('SELECT id FROM materials WHERE material_name = :name LIMIT 1');
+            $stmt->execute([':name' => $materialName]);
+            $existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $remarks = trim($row[8] ?? '');
+            if ($existing) {
+                $stmt = $pdo->prepare('
+                    UPDATE materials
+                    SET type            = :type,
+                        shop_stock      = :shop,
+                        ph_stock        = :ph,
+                        total_stock     = :total,
+                        total_cost      = :total_cost,
+                        pieces_per_pack = :pieces,
+                        unit_cost       = :unit_cost,
+                        remarks         = :remarks
+                    WHERE material_name = :name
+                ');
+                $stmt->execute([
+                    ':type'       => $type,
+                    ':shop'       => $shopStock,
+                    ':ph'         => $phStock,
+                    ':total'      => $totalStock,
+                    ':total_cost' => $totalCost,
+                    ':pieces'     => $piecesPerPack,
+                    ':unit_cost'  => $unitCost,
+                    ':remarks'    => $remarks,
+                    ':name'       => $materialName,
+                ]);
+                $totalUpdated++;
+            } else {
+                $stmt = $pdo->prepare('
+                    INSERT INTO materials
+                        (type, material_name, shop_stock, ph_stock, total_stock,
+                         total_cost, pieces_per_pack, unit_cost, remarks)
+                    VALUES
+                        (:type, :name, :shop, :ph, :total,
+                         :total_cost, :pieces, :unit_cost, :remarks)
+                ');
+                $stmt->execute([
+                    ':type'       => $type,
+                    ':name'       => $materialName,
+                    ':shop'       => $shopStock,
+                    ':ph'         => $phStock,
+                    ':total'      => $totalStock,
+                    ':total_cost' => $totalCost,
+                    ':pieces'     => $piecesPerPack,
+                    ':unit_cost'  => $unitCost,
+                    ':remarks'    => $remarks,
+                ]);
+                $totalImported++;
+            }
 
-        $materialName = mb_convert_encoding($materialName, 'UTF-8', 'UTF-8');
-        $type = mb_convert_encoding($type, 'UTF-8', 'UTF-8');
-        $remarks = mb_convert_encoding($remarks, 'UTF-8', 'UTF-8');
-
-        $checkStmt = $pdo->prepare("SELECT id FROM materials WHERE material_name = :name");
-        $checkStmt->execute([':name' => $materialName]);
-        $existing = $checkStmt->fetch();
-
-        if ($existing) {
-            $updateStmt = $pdo->prepare("
-                UPDATE materials 
-                SET type = :type, shop_stock = :shop, ph_stock = :ph, total_stock = :total,
-                    total_cost = :total_cost, pieces_per_pack = :pieces, unit_cost = :unit_cost, remarks = :remarks
-                WHERE material_name = :name
-            ");
-            $updateStmt->execute([
-                ':type' => $type,
-                ':shop' => $shopStock,
-                ':ph' => $phStock,
-                ':total' => $totalStock,
-                ':total_cost' => $totalCost,
-                ':pieces' => $piecesPerPack,
-                ':unit_cost' => $unitCost,
-                ':remarks' => $remarks,
-                ':name' => $materialName
-            ]);
-            $updated++;
-        } else {
-            $insertStmt = $pdo->prepare("
-                INSERT INTO materials (type, material_name, shop_stock, ph_stock, total_stock, total_cost, pieces_per_pack, unit_cost, remarks)
-                VALUES (:type, :name, :shop, :ph, :total, :total_cost, :pieces, :unit_cost, :remarks)
-            ");
-            $insertStmt->execute([
-                ':type' => $type,
-                ':name' => $materialName,
-                ':shop' => $shopStock,
-                ':ph' => $phStock,
-                ':total' => $totalStock,
-                ':total_cost' => $totalCost,
-                ':pieces' => $piecesPerPack,
-                ':unit_cost' => $unitCost,
-                ':remarks' => $remarks
-            ]);
-            $imported++;
+        } catch (Exception $rowError) {
+            $errors[] = 'Row ' . ($rowIndex + 2) . ' ("' . $materialName . '"): ' . $rowError->getMessage();
+            $totalSkipped++;
         }
     }
 
     $pdo->commit();
 
-    $response['success'] = true;
-    $response['message'] = "Imported: $imported new, $updated updated";
+    $origExt = strtolower(pathinfo($_FILES[$fileKey]['name'] ?? '', PATHINFO_EXTENSION));
+    $formatLabel = ($origExt === 'xlsx') ? 'Excel (.xlsx)' : 'CSV (.csv)';
+
+    $response = [
+        'success' => true,
+        'message' => "{$formatLabel} import completed — Added: {$totalImported}, Updated: {$totalUpdated}, Skipped: {$totalSkipped}",
+        'details' => [
+            'imported' => $totalImported,
+            'updated'  => $totalUpdated,
+            'skipped'  => $totalSkipped,
+            'errors'   => $errors,
+        ],
+    ];
+
+} catch (ImportException $e) {
+    if (isset($pdo) && $pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    $response = [
+        'success'           => false,
+        'error_type'        => $e->errorType,
+        'message'           => $e->getMessage(),
+        'technical_message' => $e->technicalMessage,
+    ];
 } catch (Exception $e) {
     if (isset($pdo) && $pdo->inTransaction()) {
         $pdo->rollBack();
     }
-    $response['message'] = $e->getMessage();
+    $response = [
+        'success' => false,
+        'message' => $e->getMessage(),
+    ];
 }
 
-if (ob_get_level()) ob_end_clean();
-echo json_encode($response);
+if (ob_get_length()) {
+    ob_end_clean();
+}
+echo json_encode($response, JSON_UNESCAPED_UNICODE);
 exit;
-

@@ -142,17 +142,20 @@
   transition: opacity 0.25s ease;
 }
 
-.stat-card:nth-child(1)::before {
-  background: var(--warning);
+.stat-card:has(.sales)::before {
+  background: #10b981;
 }
-.stat-card:nth-child(2)::before {
-  background: var(--info);
+.stat-card:has(.orders)::before {
+  background: #3b82f6;
 }
-.stat-card:nth-child(3)::before {
-  background: var(--success);
+.stat-card:has(.customers)::before {
+  background: #6366f1;
 }
-.stat-card:nth-child(4)::before {
-  background: var(--danger);
+.stat-card:has(.inventory)::before {
+  background: #0ea5e9;
+}
+.stat-card:has(.stock)::before {
+  background: #f59e0b;
 }
 
 .stat-card:hover {
@@ -204,25 +207,29 @@
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
-  color: #fff;
   flex-shrink: 0;
   margin-top: 8px;
 }
 
 .stat-icon.sales {
   background: #edfff4;
+  color: #10b981;
 }
 .stat-icon.orders {
   background: #eaf2ff;
+  color: #3b82f6;
 }
 .stat-icon.customers {
   background: #edf3ff;
+  color: #6366f1;
 }
 .stat-icon.stock {
   background: #fff5e4;
+  color: #f59e0b;
 }
 .stat-icon.inventory {
   background: #f0f7ff;
+  color: #0ea5e9;
 }
 
 /* ══════════════════════════════════════

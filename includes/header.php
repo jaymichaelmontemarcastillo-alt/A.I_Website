@@ -21,7 +21,7 @@ $showSearch = in_array($currentPage, ['product.php', 'Bundles.php']);
     <link rel="stylesheet" href="<?php echo $baseDir; ?>assets/css/customer-site/style.css">
     <link rel="stylesheet" href="<?php echo $baseDir; ?>assets/css/customer-site/notifications.css">
 
-    <?php if ($currentPage === 'index.php'): ?>
+    <?php if (in_array($currentPage, ['index.php', 'product.php', 'AboutUs.php', 'Bundles.php'])): ?>
     <link rel="stylesheet" href="<?php echo $baseDir; ?>assets/css/customer-site/home.css">
     <?php endif; ?>
 

@@ -20,8 +20,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/../../connect/config.php';
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once dirname(dirname(__DIR__)) . '/connect/config.php';
+require_once dirname(dirname(__DIR__)) . '/vendor/autoload.php';
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -181,15 +181,20 @@ try {
 
     /* ── 10. Logo ─────────────────────────────────────────────────────────── */
     $logoSrc = '';
-    $logoPath = __DIR__ . '/../../assets/images/admin-site/header_image.png';
+    $logoPath = dirname(dirname(__DIR__)) . '/assets/images/New_AI_Logo.png';
 
-    if (file_exists($logoPath)) {
-        $logoData = base64_encode(file_get_contents($logoPath));
-        $logoSrc = 'data:image/png;base64,' . $logoData;
-    } else {
-        // Fallback: SVG placeholder if logo not found
-        error_log('Warning: Logo not found at ' . $logoPath);
-        $logoSrc = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="110" height="180"%3E%3Crect fill="%23e5e7eb" width="110" height="180"/%3E%3Ctext x="50" y="90" font-family="Arial" font-size="10" fill="%23999" text-anchor="middle" dominant-baseline="middle"%3ELogo%3C/text%3E%3C/svg%3E';
+    if (!empty($logoPath) && file_exists($logoPath)) {
+        $rawLogo = @file_get_contents($logoPath);
+        if ($rawLogo !== false) {
+            $logoData = base64_encode($rawLogo);
+            $logoSrc  = 'data:image/png;base64,' . $logoData;
+        }
+    }
+
+    if (empty($logoSrc)) {
+        // Fallback: 1x1 transparent PNG if logo not found
+        error_log('Warning: Logo not found or unreadable at ' . ($logoPath ?? 'empty'));
+        $logoSrc = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
     }
 
     /* ── 11. Full HTML document ───────────────────────────────────────────── */
@@ -211,9 +216,13 @@ body {
 }
 
 /* ─── Letterhead ─── */
-.lh-table  { width:100%; padding-bottom:14px; margin-bottom:20px; }
-.lh-logo   { width:110px; vertical-align:middle; }
-.lh-logo img { width:101%; height:180px; object-fit:cover; }
+.lh-table  { width:92%; padding-bottom:15px; margin: 25px auto 30px auto; border:none; }
+.lh-logo   { width:160px; vertical-align:middle; border:none; padding:0; text-align:left; }
+.lh-logo img { width:150px; height:auto; }
+.lh-text   { vertical-align:middle; padding-left:15px; border:none; white-space:nowrap; }
+.lh-title  { font-size:32px; font-weight:bold; color:#2e3092; margin-bottom:6px; font-family: \'Inter\', sans-serif; letter-spacing: 0.5px; }
+.lh-info   { font-size:12.5px; font-weight:bold; color:#000; line-height:1.6; font-family: \'Inter\', sans-serif; }
+.lh-info strong { font-weight:bold; }
 
 /* ─── Client / meta ─── */
 .meta-table { width:100%; margin-bottom:18px; }
@@ -290,7 +299,7 @@ body {
 }
 .special-notes-num { 
     width: 25px; 
-    font-size: 9px; 
+    font-size: 11px; 
     color: #000; 
     text-align: right; 
     vertical-align: top; 
@@ -298,7 +307,7 @@ body {
     font-weight: normal;
 }
 .special-notes-text { 
-    font-size: 9px; 
+    font-size: 11px; 
     color: #000; 
     line-height: 1.6; 
     padding-left: 10px; 
@@ -318,11 +327,19 @@ body {
 </head>
 <body>
 
-<!-- LETTERHEAD - ONLY IMAGE, NO TEXT -->
+<!-- LETTERHEAD - LOGO + TEXT -->
 <table class="lh-table" cellpadding="0" cellspacing="0">
     <tr>
         <td class="lh-logo">
             <img src="' . $logoSrc . '" alt="Anything Inside">
+        </td>
+        <td class="lh-text">
+            <div class="lh-title">ANYTHING INSIDE</div>
+            <div class="lh-info">
+                <strong>Address:</strong> Plaza Agapita Commercial Complex, Los Baños, Laguna<br>
+                <strong>Contact No.:</strong> 0968 730 5403<br>
+                <strong>Email Address:</strong> <u>ai.anythinginside@gmail.com</u>
+            </div>
         </td>
     </tr>
 </table>
@@ -391,10 +408,33 @@ body {
 </html>';
 
     /* ── 12. Dompdf - Initialize ──────────────────────────────────────────── */
+    $tempDir = dirname(dirname(__DIR__)) . '/uploads/temp';
+    if (!is_dir($tempDir)) {
+        @mkdir($tempDir, 0755, true);
+    }
+
+    $fontDir = dirname(dirname(__DIR__)) . '/uploads/font_cache';
+    if (!is_dir($fontDir)) {
+        @mkdir($fontDir, 0755, true);
+    }
+
     $opts = new Options();
     $opts->set('defaultFont',          'DejaVu Sans');
-    $opts->set('isRemoteEnabled',      false);
+    $opts->set('isRemoteEnabled',      true);
     $opts->set('isHtml5ParserEnabled', true);
+
+    if (is_dir($tempDir) && is_writable($tempDir)) {
+        $opts->set('tempDir', $tempDir);
+    }
+    if (is_dir($fontDir) && is_writable($fontDir)) {
+        $opts->set('fontDir', $fontDir);
+        $opts->set('fontCache', $fontDir);
+    }
+
+    $chrootPath = realpath(dirname(dirname(__DIR__)));
+    if (!empty($chrootPath)) {
+        $opts->set('chroot', $chrootPath);
+    }
 
     $dompdf = new Dompdf($opts);
 
@@ -411,14 +451,18 @@ body {
     }
 
     /* ── 15. Save to disk ─────────────────────────────────────────────────── */
-    $uploadDir = __DIR__ . '/../../uploads/quotations/';
+    $uploadDir = dirname(dirname(__DIR__)) . '/uploads/quotations/';
 
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        @mkdir($uploadDir, 0755, true);
     }
 
-    if (!is_writable($uploadDir)) {
-        throw new Exception('Upload directory not writable: ' . $uploadDir);
+    if (!is_dir($uploadDir) || !is_writable($uploadDir)) {
+        // Fallback if permission issue on uploadDir
+        $uploadDir = $tempDir . '/';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
     }
 
     $safeNum  = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $quote['quote_number']);
@@ -429,7 +473,10 @@ body {
         throw new Exception('Failed to write PDF file: ' . $filePath);
     }
 
-    $pdfUrl = '/Anything_Inside_Website/uploads/quotations/' . $filename;
+    // Dynamic web relative path calculation
+    $scriptDir  = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+    $baseWebDir = preg_replace('#/api/admin_site/?$#i', '', $scriptDir);
+    $pdfUrl     = rtrim($baseWebDir, '/') . '/uploads/quotations/' . $filename;
 
     /* ── 16. Update database ──────────────────────────────────────────────── */
     $updateStmt = $pdo->prepare("

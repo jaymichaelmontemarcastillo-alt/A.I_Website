@@ -282,6 +282,8 @@ class QuotationManager {
     this._isSaving = false;
     this._pendingApprovalId = null;
     this._productsCache = null;
+    this._pdfProgressInterval = null;
+    this._pdfProgressVal = 0;
 
     this.init();
   }
@@ -1169,9 +1171,9 @@ class QuotationManager {
     }
   }
 
-  // ── DELIVERY RECEIPT FROM MODAL ──────────────────────────────────────────
-  async generateDeliveryReceiptFromModal() {
-    const quotationId = this._editingId;
+  // ── DELIVERY RECEIPT ──────────────────────────────────────────────────────
+  async generateDeliveryReceipt(id) {
+    const quotationId = id || this._editingId;
 
     if (!quotationId) {
       this.showNotification(
@@ -1181,9 +1183,10 @@ class QuotationManager {
       return;
     }
 
-    this.showNotification(
-      "Generating Delivery Receipt, please wait...",
-      "info",
+    this.closeApprovalModal();
+    this.showPdfProgressModal(
+      "Generating Delivery PDF",
+      "Preparing layout and building delivery receipt document...",
     );
 
     try {
@@ -1196,6 +1199,7 @@ class QuotationManager {
       const result = await this._parseJSON(response);
 
       if (result.success) {
+        await this.finishPdfProgressModal(true);
         this.showNotification(
           "Delivery Receipt generated successfully!",
           "success",
@@ -1226,18 +1230,24 @@ class QuotationManager {
         await this.fetchQuotations();
         await this.fetchStats();
       } else {
+        await this.finishPdfProgressModal(false);
         this.showNotification(
           result.message || "Failed to generate Delivery Receipt",
           "error",
         );
       }
     } catch (err) {
-      console.error("generateDeliveryReceiptFromModal error:", err);
+      console.error("generateDeliveryReceipt error:", err);
+      await this.finishPdfProgressModal(false);
       this.showNotification(
         "Error generating Delivery Receipt: " + err.message,
         "error",
       );
     }
+  }
+
+  async generateDeliveryReceiptFromModal() {
+    return this.generateDeliveryReceipt(this._editingId);
   }
 
   // Helper to get quote number from modal
@@ -1496,13 +1506,219 @@ class QuotationManager {
     }
   }
 
+  // ── PDF PROGRESS CIRCLE BAR MODAL HELPERS ─────────────────────────────────
+  injectPdfProgressModalHtml() {
+    if (document.getElementById("pdfProgressModal")) return;
+
+    const modalHtml = `
+      <div id="pdfProgressModal" class="pdf-progress-overlay">
+          <div class="pdf-progress-card">
+              <div class="pdf-progress-header">
+                  <div class="pdf-progress-icon-wrap">
+                      <i class="fa-solid fa-file-pdf pdf-anim-icon"></i>
+                  </div>
+                  <h3 id="pdfProgressTitle" class="pdf-progress-title">Generating PDF Document</h3>
+                  <p id="pdfProgressSubtitle" class="pdf-progress-subtitle">Please wait while your document is being prepared...</p>
+              </div>
+              
+              <div class="pdf-progress-circle-container">
+                  <svg class="pdf-progress-svg" viewBox="0 0 120 120">
+                      <circle class="pdf-progress-bg" cx="60" cy="60" r="50"></circle>
+                      <circle class="pdf-progress-bar" id="pdfCircleBar" cx="60" cy="60" r="50"></circle>
+                  </svg>
+                  <div class="pdf-progress-percentage">
+                      <span id="pdfProgressPercent">0%</span>
+                      <span class="pdf-progress-label">Progress</span>
+                  </div>
+              </div>
+
+              <div class="pdf-progress-status-container">
+                  <div class="pdf-status-step active" id="pdfStep1">
+                      <i class="fa-solid fa-spinner fa-spin"></i> <span>Processing document data</span>
+                  </div>
+                  <div class="pdf-status-step pending" id="pdfStep2">
+                      <i class="fa-regular fa-circle"></i> <span>Rendering PDF template</span>
+                  </div>
+                  <div class="pdf-status-step pending" id="pdfStep3">
+                      <i class="fa-regular fa-circle"></i> <span>Finalizing & opening document</span>
+                  </div>
+              </div>
+          </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML("beforeend", modalHtml);
+  }
+
+  showPdfProgressModal(
+    title = "Generating PDF",
+    subtitle = "Please wait while your document is being prepared...",
+  ) {
+    this.injectPdfProgressModalHtml();
+    const modal = document.getElementById("pdfProgressModal");
+    if (!modal) return;
+
+    const titleEl = document.getElementById("pdfProgressTitle");
+    const subEl = document.getElementById("pdfProgressSubtitle");
+    if (titleEl) titleEl.textContent = title;
+    if (subEl) subEl.textContent = subtitle;
+
+    this._updatePdfCircleProgress(0);
+    this._setPdfStep(1, "active");
+    this._setPdfStep(2, "pending");
+    this._setPdfStep(3, "pending");
+
+    modal.style.display = "flex";
+    void modal.offsetWidth; // Trigger reflow for transition
+    modal.classList.add("show");
+
+    this._pdfProgressVal = 0;
+    if (this._pdfProgressInterval) clearInterval(this._pdfProgressInterval);
+
+    this._pdfProgressInterval = setInterval(() => {
+      if (this._pdfProgressVal < 92) {
+        let increment = (92 - this._pdfProgressVal) * 0.08;
+        if (increment < 0.6) increment = 0.6;
+        this._pdfProgressVal = Math.min(92, this._pdfProgressVal + increment);
+        const currentPercent = Math.floor(this._pdfProgressVal);
+        this._updatePdfCircleProgress(currentPercent);
+
+        if (currentPercent > 25 && currentPercent < 65) {
+          this._setPdfStep(1, "done");
+          this._setPdfStep(2, "active");
+        } else if (currentPercent >= 65) {
+          this._setPdfStep(1, "done");
+          this._setPdfStep(2, "done");
+          this._setPdfStep(3, "active");
+        }
+      }
+    }, 100);
+  }
+
+  _updatePdfCircleProgress(percent) {
+    const circleBar = document.getElementById("pdfCircleBar");
+    const percentText = document.getElementById("pdfProgressPercent");
+    if (circleBar) {
+      const circumference = 314.159;
+      const offset = circumference - (percent / 100) * circumference;
+      circleBar.style.strokeDashoffset = offset;
+    }
+    if (percentText) {
+      percentText.textContent = `${percent}%`;
+    }
+  }
+
+  _setPdfStep(stepNum, state) {
+    const stepEl = document.getElementById(`pdfStep${stepNum}`);
+    if (!stepEl) return;
+    const iconEl = stepEl.querySelector("i");
+    if (state === "done") {
+      stepEl.className = "pdf-status-step completed";
+      if (iconEl) iconEl.className = "fa-solid fa-circle-check";
+    } else if (state === "active") {
+      stepEl.className = "pdf-status-step active";
+      if (iconEl) iconEl.className = "fa-solid fa-spinner fa-spin";
+    } else {
+      stepEl.className = "pdf-status-step pending";
+      if (iconEl) iconEl.className = "fa-regular fa-circle";
+    }
+  }
+
+  async finishPdfProgressModal(success = true) {
+    if (this._pdfProgressInterval) {
+      clearInterval(this._pdfProgressInterval);
+      this._pdfProgressInterval = null;
+    }
+
+    if (success) {
+      this._updatePdfCircleProgress(100);
+      this._setPdfStep(1, "done");
+      this._setPdfStep(2, "done");
+      this._setPdfStep(3, "done");
+      await new Promise((res) => setTimeout(res, 400));
+    }
+
+    const modal = document.getElementById("pdfProgressModal");
+    if (modal) {
+      modal.classList.remove("show");
+      await new Promise((res) => setTimeout(res, 250));
+      modal.style.display = "none";
+    }
+  }
+
+  closeApprovalModal() {
+    const modal = document.getElementById("ApprovalModal");
+    if (modal) modal.style.display = "none";
+  }
+
+  openDownloadModal(id) {
+    console.log("Opening download modal for ID:", id);
+    this.currentDownloadId = id;
+    const modal = document.getElementById("QuotationDownloadModal");
+    if (modal) {
+        modal.style.display = "flex";
+        modal.classList.add("show");
+    } else {
+        console.error("QuotationDownloadModal not found in DOM");
+        this.showNotification("Download modal could not be found.", "error");
+    }
+  }
+
+  async executeDownload(format) {
+    console.log("Executing download format:", format);
+    const modal = document.getElementById("QuotationDownloadModal");
+    if (modal) {
+        modal.style.cssText = "display: none !important;";
+        modal.classList.remove("show");
+    }
+
+    try {
+        if (format === 'pdf') {
+            await this.generatePDF(this.currentDownloadId);
+        } else if (format === 'docx') {
+            await this.generateDocx(this.currentDownloadId);
+        }
+    } catch (e) {
+        console.error("Error executing download:", e);
+        this.showNotification("An error occurred starting the download.", "error");
+    }
+  }
+
+  // ── DOCX GENERATION ───────────────────────────────────────────────────────
+  async generateDocx(id) {
+    if (!id) {
+      this.showNotification("Error: No quotation ID provided.", "error");
+      return;
+    }
+    
+    // Create a temporary form to trigger standard download via POST
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "../../api/admin_site/generate_quotation_docx.php";
+    // Removed target="_blank" to download immediately in the same window
+    
+    const input = document.createElement("input");
+    input.type = "hidden";
+    input.name = "id";
+    input.value = id;
+
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+    
+    this.showNotification("DOCX download initiated!", "success");
+  }
+
   // ── PDF GENERATION ────────────────────────────────────────────────────────
   async generatePDF(id) {
     if (!id) {
       this.showNotification("Error: No quotation ID provided.", "error");
       return;
     }
-    this.showNotification("Generating PDF, please wait...", "info");
+    this.showPdfProgressModal(
+      "Generating Quotation PDF",
+      "Preparing layout and building quotation document...",
+    );
 
     try {
       const response = await fetch(this.config.pdfApiUrl, {
@@ -1513,9 +1729,19 @@ class QuotationManager {
       const result = await this._parseJSON(response);
 
       if (result.success) {
+        await this.finishPdfProgressModal(true);
         this.showNotification("PDF generated successfully!", "success");
-        window.open(result.pdf_url, "_blank");
+        if (result.pdf_url) {
+          // Download immediately instead of opening in a new tab
+          const a = document.createElement('a');
+          a.href = result.pdf_url;
+          a.download = `Quotation_${id}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        }
       } else {
+        await this.finishPdfProgressModal(false);
         this.showNotification(
           result.message || "Failed to generate PDF",
           "error",
@@ -1523,6 +1749,7 @@ class QuotationManager {
       }
     } catch (err) {
       console.error("generatePDF error:", err);
+      await this.finishPdfProgressModal(false);
       this.showNotification("Error generating PDF: " + err.message, "error");
     }
   }
@@ -1603,8 +1830,8 @@ class QuotationManager {
                     <button class="btn-edit" onclick="quotationManager.openEditModal(${q.id})" title="Edit" style="background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; color: #2563eb;">
                         <i class="fa-solid fa-edit"></i>
                     </button>
-                    <button class="btn-pdf" onclick="quotationManager.generatePDF(${q.id})" title="Generate PDF" style="background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; color: #dc2626;">
-                        <i class="fa-solid fa-file-pdf"></i>
+                    <button class="btn-pdf" onclick="quotationManager.openDownloadModal(${q.id})" title="Download/Export" style="background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; color: #10b981;">
+                        <i class="fa-solid fa-download"></i>
                     </button>
                     <button class="btn-delete" onclick="quotationManager.deleteQuotation(${q.id}, '${this._esc(q.quote_number)}')" title="Delete" style="background: none; border: none; cursor: pointer; padding: 4px 8px; border-radius: 4px; color: #6b7280;">
                         <i class="fa-solid fa-trash"></i>

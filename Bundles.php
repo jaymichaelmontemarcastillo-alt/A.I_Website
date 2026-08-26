@@ -1,346 +1,480 @@
 <?php
 session_start();
-require_once 'connect/config.php';
 include 'includes/header.php';
-
-$pdo = getDBConnection();
-if (!$pdo) {
-    die('Database connection failed.');
-}
-
-// Fetch ONLY bundles
-$bundles = getBundles($pdo);   // uses type = 'bundle'
-
-// For hero, use the first bundle if available
-$heroBundle = !empty($bundles) ? $bundles[0] : null;
 ?>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..700;1,14..32,300..700&family=Playfair+Display:ital,wght@0,400..700;1,400..700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Load Google Font Poppins -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
 <style>
-/* ========== ISOLATED BUNDLE PAGE STYLES ========== */
+/* ========== INTEGRATED THEME VARIABLES ========== */
 #bundle-page {
-  --bp-deep-navy: #0a1a3a;
-  --bp-royal-blue: #0B3D91;
-  --bp-warm-amber: #f4a81d;
-  --bp-pure-white: #ffffff;
-  --bp-text-muted: #5a6275;
-  --bp-shadow-sm: 0 2px 8px rgba(10,26,58,0.06);
-  --bp-shadow-xl: 0 30px 70px rgba(10,26,58,0.20);
-  --bp-radius-lg: 22px;
-  --bp-transition: 0.35s cubic-bezier(0.25,0.46,0.45,0.94);
-  --bp-font-body: 'Plus Jakarta Sans', 'Inter', sans-serif;
-  --bp-font-display: 'Playfair Display', 'Georgia', serif;
-  margin: 0; padding: 0;
-  font-family: var(--bp-font-body);
-  color: var(--bp-deep-navy);
-  background: #fafbfd;
-  line-height: 1.6;
+  --primary: #0a2a44; /* Deep Navy Background */
+  --accent: #f4ba31;  /* Warm Amber Accent */
+  --bg-dark: #0a2a44; 
+  --white: #ffffff;
+  --text-on-dark: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.7);
+  --radius: 20px;
+  --shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+  
+  background: var(--bg-dark); /* Applied globally */
+  color: var(--text-on-dark);
+  font-family: "Poppins", sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
 }
 
-#bundle-page *,
-#bundle-page *::before,
-#bundle-page *::after {
-  box-sizing: border-box; margin: 0; padding: 0;
+/* ===== CUSTOM FONTS FROM YOUR CSS ===== */
+@font-face {
+  font-family: "GWbently";
+  src: url("assets/fonts/GWbently.ttf") format("truetype");
+  font-weight: normal; font-style: normal;
+}
+@font-face {
+  font-family: "TNRM";
+  src: url("assets/fonts/TNRM.ttf") format("truetype");
+  font-weight: normal; font-style: normal;
 }
 
-/* ---------- HERO ---------- */
-#bundle-page .bundle-hero {
-  position: relative;
-  min-height: 420px;
+#bundle-page .tnrm { font-family: "TNRM", "Georgia", serif; }
+#bundle-page .gw-font { font-family: "GWbently", serif; color: var(--accent); }
+
+/* ---------- GLOBAL TAG/LABEL ---------- */
+#bundle-page .tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(244, 186, 49, 0.15); /* Translucent Amber */
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 10px 18px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+/* ---------- FRAME 1: HERO ---------- */
+#bundle-page .hero-frame {
+  background: linear-gradient(135deg, #0a2a44 0%, #1a4a6e 100%);
+  color: white;
+  min-height: 100vh;
   display: flex;
   align-items: center;
-  background: #f0f5fb;
-  padding: 50px 0;
-}
-
-/* Background image container (set via JS) */
-#bundle-page .hero-bg-image {
-  position: absolute; inset: 0;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  z-index: 0;
-  opacity: 0.15;
-  transition: background-image 0.5s ease;
-}
-/* If no image, hide container */
-#bundle-page .hero-bg-image:empty {
-  display: none;
-}
-
-#bundle-page .hero-decor { position: absolute; z-index: 2; pointer-events: none; }
-#bundle-page .hero-decor-circle {
-  position: absolute; border-radius: 50%;
-  border: 2px solid rgba(11,61,145,0.08);
-  animation: bp-float 14s ease-in-out infinite;
-}
-#bundle-page .hero-decor-circle:nth-child(1) { width:280px; height:280px; top:-100px; right:-60px; }
-#bundle-page .hero-decor-circle:nth-child(2) { width:180px; height:180px; bottom:-50px; left:-40px; animation-delay:-5s; border-color:rgba(244,168,29,0.2); }
-#bundle-page .hero-decor-circle:nth-child(3) { width:120px; height:120px; top:30%; right:15%; animation-delay:-9s; border-color:rgba(11,61,145,0.06); }
-@keyframes bp-float {
-  0%,100%{transform:translateY(0) rotate(0deg)}
-  25%{transform:translateY(-25px) rotate(3deg)}
-  50%{transform:translateY(-10px) rotate(-2deg)}
-  75%{transform:translateY(-30px) rotate(1deg)}
-}
-
-#bundle-page .container {
-  position: relative; z-index: 3;
-  max-width: 1200px; margin: 0 auto;
-  padding: 0 40px;
-  display: flex;
-  align-items: left;
-}
-
-#bundle-page .hero-content {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  max-width: 600px;
+  text-align: center;
   width: 100%;
-  margin: 0 !important;
-  text-align: left !important;
-  animation: bp-fadeIn 0.8s ease-out;
 }
 
-@keyframes bp-fadeIn { 
-  from { opacity:0; transform:translateY(30px); } 
-  to { opacity:1; transform:translateY(0); } 
+#bundle-page .hero-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
-#bundle-page .hero-badge {
-  display:inline-flex; align-items:center; gap:8px;
-  background: var(--bp-royal-blue);
-  color:#fff;
-  padding:8px 18px; border-radius:50px; font-size:0.85rem; font-weight:600;
-  letter-spacing:0.04em; text-transform:uppercase; margin-bottom:20px;
-}
-#bundle-page .hero-badge .dot {
-  width:8px; height:8px; border-radius:50%; background:var(--bp-warm-amber);
-  animation:bp-pulse 1.8s infinite;
-}
-@keyframes bp-pulse { 
-  0%,100%{opacity:1;transform:scale(1)} 
-  50%{opacity:0.5;transform:scale(1.6)} 
+#bundle-page .hero-frame h1 {
+  font-family: "TNRM", serif;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  line-height: 1.1;
+  margin-bottom: 20px;
 }
 
-#bundle-page .bundle-hero h1 {
-  font-family:var(--bp-font-display); font-size:clamp(32px,5vw,56px);
-  font-weight:700; line-height:1.1; margin-bottom:16px; color:#0a2a44;
-}
-#bundle-page .hero-desc {
-  color:#546d84; font-size:1.1rem; line-height:1.7;
-  margin-bottom:28px; max-width:550px;
-}
-#bundle-page .hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
-#bundle-page .btn-hero {
-  display:inline-flex; align-items:center; gap:10px;
-  background:var(--bp-warm-amber); color:#0a2a44;
-  padding:14px 28px; border-radius:50px; font-weight:700; text-decoration:none;
-  transition:all var(--bp-transition); box-shadow:0 8px 24px rgba(244,168,29,0.3);
-}
-#bundle-page .btn-hero:hover { background:#fbbf3b; transform:translateY(-3px); box-shadow:0 14px 36px rgba(244,168,29,0.5); }
-#bundle-page .btn-hero-outline {
-  display:inline-flex; align-items:center; gap:10px;
-  background:#ffffff; color:#0B3D91; padding:14px 28px; border-radius:50px;
-  font-weight:600; text-decoration:none; border:2px solid #0B3D91;
-  transition:all var(--bp-transition);
-}
-#bundle-page .btn-hero-outline:hover { background:#e8f2ff; transform:translateY(-3px); }
-
-/* ---------- GRID SECTION ---------- */
-#bundle-page .bundles-section {
-  max-width:1200px; margin: 40px auto 60px; padding:0 28px; position:relative; z-index:5;
-}
-#bundle-page .bundles-section-header { text-align:center; margin-bottom:32px; }
-#bundle-page .section-label {
-  display:inline-block; font-size:0.8rem; font-weight:700; text-transform:uppercase;
-  letter-spacing:0.08em; color:var(--bp-royal-blue); background:#e8f2ff;
-  padding:6px 16px; border-radius:50px; margin-bottom:10px;
-}
-#bundle-page .bundles-section-header h2 {
-  font-family:var(--bp-font-display); font-size:clamp(24px,3.5vw,38px); color:var(--bp-deep-navy); font-weight:700;
+#bundle-page .hero-frame h1 .gw-font {
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  display: block;
+  margin-top: -10px;
 }
 
-/* ---------- PRODUCT GRID ---------- */
-#bundle-page .bundle-grid {
+/* ---------- WIZARD STEPS (Deep Navy Background) ---------- */
+.wizard-step {
+  display: none; 
+  padding: 80px 0;
+  background: var(--bg-dark); /* Navy blue background for every step */
+}
+
+.wizard-step.active {
+  display: block;
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-head {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.section-head h2 {
+  font-family: "TNRM", serif;
+  font-size: clamp(2.2rem, 4vw, 3rem);
+  color: var(--white); /* White text for contrast */
+  font-weight: 400;
+}
+
+.selection-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
 }
 
-#bundle-page .promo-bundle-card {
-  background: var(--bp-pure-white);
-  border-radius: var(--bp-radius-lg);
-  box-shadow: var(--bp-shadow-sm);
-  overflow: hidden;
-  border: 1px solid #eef1f7;
-  transition: all var(--bp-transition);
+/* ---------- CARDS (White Content) ---------- */
+.selection-card {
+  background: var(--white);
+  padding: 40px 20px;
+  border-radius: var(--radius);
+  text-align: center;
+  border: 2px solid transparent;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  color: var(--primary); /* Text inside cards remains navy */
+}
+
+.icon-circle {
+  width: 70px;
+  height: 70px;
+  margin: 0 auto 20px;
+  background: rgba(10, 42, 68, 0.05);
+  border-radius: 50%;
   display: flex;
-  flex-direction: column;
-  height: 530px;
-  position: relative;
-}
-#bundle-page .promo-bundle-card:hover {
-  transform: translateY(-10px);
-  box-shadow: var(--bp-shadow-xl);
-  border-color: #dbe3f5;
-}
-#bundle-page .promo-bundle-link {
-  display: flex; flex-direction: column; flex:1;
-  width:100%; border:none; background:transparent;
-  padding:0; text-align:left; cursor:pointer;
-}
-#bundle-page .gift-img {
-  height: 240px; overflow: hidden; position: relative;
-  background: #eef1f7;
-  display: flex; align-items: center; justify-content: center;
-}
-#bundle-page .gift-img img {
-  width:100%; height:100%; object-fit:cover;
-  transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94);
-}
-#bundle-page .gift-img .no-image-icon {
-  font-size: 3.5rem;
-  color: #b0c0d0;
-}
-#bundle-page .promo-bundle-card:hover .gift-img img { transform: scale(1.08); }
-#bundle-page .badge {
-  position:absolute; top:14px; left:14px; background:var(--bp-warm-amber);
-  color:var(--bp-deep-navy); padding:7px 14px; border-radius:50px;
-  font-weight:700; font-size:0.78rem; z-index:2;
-  box-shadow:0 4px 14px rgba(244,168,29,0.4); text-transform:uppercase;
-}
-#bundle-page .gift-info {
-  padding:18px 20px 22px; display:flex; flex-direction:column; gap:10px; flex:1;
-}
-#bundle-page .gift-info h4 {
-  font-family:var(--bp-font-display); font-weight:700; font-size:1.25rem; color:var(--bp-deep-navy);
-}
-#bundle-page .card-divider {
-  width:40px; height:3px; background:var(--bp-warm-amber); border-radius:2px;
-}
-#bundle-page .gift-info p {
-  color:var(--bp-text-muted);
-  font-size: 0.78rem;
-  line-height: 1.45;
-  flex:1;
-  overflow: hidden;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  color: var(--primary);
+  transition: 0.3s;
 }
 
-/* ---------- RESPONSIVE ---------- */
-@media (max-width: 1100px) {
-  #bundle-page .bundle-grid { grid-template-columns: repeat(3, 1fr); }
-  #bundle-page .promo-bundle-card { height: 500px; }
+.selection-card h3 {
+  font-size: 18px;
+  font-weight: 600;
 }
-@media (max-width: 800px) {
-  #bundle-page .bundle-grid { grid-template-columns: repeat(2, 1fr); }
-  #bundle-page .promo-bundle-card { height: 480px; }
-  #bundle-page .container { flex-direction: column; align-items: flex-start; padding:0 24px; }
-  #bundle-page .bundle-hero { min-height: 380px; padding: 30px 0; }
+
+.selection-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
 }
-@media (max-width: 500px) {
-  #bundle-page .bundle-grid { grid-template-columns: 1fr; }
-  #bundle-page .promo-bundle-card { height: auto; min-height: 430px; }
-  #bundle-page .bundle-hero h1 { font-size:28px; }
-  #bundle-page .hero-desc { font-size:0.9rem; }
+
+.selection-card:hover .icon-circle {
+  background: var(--accent);
+  color: var(--primary);
+}
+
+/* ---------- BUTTONS ---------- */
+.btn-highlight {
+  background: var(--accent);
+  color: var(--primary);
+  border: 2px solid var(--accent);
+  font-weight: 700;
+  padding: 16px 40px;
+  border-radius: 50px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-family: "Poppins", sans-serif;
+  transition: 0.3s;
+}
+
+.btn-highlight:hover {
+  background: #e6b83a;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(244, 186, 49, 0.4);
+}
+
+/* ---------- RESULTS FOOTER ---------- */
+.results-footer {
+  margin-top: 60px;
+  text-align: center;
+  padding: 50px;
+  background: rgba(255, 255, 255, 0.05); /* Very subtle translucent white */
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.chip-container {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin: 25px 0;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 10px 22px;
+  border: 1px solid var(--accent);
+  border-radius: 50px;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.chip:hover {
+  background: var(--accent);
+  color: var(--primary);
+}
+
+.contact-link {
+    color: var(--accent);
+    font-weight: 700;
+    text-decoration: underline;
 }
 </style>
 
 <main id="bundle-page">
-  <section class="bundle-hero" id="bundle-hero">
-    <!-- Background image container (will be set via JS) -->
-    <div class="hero-bg-image" id="heroBgImage" 
-         style="background-image: url('<?php 
-           if ($heroBundle && !empty($heroBundle['image_path'])) {
-             echo htmlspecialchars($heroBundle['image_path'], ENT_QUOTES);
-           }
-         ?>');">
-    </div>
 
-    <div class="hero-decor" aria-hidden="true">
-      <div class="hero-decor-circle"></div>
-      <div class="hero-decor-circle"></div>
-      <div class="hero-decor-circle"></div>
+  <!-- FRAME 1: HERO -->
+  <section class="hero-frame" id="frame-1">
+    <div class="hero-container">
+      <span class="tag">GIFT BUNDLES — Find Your Gift</span>
+      <h1>Thoughtful Gifts,<br><span class="gw-font">Made Easy.</span></h1>
+      <p style="font-size: 1.2rem; margin-bottom: 30px; color: var(--text-muted);">Personalized gift bundles made for the people and moments that matter.</p>
+      <button class="btn-highlight" onclick="goToStep(2)">
+        Explore Gift Bundles <i class="fas fa-arrow-right"></i>
+      </button>
     </div>
+  </section>
+
+  <!-- FRAME 2: WHO (Deep Navy) -->
+  <section class="wizard-step" id="frame-2">
     <div class="container">
-      <div class="hero-content">
-        <span class="hero-badge"><span class="dot"></span> Featured Bundle</span>
-        <h1 id="hero-title"><?php echo $heroBundle ? htmlspecialchars($heroBundle['name'], ENT_QUOTES) : 'No Bundles Yet'; ?></h1>
-        <p class="hero-desc" id="hero-description"><?php echo $heroBundle ? htmlspecialchars($heroBundle['description'], ENT_QUOTES) : 'Check back later for exciting bundles.'; ?></p>
-        <div class="hero-ctas">
-          <a href="#bundles" class="btn-hero"><i class="fas fa-gift"></i> Explore Bundles</a>
-          <a href="product.php" class="btn-hero-outline">View Merchandise <i class="fas fa-arrow-right"></i></a>
+      <div class="section-head">
+        <span class="tag">Step 01</span>
+        <h2>Who are you shopping for?</h2>
+      </div>
+      <div class="selection-grid">
+        <div class="selection-card" onclick="selectOption('recipient', 'For Her', 3)">
+          <div class="icon-circle"><i class="fas fa-venus"></i></div>
+          <h3>For Her</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('recipient', 'For Him', 3)">
+          <div class="icon-circle"><i class="fas fa-mars"></i></div>
+          <h3>For Him</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('recipient', 'For Couples', 3)">
+          <div class="icon-circle"><i class="fas fa-heart"></i></div>
+          <h3>For Couples</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('recipient', 'For Friends', 3)">
+          <div class="icon-circle"><i class="fas fa-user-friends"></i></div>
+          <h3>For Friends</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('recipient', 'For Family', 3)">
+          <div class="icon-circle"><i class="fas fa-home"></i></div>
+          <h3>For Family</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('recipient', 'For Clients', 3)">
+          <div class="icon-circle"><i class="fas fa-briefcase"></i></div>
+          <h3>For Clients & Employees</h3>
         </div>
       </div>
     </div>
   </section>
 
-  <section id="bundles" class="bundles-section">
-    <div class="bundles-section-header">
-      <span class="section-label">Our Collection</span>
-      <h2>Promo Bundles</h2>
-    </div>
-    
-    <div class="bundle-grid">
-      <?php if (empty($bundles)): ?>
-        <p>No bundles available at the moment.</p>
-      <?php else: ?>
-        <?php foreach ($bundles as $bundle): ?>
-          <article class="promo-bundle-card" 
-                   data-name="<?php echo htmlspecialchars($bundle['name'], ENT_QUOTES); ?>"
-                   data-description="<?php echo htmlspecialchars($bundle['description'], ENT_QUOTES); ?>"
-                   data-image="<?php echo htmlspecialchars($bundle['image_path'], ENT_QUOTES); ?>">
-            <button type="button" class="promo-bundle-link bundle-select">
-              <div class="gift-img">
-                <?php if (!empty($bundle['image_path'])): ?>
-                  <img src="<?php echo htmlspecialchars($bundle['image_path'], ENT_QUOTES); ?>" alt="<?php echo htmlspecialchars($bundle['name'], ENT_QUOTES); ?>" loading="lazy">
-                <?php else: ?>
-                  <div class="no-image-icon"><i class="fas fa-box-open"></i></div>
-                <?php endif; ?>
-              </div>
-              <div class="gift-info">
-                <h4><?php echo htmlspecialchars($bundle['name'], ENT_QUOTES); ?></h4>
-                <div class="card-divider"></div>
-                <p><?php echo htmlspecialchars($bundle['description'], ENT_QUOTES); ?></p>
-              </div>
-            </button>
-          </article>
-        <?php endforeach; ?>
-      <?php endif; ?>
+  <!-- FRAME 3: OCCASION (Deep Navy) -->
+  <section class="wizard-step" id="frame-3">
+    <div class="container">
+      <div class="section-head">
+        <span class="tag">Step 02</span>
+        <h2>What's the occasion?</h2>
+      </div>
+      <div class="selection-grid">
+        <div class="selection-card" onclick="selectOption('occasion', 'Birthday', 4)">
+          <div class="icon-circle"><i class="fas fa-birthday-cake"></i></div>
+          <h3>Birthday</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('occasion', 'Graduation', 4)">
+          <div class="icon-circle"><i class="fas fa-graduation-cap"></i></div>
+          <h3>Graduation</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('occasion', 'Anniversary', 4)">
+          <div class="icon-circle"><i class="fas fa-calendar-alt"></i></div>
+          <h3>Anniversary</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('occasion', 'Thank You', 4)">
+          <div class="icon-circle"><i class="fas fa-hands-helping"></i></div>
+          <h3>Thank You</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('occasion', 'Appreciation', 4)">
+          <div class="icon-circle"><i class="fas fa-award"></i></div>
+          <h3>Appreciation</h3>
+        </div>
+        <div class="selection-card" onclick="selectOption('occasion', 'Just Because', 4)">
+          <div class="icon-circle"><i class="fas fa-gift"></i></div>
+          <h3>Just Because</h3>
+        </div>
+      </div>
     </div>
   </section>
+
+  <!-- FRAME 4: BUDGET (Deep Navy) -->
+  <section class="wizard-step" id="frame-4">
+    <div class="container">
+      <div class="section-head">
+        <span class="tag">Step 03</span>
+        <h2>What's your budget?</h2>
+      </div>
+      <div class="selection-grid">
+        <div class="selection-card" onclick="selectOption('budget', '300-500', 5)">
+          <div class="icon-circle"><i class="fas fa-leaf"></i></div>
+          <h3>₱300–₱500</h3>
+          <p style="color: #666; font-size: 0.8rem;">Small & thoughtful</p>
+        </div>
+        <div class="selection-card" onclick="selectOption('budget', '500-1000', 5)">
+          <div class="icon-circle"><i class="fas fa-star"></i></div>
+          <h3>₱500–₱1,000</h3>
+          <p style="color: #666; font-size: 0.8rem;">Something special</p>
+        </div>
+        <div class="selection-card" onclick="selectOption('budget', '1000-1500', 5)">
+          <div class="icon-circle"><i class="fas fa-box-open"></i></div>
+          <h3>₱1,000–₱1,500</h3>
+          <p style="color: #666; font-size: 0.8rem;">A complete gift</p>
+        </div>
+        <div class="selection-card" onclick="selectOption('budget', '1500+', 5)">
+          <div class="icon-circle"><i class="fas fa-crown"></i></div>
+          <h3>₱1,500+</h3>
+          <p style="color: #666; font-size: 0.8rem;">Premium & personalized</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FRAME 5: RESULTS (Deep Navy) -->
+  <section class="wizard-step" id="frame-5">
+    <div class="container">
+      <div class="section-head">
+        <span class="tag">Personalized Results</span>
+        <h2 id="match-title">We found these gifts.</h2>
+      </div>
+
+      <div class="selection-grid">
+        <!-- Results Card -->
+        <article class="selection-card" style="cursor: default; padding: 0; overflow: hidden; text-align: left;">
+          <img src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=600" style="width:100%; height:250px; object-fit:cover;">
+          <div style="padding: 25px;">
+            <h3 style="margin-bottom: 5px;">Birthday Self-Care Bundle</h3>
+            <p style="color: var(--primary); font-weight: 700; font-size: 1.4rem; margin-bottom: 10px;">₱799</p>
+            <p style="font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 20px;">Personalized mug + pouch + treats + luxury gift packaging.</p>
+            <button class="btn-highlight" style="width:100%; justify-content: center;">Add to Cart</button>
+          </div>
+        </article>
+      </div>
+
+      <!-- NEW DESIGN INTEGRATED HERE -->
+      <div style="margin-top: 80px; text-align: center;">
+        
+        <!-- Optional: Keep the "Change Filter" chips above the help box -->
+        <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">Not quite what you're looking for?</p>
+        <div class="chip-container" style="margin-bottom: 50px;">
+          <div class="chip" onclick="goToStep(2)">Change Recipient</div>
+          <div class="chip" onclick="goToStep(3)">Change Occasion</div>
+          <div class="chip" onclick="goToStep(4)">Change Budget</div>
+        </div>
+
+        <!-- THE REQUESTED DESIGN BOX -->
+        <div style="max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.05); padding: 60px; border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.1);">
+          <h2 class="tnrm" style="font-size: 2.5rem; margin-bottom: 20px; color: white;">Not sure what would work for you?</h2>
+          <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 35px;">
+            You don't have to figure it all out yourself. Tell us your budget, quantity, and purpose—we'll help you find the right option.
+          </p>
+          <a href="contact.php" class="btn-highlight">
+            <i class="fas fa-comment-dots"></i> Message Us
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </section><!-- FRAME 5: RESULTS (Deep Navy) -->
+  <section class="wizard-step" id="frame-5">
+    <div class="container">
+      <div class="section-head">
+        <span class="tag">Personalized Results</span>
+        <h2 id="match-title">We found these gifts.</h2>
+      </div>
+
+      <div class="selection-grid">
+        <!-- Results Card -->
+        <article class="selection-card" style="cursor: default; padding: 0; overflow: hidden; text-align: left;">
+          <img src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=600" style="width:100%; height:250px; object-fit:cover;">
+          <div style="padding: 25px;">
+            <h3 style="margin-bottom: 5px;">Birthday Self-Care Bundle</h3>
+            <p style="color: var(--primary); font-weight: 700; font-size: 1.4rem; margin-bottom: 10px;">₱799</p>
+            <p style="font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 20px;">Personalized mug + pouch + treats + luxury gift packaging.</p>
+            <button class="btn-highlight" style="width:100%; justify-content: center;">Add to Cart</button>
+          </div>
+        </article>
+      </div>
+
+      <!-- NEW DESIGN INTEGRATED HERE -->
+      <div style="margin-top: 80px; text-align: center;">
+        
+        <!-- Optional: Keep the "Change Filter" chips above the help box -->
+        <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">Not quite what you're looking for?</p>
+        <div class="chip-container" style="margin-bottom: 50px;">
+          <div class="chip" onclick="goToStep(2)">Change Recipient</div>
+          <div class="chip" onclick="goToStep(3)">Change Occasion</div>
+          <div class="chip" onclick="goToStep(4)">Change Budget</div>
+        </div>
+
+        <!-- THE REQUESTED DESIGN BOX -->
+        <div style="max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.05); padding: 60px; border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.1);">
+          <h2 class="tnrm" style="font-size: 2.5rem; margin-bottom: 20px; color: white;">Not sure what would work for you?</h2>
+          <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 35px;">
+            You don't have to figure it all out yourself. Tell us your budget, quantity, and purpose—we'll help you find the right option.
+          </p>
+          <a href="contact.php" class="btn-highlight">
+            <i class="fas fa-comment-dots"></i> Message Us
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
 </main>
 
 <script>
-// Update hero when a bundle card is clicked
-document.querySelectorAll('#bundle-page .bundle-select').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const card = btn.closest('.promo-bundle-card');
-    if (!card) return;
-    const heroBg = document.getElementById('heroBgImage');
-    const heroTitle = document.getElementById('hero-title');
-    const heroDesc = document.getElementById('hero-description');
-    
-    // Update text
-    heroTitle.textContent = card.dataset.name;
-    heroDesc.textContent = card.dataset.description;
-    
-    // Update background image
-    const imageUrl = card.dataset.image;
-    if (imageUrl && imageUrl.trim() !== '') {
-      heroBg.style.backgroundImage = 'url("' + imageUrl + '")';
-    } else {
-      // Optionally remove background to show gradient fallback
-      heroBg.style.backgroundImage = 'none';
-    }
-    
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+let selections = { recipient: '', occasion: '', budget: '' };
+
+function goToStep(step) {
+  // Completely hide Hero past step 1
+  const hero = document.getElementById('frame-1');
+  hero.style.display = (step === 1) ? 'flex' : 'none';
+
+  // Toggle active class for wizard steps
+  document.querySelectorAll('.wizard-step').forEach(section => {
+    section.classList.remove('active');
   });
-});
+
+  if (step > 1) {
+    const target = document.getElementById('frame-' + step);
+    target.classList.add('active');
+  }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function selectOption(category, value, nextStep) {
+  selections[category] = value;
+  
+  if (nextStep === 5) {
+    const title = document.getElementById('match-title');
+    title.innerHTML = `We found these gifts <span class="gw-font">${selections.recipient.toLowerCase()}</span>.`;
+  }
+  
+  goToStep(nextStep);
+}
 </script>
+
 <?php include 'includes/footer.php'; ?>

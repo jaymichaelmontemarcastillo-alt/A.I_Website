@@ -53,7 +53,7 @@ try {
     }
 
     // Otherwise, try to find PDF file by quote_number
-    $uploadDir = __DIR__ . '/../uploads/quotations/';
+    $uploadDir = __DIR__ . '/../../uploads/quotations/';
     $safeNum = preg_replace('/[^a-zA-Z0-9_\-]/', '_', $quotation['quote_number']);
     $pattern = 'quotation_' . $safeNum . '_*.pdf';
 
@@ -66,7 +66,9 @@ try {
         });
 
         $pdfFile = basename($files[0]);
-        $pdfUrl = '/Anything_Inside_Website/uploads/quotations/' . $pdfFile;
+        $scriptDir  = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+        $baseWebDir = preg_replace('#/api/customer_site/?$#i', '', $scriptDir);
+        $pdfUrl     = rtrim($baseWebDir, '/') . '/uploads/quotations/' . $pdfFile;
 
         // Optionally update database with PDF URL
         $updateStmt = $pdo->prepare("UPDATE quotations SET pdf_url = ? WHERE id = ?");

@@ -63,6 +63,13 @@ try {
         throw new Exception('Database connection failed');
     }
 
+    // Ensure remarks column exists BEFORE starting transaction (DDL causes implicit commit in MySQL)
+    try {
+        $pdo->exec("ALTER TABLE bom_audit ADD COLUMN remarks TEXT DEFAULT NULL");
+    } catch (Exception $ex) {
+        // Ignore if exists
+    }
+
     $pdo->beginTransaction();
 
     // ── Guard: prevent creating a duplicate/blank audit that shadows an existing one ──
@@ -99,7 +106,11 @@ try {
         $totalAmountDue += floatval($item['total_amount'] ?? 0);
     }
 
-    // Extract overhead values (matching JavaScript field names)
+    // Extract remarks
+    $remarks = trim($input['remarks'] ?? '');
+
+    // Extract overhead values & calculate total overhead
+    $totalOverhead = 0;
     $shopRent = floatval($overhead['shop_rent'] ?? 0);
     $fixedSalaries = floatval($overhead['fixed_salaries'] ?? 0);
     $shopUtilities = floatval($overhead['shop_utilities'] ?? 0);
@@ -107,10 +118,20 @@ try {
     $machineDepreciation = floatval($overhead['machine_depreciation'] ?? 0);
     $maintenanceRepair = floatval($overhead['maintenance_repair'] ?? 0);
     $marketing = floatval($overhead['marketing_promo'] ?? 0);
-    
-    // Calculate total overhead from categories
-    $totalOverhead = $shopRent + $fixedSalaries + $shopUtilities + $subscriptions +
-        $machineDepreciation + $maintenanceRepair + $marketing;
+
+    if (is_array($overhead) && !empty($overhead)) {
+        // If passed as array of rows [{item, quantity, percentage, total}]
+        if (array_keys($overhead) === range(0, count($overhead) - 1)) {
+            foreach ($overhead as $ovRow) {
+                $totalOverhead += floatval($ovRow['total'] ?? 0);
+            }
+        } else {
+            $totalOverhead = $shopRent + $fixedSalaries + $shopUtilities + $subscriptions +
+                $machineDepreciation + $maintenanceRepair + $marketing;
+        }
+    } else {
+        $totalOverhead = floatval($input['total_overhead'] ?? 0);
+    }
 
     // Calculate overhead per hour if not provided
     if ($overheadPerHour <= 0 && $workingHours > 0) {
@@ -119,7 +140,7 @@ try {
 
     $totalCostWithOverhead = $totalMaterialCost + $totalRejectCost + $totalOverhead;
 
-    // Calculate profit (manual if provided)
+    // Calculate profit (Total Sales - Total Cost)
     if (isset($input['manual_profit'])) {
         $profit = floatval($input['manual_profit']);
     } else {
@@ -146,7 +167,7 @@ try {
          overhead_marketing, overhead_electricity, total_overhead, overhead_per_hour,
          production_hours, total_cost_with_overhead, is_completed, created_at,
          electricity_shop, electricity_production, overhead_data, working_hours,
-         audit_name)
+         audit_name, remarks)
         VALUES 
         (:quote_id, :items, :materials, :rejects, :signatures,
          :total_material_cost, :total_reject_cost, :total_amount_due, :profit, :auto_compute,
@@ -155,7 +176,7 @@ try {
          :overhead_marketing, :overhead_electricity, :total_overhead, :overhead_per_hour,
          :production_hours, :total_cost_with_overhead, 1, NOW(),
          :electricity_shop, :electricity_production, :overhead_data, :working_hours,
-         :audit_name)
+         :audit_name, :remarks)
     ");
 
     $stmt->execute([
@@ -176,7 +197,7 @@ try {
         ':overhead_machine_depreciation' => $machineDepreciation,
         ':overhead_maintenance_repair' => $maintenanceRepair,
         ':overhead_marketing' => $marketing,
-        ':overhead_electricity' => 0, // This column is deprecated, we use electricity_shop/production
+        ':overhead_electricity' => 0,
         ':total_overhead' => $totalOverhead,
         ':overhead_per_hour' => $overheadPerHour,
         ':production_hours' => $productionHours,
@@ -185,7 +206,8 @@ try {
         ':electricity_production' => $electricityProduction,
         ':overhead_data' => $overheadJson,
         ':working_hours' => $workingHours,
-        ':audit_name' => $auditName
+        ':audit_name' => $auditName,
+        ':remarks' => $remarks
     ]);
 
     $auditId = $pdo->lastInsertId();

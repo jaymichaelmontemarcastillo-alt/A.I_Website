@@ -10,11 +10,26 @@
 
 document.addEventListener("DOMContentLoaded", function () {
   const toggleBtn = document.getElementById("toggle-btn");
+  const mobileNavToggle = document.getElementById("mobileNavToggle");
+  const mobileSidebarClose = document.getElementById("mobileSidebarClose");
+  const overlay = document.getElementById("sidebarOverlay") || document.querySelector(".sidebar-overlay");
   const wrapper = document.querySelector(".admin-wrapper");
   const sidebar = document.getElementById("sidebar");
   const html = document.documentElement;
 
   const isMobile = () => window.innerWidth <= 768;
+
+  const openMobileSidebar = () => {
+    sidebar.classList.add("active", "mobile-open");
+    if (overlay) overlay.classList.add("active");
+    document.body.style.overflow = "hidden";
+  };
+
+  const closeMobileSidebar = () => {
+    sidebar.classList.remove("active", "mobile-open");
+    if (overlay) overlay.classList.remove("active");
+    document.body.style.overflow = "";
+  };
 
   /**
    * STEP 1: Apply initial collapsed state from localStorage
@@ -23,10 +38,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (isCollapsed && !isMobile()) {
     html.setAttribute("data-sidebar-collapsed", "true");
-    wrapper.classList.add("collapsed");
+    if (wrapper) wrapper.classList.add("collapsed");
   } else {
     html.removeAttribute("data-sidebar-collapsed");
-    wrapper.classList.remove("collapsed");
+    if (wrapper) wrapper.classList.remove("collapsed");
   }
 
   /**
@@ -37,48 +52,69 @@ document.addEventListener("DOMContentLoaded", function () {
   }, 50);
 
   /**
-   * STEP 3: Handle toggle button clicks
+   * STEP 3: Handle toggle buttons
    */
-  toggleBtn.addEventListener("click", function (e) {
-    e.stopPropagation();
+  if (mobileNavToggle) {
+    mobileNavToggle.addEventListener("click", function (e) {
+      e.stopPropagation();
+      openMobileSidebar();
+    });
+  }
 
-    if (isMobile()) {
-      // Mobile behavior: slide sidebar in/out
-      sidebar.classList.toggle("active");
+  if (mobileSidebarClose) {
+    mobileSidebarClose.addEventListener("click", function (e) {
+      e.stopPropagation();
+      closeMobileSidebar();
+    });
+  }
 
-      // Toggle overlay
-      const overlay = document.querySelector(".sidebar-overlay");
-      if (overlay) {
-        overlay.classList.toggle("active");
-      }
-    } else {
-      // Desktop behavior: collapse/expand sidebar
-      wrapper.classList.toggle("collapsed");
-      const nowCollapsed = wrapper.classList.contains("collapsed");
+  if (toggleBtn) {
+    toggleBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
 
-      // Update data attribute for CSS
-      if (nowCollapsed) {
-        html.setAttribute("data-sidebar-collapsed", "true");
+      if (isMobile()) {
+        if (sidebar.classList.contains("active") || sidebar.classList.contains("mobile-open")) {
+          closeMobileSidebar();
+        } else {
+          openMobileSidebar();
+        }
       } else {
-        html.removeAttribute("data-sidebar-collapsed");
-      }
+        if (!wrapper) return;
+        wrapper.classList.toggle("collapsed");
+        const nowCollapsed = wrapper.classList.contains("collapsed");
 
-      // Save state to localStorage
-      localStorage.setItem("sidebar-collapsed", nowCollapsed);
-    }
+        if (nowCollapsed) {
+          html.setAttribute("data-sidebar-collapsed", "true");
+        } else {
+          html.removeAttribute("data-sidebar-collapsed");
+        }
+
+        localStorage.setItem("sidebar-collapsed", nowCollapsed);
+      }
+    });
+  }
+
+  if (overlay) {
+    overlay.addEventListener("click", closeMobileSidebar);
+  }
+
+  // Close sidebar on nav item click (mobile)
+  const navItems = sidebar ? sidebar.querySelectorAll(".nav-item") : [];
+  navItems.forEach((item) => {
+    item.addEventListener("click", () => {
+      if (isMobile()) {
+        closeMobileSidebar();
+      }
+    });
   });
 
   /**
    * STEP 4: Close sidebar when clicking outside (mobile only)
    */
   document.addEventListener("click", function (e) {
-    if (isMobile() && sidebar.classList.contains("active")) {
-      const overlay = document.querySelector(".sidebar-overlay");
-      if (!sidebar.contains(e.target) && !toggleBtn.contains(e.target)) {
-        sidebar.classList.remove("active");
-        if (overlay) {
-          overlay.classList.remove("active");
-        }
+    if (isMobile() && (sidebar.classList.contains("active") || sidebar.classList.contains("mobile-open"))) {
+      if (!sidebar.contains(e.target) && (!mobileNavToggle || !mobileNavToggle.contains(e.target)) && (!toggleBtn || !toggleBtn.contains(e.target))) {
+        closeMobileSidebar();
       }
     }
   });
@@ -88,11 +124,7 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   window.addEventListener("resize", function () {
     if (!isMobile()) {
-      sidebar.classList.remove("active");
-      const overlay = document.querySelector(".sidebar-overlay");
-      if (overlay) {
-        overlay.classList.remove("active");
-      }
+      closeMobileSidebar();
     }
   });
 });

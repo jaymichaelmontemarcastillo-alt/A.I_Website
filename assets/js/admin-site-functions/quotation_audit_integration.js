@@ -283,13 +283,13 @@ class QuotationAuditIntegration {
                           <div class="qa-audit-col-left">
                               <!-- Audit Container -->
                               <div class="qa-audit-container">
-                                  <!-- Audit Name -->
+                                  <!-- 1. Audit Name -->
                                   <div class="qa-section">
                                       <div class="qa-section-label"><i class="fa-solid fa-tag"></i> Audit Name</div>
                                       <input type="text" id="qaAuditItemName" class="qa-input-full" placeholder="Enter audit name...">
                                   </div>
 
-                                  <!-- Materials Used -->
+                                  <!-- 2. Materials Used -->
                                   <div class="qa-section">
                                       <div class="qa-section-label"><i class="fa-solid fa-cubes"></i> Materials Used</div>
                                       <div class="qa-dynamic-container qa-material-header">
@@ -307,7 +307,7 @@ class QuotationAuditIntegration {
                                       </button>
                                   </div>
 
-                                  <!-- Rejects / Wastage -->
+                                  <!-- 3. Rejects / Wastage -->
                                   <div class="qa-section">
                                       <div class="qa-section-label"><i class="fa-solid fa-trash-alt"></i> Rejects / Wastage</div>
                                       <div class="qa-dynamic-container qa-material-header">
@@ -325,9 +325,9 @@ class QuotationAuditIntegration {
                                       </button>
                                   </div>
 
-                                  <!-- Items Produced -->
+                                  <!-- 4. Total Sales -->
                                   <div class="qa-section">
-                                      <div class="qa-section-label"><i class="fa-solid fa-box"></i> Items Produced</div>
+                                      <div class="qa-section-label"><i class="fa-solid fa-box"></i> Total Sales</div>
                                       <div class="qa-dynamic-container qa-item-header">
                                           <div class="qa-table-header">
                                               <span>Item Name</span>
@@ -343,7 +343,26 @@ class QuotationAuditIntegration {
                                       </button>
                                   </div>
 
-                                  <!-- Summary -->
+                                  <!-- 5. Overhead Cost -->
+                                  <div class="qa-section">
+                                      <div class="qa-section-label"><i class="fa-solid fa-coins"></i> Overhead Cost</div>
+                                      <div class="qa-dynamic-container qa-overhead-header">
+                                          <div class="qa-table-header">
+                                              <span>Item</span>
+                                              <span>Qty</span>
+                                              <span>Unit Cost</span>
+                                              <span>Percentage (%)</span>
+                                              <span>Total</span>
+                                              <span></span>
+                                          </div>
+                                          <div id="qaOverheadContainer"></div>
+                                      </div>
+                                      <button type="button" class="qa-add-row-btn" onclick="quotationAuditIntegration.addOverheadRow()">
+                                          <i class="fa-solid fa-plus"></i> Add Item
+                                      </button>
+                                  </div>
+
+                                  <!-- 6. Summary -->
                                   <div class="qa-section">
                                       <div class="qa-section-label"><i class="fa-solid fa-calculator"></i> Summary</div>
                                       <div class="qa-totals-summary">
@@ -356,8 +375,16 @@ class QuotationAuditIntegration {
                                               <span class="value" id="qaTotalRejectCost">₱0.00</span>
                                           </div>
                                           <div>
-                                              <span class="label">Amount Due</span>
+                                              <span class="label">Overhead Cost</span>
+                                              <span class="value" id="qaTotalOverheadCost">₱0.00</span>
+                                          </div>
+                                          <div>
+                                              <span class="label">Total Sales</span>
                                               <span class="value" id="qaTotalAmountDue">₱0.00</span>
+                                          </div>
+                                          <div>
+                                              <span class="label">Total Cost</span>
+                                              <span class="value" id="qaTotalCost">₱0.00</span>
                                           </div>
                                           <div>
                                               <span class="label">Profit</span>
@@ -366,65 +393,10 @@ class QuotationAuditIntegration {
                                       </div>
                                   </div>
 
-                                  <!-- Electricity & Overhead Costs - Combined Dropdown -->
-                                  <div class="qa-section qa-collapsible-section">
-                                      <div class="qa-collapsible-header" onclick="quotationAuditIntegration.toggleOverheadAccordion()">
-                                          <i class="fa-solid fa-chevron-right qa-collapsible-icon" id="qaOverheadIcon"></i>
-                                          <span class="qa-collapsible-title">Electricity &amp; Overhead Costs</span>
-                                          <span class="qa-collapsible-badge" id="qaOverheadBadge">Click to expand</span>
-                                      </div>
-                                      <div class="qa-collapsible-body" id="qaOverheadPanel">
-                                          <div class="qa-collapsible-inner">
-                                              <!-- Electricity Fields -->
-                                              <div class="qa-sub-section">
-                                                  <div class="qa-sub-section-label">Electricity Cost</div>
-                                                  <div class="qa-electricity-fields">
-                                                      <div class="qa-electricity-field">
-                                                          <label for="qaElecShop">Shop</label>
-                                                          <input type="number" id="qaElecShop" min="0" step="0.01" placeholder="0.00" value="0">
-                                                      </div>
-                                                      <div class="qa-electricity-field">
-                                                          <label for="qaElecProduction">Production</label>
-                                                          <input type="number" id="qaElecProduction" min="0" step="0.01" placeholder="0.00" value="0">
-                                                      </div>
-                                                  </div>
-                                              </div>
-
-                                              <!-- Overhead Category Costs -->
-                                              <div class="qa-sub-section">
-                                                  <div class="qa-sub-section-label">Overhead Category Cost</div>
-                                                  <div class="qa-overhead-table-wrapper">
-                                                      <table class="qa-overhead-table">
-                                                          <thead>
-                                                              <tr>
-                                                                  <th>Category</th>
-                                                                  <th style="text-align:right;">Monthly Cost</th>
-                                                              </tr>
-                                                          </thead>
-                                                          <tbody id="qaOverheadTableBody">
-                                                              ${this.renderOverheadRows()}
-                                                          </tbody>
-                                                          <tfoot>
-                                                              <tr class="qa-overhead-total-row">
-                                                                  <td><strong>TOTAL MONTHLY OVERHEAD</strong></td>
-                                                                  <td style="text-align:right;"><strong id="qaTotalMonthlyOverhead">₱0.00</strong></td>
-                                                              </tr>
-                                                              <tr class="qa-overhead-hours-row">
-                                                                  <td><label for="qaWorkingHours">Working Hours</label></td>
-                                                                  <td style="text-align:right;">
-                                                                      <input type="number" id="qaWorkingHours" class="qa-overhead-hours-input" min="1" step="1" value="250">
-                                                                  </td>
-                                                              </tr>
-                                                              <tr class="qa-overhead-perhour-row">
-                                                                  <td><strong>Overhead Per Hour</strong></td>
-                                                                  <td style="text-align:right;"><strong id="qaOverheadPerHour">₱0.00 / hour</strong></td>
-                                                              </tr>
-                                                          </tfoot>
-                                                      </table>
-                                                  </div>
-                                              </div>
-                                          </div>
-                                      </div>
+                                  <!-- 7. Remarks -->
+                                  <div class="qa-section">
+                                      <div class="qa-section-label"><i class="fa-solid fa-comment-dots"></i> Remarks</div>
+                                      <textarea id="qaRemarks" class="qa-input-full qa-remarks-textarea" rows="3" placeholder="Enter remarks or notes..."></textarea>
                                   </div>
                               </div>
                           </div>
@@ -479,16 +451,19 @@ class QuotationAuditIntegration {
                           <button class="qa-btn-cancel" onclick="quotationAuditIntegration.closeAuditModal()">
                               <i class="fa-solid fa-xmark"></i> Cancel
                           </button>
-                          <button class="qa-btn-submit" id="qaSubmitBtn" onclick="quotationAuditIntegration.submitAudit()">
-                              <i class="fa-solid fa-check"></i> <span id="qaSubmitBtnText">Create Audit</span>
-                          </button>
+                          <div style="display: flex; gap: 10px;">
+                              <button type="button" onclick="inventoryAuditDownload.openDownloadModal()" style="background-color: #10b981; color: white; border: none; border-radius: 6px; padding: 10px 20px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 14px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#059669'" onmouseout="this.style.backgroundColor='#10b981'">
+                                  <i class="fa-solid fa-download"></i> Download Options
+                              </button>
+                              <button class="qa-btn-submit" id="qaSubmitBtn" onclick="quotationAuditIntegration.submitAudit()">
+                                  <i class="fa-solid fa-check"></i> <span id="qaSubmitBtnText">Create Audit</span>
+                              </button>
+                          </div>
                       </div>
                   </div>
               </div>
           `;
       document.body.insertAdjacentHTML("beforeend", modalHtml);
-      this.attachOverheadListeners();
-      this.updateOverheadComputation();
     }
   }
   setupQuotationSelectionModal() {
@@ -714,6 +689,10 @@ class QuotationAuditIntegration {
   // In quotation_audit_integration.js - Replace loadExistingAudit
   async loadExistingAudit(quotationId, quoteNumber, auditId = null) {
     try {
+      if (!this.materialsList || this.materialsList.length === 0) {
+        await this.loadMaterials();
+      }
+
       // Build the URL
       let url;
       if (auditId) {
@@ -870,6 +849,9 @@ class QuotationAuditIntegration {
       itemNameInput.placeholder = `${quotation.quote_number} - ${quotation.client_name}`;
     }
 
+    const remarksEl = document.getElementById("qaRemarks");
+    if (remarksEl) remarksEl.value = "";
+
     this.updateQuotationInfo(quotation);
     this.clearAuditRows();
 
@@ -891,161 +873,21 @@ class QuotationAuditIntegration {
       this.addItemRow();
     }
 
+    // Reset fixed overhead fields
+    this.resetOverheadFields();
+
     const createdBy = document.getElementById("qaCreatedBy");
-    if (createdBy) {
-      createdBy.value = "";
-    }
+    if (createdBy) createdBy.value = "";
 
     this.recalculateTotals();
-    this.updateOverheadComputation();
-    this.resetElectricityFields();
+    this.attachOverheadListeners();
   }
 
-  // In quotation_audit_integration.js - Update prefillEditAuditForm
-
-  // In quotation_audit_integration.js - Update prefillEditAuditForm method
-  // In quotation_audit_integration.js - Update prefillEditAuditForm
-  // Replace the selectQuotationForAudit method
-  async selectQuotationForAudit(
-    quotationId,
-    quoteNumber,
-    hasAudit = false,
-    auditId = null,
-  ) {
-    this.closeQuotationModal();
-    this.showAuditLoading(true);
-
-    try {
-      // First check if the quotation has an audit using the dedicated API
-      const statusResponse = await fetch(
-        `../../api/admin_site/inventory/get_quotation_audit_status.php?id=${quotationId}`,
-      );
-      const statusResult = await statusResponse.json();
-
-      if (statusResult.success && statusResult.has_audit) {
-        // It has an audit - load it for editing
-        await this.loadExistingAudit(
-          quotationId,
-          quoteNumber,
-          statusResult.audit_id,
-        );
-        return;
-      }
-
-      // No audit exists - load quotation data for new audit
-      const response = await fetch(
-        `${this.api.getQuotationMaterials}?id=${quotationId}`,
-      );
-      const result = await response.json();
-
-      if (result.success) {
-        this.currentQuotation = result.quotation;
-        this.currentQuotationItems = result.items;
-        this.currentAuditData = null;
-        this.isEditMode = false;
-        this.prefillAuditForm(result);
-        this.openAuditModal();
-        this.updateSubmitButton(false);
-        this.showAuditLoading(false);
-        this.showNotification(
-          `Loaded quotation ${quoteNumber} for audit`,
-          "success",
-        );
-      } else {
-        this.showAuditLoading(false);
-        this.showNotification(
-          result.message || "Failed to load quotation details",
-          "error",
-        );
-      }
-    } catch (error) {
-      console.error("Error loading quotation details:", error);
-      this.showAuditLoading(false);
-      this.showNotification(
-        "Error loading quotation details: " + error.message,
-        "error",
-      );
-    }
-  }
-
-  // Replace the loadExistingAudit method
-  async loadExistingAudit(quotationId, quoteNumber, auditId = null) {
-    try {
-      // Build the URL
-      let url;
-      if (auditId) {
-        url = `${this.api.getAuditData}?audit_id=${auditId}`;
-      } else {
-        url = `${this.api.getAuditData}?quotation_id=${quotationId}`;
-      }
-
-      console.log("Loading audit from URL:", url);
-
-      const response = await fetch(url);
-      const result = await response.json();
-
-      console.log("Audit response:", result);
-
-      if (result.success && result.data) {
-        this.currentAuditData = result.data;
-        this.currentQuotation = result.data.quotation;
-        this.currentQuotationItems = result.data.items || [];
-        this.isEditMode = true;
-
-        console.log("Audit data loaded:", this.currentAuditData);
-        console.log("Signatures:", this.currentAuditData.audit.signatures);
-        console.log(
-          "Electricity:",
-          this.currentAuditData.audit.electricity_data,
-        );
-        console.log("Overhead:", this.currentAuditData.audit.overhead_data);
-
-        this.prefillEditAuditForm(result.data);
-        this.openAuditModal();
-        this.updateSubmitButton(true);
-        this.showAuditLoading(false);
-        this.showNotification(
-          `Loaded audit for ${quoteNumber} (Edit Mode)`,
-          "success",
-        );
-      } else {
-        console.error("Failed to load audit:", result.message);
-        // Fallback: load quotation data for new audit
-        const response = await fetch(
-          `${this.api.getQuotationMaterials}?id=${quotationId}`,
-        );
-        const result = await response.json();
-        if (result.success) {
-          this.currentQuotation = result.quotation;
-          this.currentQuotationItems = result.items;
-          this.currentAuditData = null;
-          this.isEditMode = false;
-          this.prefillAuditForm(result);
-          this.openAuditModal();
-          this.updateSubmitButton(false);
-          this.showAuditLoading(false);
-          this.showNotification(
-            `Loaded quotation ${quoteNumber} (No existing audit found)`,
-            "info",
-          );
-        }
-      }
-    } catch (error) {
-      console.error("Error loading existing audit:", error);
-      this.showAuditLoading(false);
-      this.showNotification("Error loading audit data", "error");
-    }
-  }
-
-  // Replace the prefillEditAuditForm method
   prefillEditAuditForm(auditData) {
     const { quotation, items, audit } = auditData;
 
     console.log("Prefilling edit audit form:", auditData);
 
-    // ============================================================
-    // AUDIT NAME
-    // ============================================================
     const itemNameInput = document.getElementById("qaAuditItemName");
     if (itemNameInput) {
       itemNameInput.value = audit.audit_name || "";
@@ -1054,14 +896,10 @@ class QuotationAuditIntegration {
       }
     }
 
-    // ============================================================
-    // QUOTATION INFO
-    // ============================================================
-    this.updateQuotationInfo(quotation);
+    const remarksEl = document.getElementById("qaRemarks");
+    if (remarksEl) remarksEl.value = audit.remarks || "";
 
-    // ============================================================
-    // CLEAR AND POPULATE ROWS
-    // ============================================================
+    this.updateQuotationInfo(quotation);
     this.clearAuditRows();
 
     // Materials
@@ -1108,73 +946,27 @@ class QuotationAuditIntegration {
       this.addItemRow();
     }
 
-    // ============================================================
-    // PEOPLE FIELDS - From signatures
-    // ============================================================
-    const signatures = audit.signatures || {};
-    console.log("Signatures data:", signatures);
+    // Populate dynamic overhead fields from saved data
+    this.resetOverheadFields();
+    const overheadRows = audit.overhead_rows || audit.overhead_data || [];
+    if (Array.isArray(overheadRows) && overheadRows.length > 0) {
+      overheadRows.forEach(ov => this.addOverheadRow(ov));
+    } else {
+      this.addOverheadRow();
+    }
 
+    // Signatures / People
+    const signatures = audit.signatures || {};
     const createdBy = document.getElementById("qaCreatedBy");
     const auditedBy = document.getElementById("qaAuditedBy");
     const acknowledgedBy = document.getElementById("qaAcknowledgedBy");
-
     if (createdBy) createdBy.value = signatures.created_by || "";
     if (auditedBy) auditedBy.value = signatures.audited_by || "";
     if (acknowledgedBy) acknowledgedBy.value = signatures.acknowledged_by || "";
 
-    // ============================================================
-    // ELECTRICITY FIELDS
-    // ============================================================
-    const electricityData = audit.electricity_data || {};
-    console.log("Electricity data:", electricityData);
-
-    const elecShop = document.getElementById("qaElecShop");
-    const elecProduction = document.getElementById("qaElecProduction");
-
-    if (elecShop) elecShop.value = electricityData.shop || 0;
-    if (elecProduction) elecProduction.value = electricityData.production || 0;
-
-    // ============================================================
-    // OVERHEAD FIELDS
-    // ============================================================
-    const overheadData = audit.overhead_data || {};
-    console.log("Overhead data:", overheadData);
-
-    // Set overhead values
-    document.querySelectorAll(".overhead-cost-input").forEach((input) => {
-      const key = input.dataset.key;
-      if (overheadData[key] !== undefined) {
-        input.value = overheadData[key];
-      }
-    });
-
-    // Working Hours
-    const workingHours = document.getElementById("qaWorkingHours");
-    if (workingHours) {
-      workingHours.value = audit.working_hours || 250;
-    }
-
-    // ============================================================
-    // UPDATE COMPUTATIONS
-    // ============================================================
-    this.updateOverheadComputation();
     this.recalculateTotals();
-
-    // ============================================================
-    // AUTO-EXPAND OVERHEAD SECTION IF HAS VALUES
-    // ============================================================
-    const hasOverheadValues = Array.from(
-      document.querySelectorAll(".overhead-cost-input"),
-    ).some((input) => parseFloat(input.value) > 0);
-    const hasElectricityValues =
-      parseFloat(document.getElementById("qaElecShop")?.value) > 0 ||
-      parseFloat(document.getElementById("qaElecProduction")?.value) > 0;
-
-    if (hasOverheadValues || hasElectricityValues) {
-      this.expandOverheadAccordion();
-    }
-
-    console.log("Prefill complete!");
+    this.attachOverheadListeners();
+    console.log("Prefill edit audit form complete!");
   }
   updateQuotationInfo(quotation) {
     const quoteNumberEl = document.getElementById("qaQuoteNumber");
@@ -1261,8 +1053,11 @@ class QuotationAuditIntegration {
     );
     const quantity =
       materialData?.suggested_quantity || materialData?.quantity || 1;
-    const unitCost = materialData?.unit_cost || 0;
-    const totalCost = materialData?.total_cost || quantity * unitCost;
+    const unitCost = parseFloat(materialData?.unit_cost || 0);
+    const totalCost =
+      materialData?.total_cost !== undefined && materialData?.total_cost !== null
+        ? parseFloat(materialData.total_cost)
+        : quantity * unitCost;
 
     row.innerHTML = `
       <div class="qa-material-name-field">
@@ -1270,17 +1065,16 @@ class QuotationAuditIntegration {
           <datalist id="qa-material-suggestions-${rowId}"></datalist>
       </div>
       <input type="number" class="material-qty qty-input" placeholder="QTY" step="1" min="0" value="${quantity}">
-      <input type="number" class="material-cost cost-input" placeholder="0.00" step="0.0001" value="${parseFloat(unitCost).toFixed(4)}">
-      <input type="number" class="material-total total-input" placeholder="0.00" step="0.01" value="${parseFloat(totalCost).toFixed(2)}">
+      <input type="number" class="material-cost cost-input" placeholder="0.00" step="0.0001" value="${unitCost.toFixed(4)}">
+      <input type="number" class="material-total total-input" placeholder="0.00" step="0.01" value="${totalCost.toFixed(2)}">
       <button class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
-       
   `;
 
     container.appendChild(row);
 
     const nameInput = row.querySelector(".material-name-input");
     const datalist = row.querySelector("datalist");
-    if (datalist) {
+    if (datalist && this.materialsList) {
       datalist.innerHTML = this.materialsList
         .map(
           (m) =>
@@ -1309,22 +1103,30 @@ class QuotationAuditIntegration {
 
     const syncFromMaterialName = () => {
       const name = nameInput.value.trim();
-      const match = this.materialsList.find(
-        (m) => m.material_name.toLowerCase() === name.toLowerCase(),
-      );
+      const match = this.materialsList
+        ? this.materialsList.find(
+            (m) => m.material_name.toLowerCase() === name.toLowerCase(),
+          )
+        : null;
       if (match) {
         row.dataset.materialId = match.id;
-        if (costEl) costEl.value = parseFloat(match.unit_cost || 0).toFixed(4);
-        updateTotal();
+        if (costEl && parseFloat(match.unit_cost || 0) > 0) {
+          costEl.value = parseFloat(match.unit_cost || 0).toFixed(4);
+        }
       } else {
         row.dataset.materialId = "";
       }
+      updateTotal();
     };
 
     nameInput.addEventListener("input", syncFromMaterialName);
+    nameInput.addEventListener("change", syncFromMaterialName);
     qtyEl.addEventListener("input", updateTotal);
+    qtyEl.addEventListener("change", updateTotal);
     costEl.addEventListener("input", updateTotal);
+    costEl.addEventListener("change", updateTotal);
     totalEl.addEventListener("input", setManualTotal);
+    totalEl.addEventListener("change", setManualTotal);
     removeBtn.addEventListener("click", () => this.removeDynamicRow(removeBtn));
 
     if (materialData?.material_id) {
@@ -1337,140 +1139,6 @@ class QuotationAuditIntegration {
     } else {
       updateTotal();
     }
-  }
-
-  addRejectRow(rejectData = null) {
-    const container = document.getElementById("qaRejectCostsContainer");
-    if (!container) return;
-
-    const rowId =
-      "rej_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-    const row = document.createElement("div");
-    row.className = "qa-dynamic-row";
-    row.id = rowId;
-
-    const rejectName = this.escapeHtml(
-      rejectData?.name || rejectData?.material_name || "",
-    );
-    const quantity = rejectData?.quantity || 1;
-    const unitCost = rejectData?.unit_cost || 0;
-    const totalCost = rejectData?.total_cost || quantity * unitCost;
-
-    row.innerHTML = `
-      <div class="qa-material-name-field">
-          <input type="text" class="reject-name-input qa-input-full" list="qa-reject-suggestions-${rowId}" placeholder="Type or choose reject item..." value="${rejectName}">
-          <datalist id="qa-reject-suggestions-${rowId}"></datalist>
-      </div>
-      <input type="number" class="reject-qty qty-input" placeholder="QTY" step="1" min="0" value="${quantity}">
-      <input type="number" class="reject-cost cost-input" placeholder="0.00" step="0.0001" value="${parseFloat(unitCost).toFixed(4)}">
-      <input type="number" class="reject-total total-input" placeholder="0.00" step="0.01" value="${parseFloat(totalCost).toFixed(2)}">
-      <button class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
-      
-  `;
-
-    container.appendChild(row);
-
-    const nameInput = row.querySelector(".reject-name-input");
-    const datalist = row.querySelector("datalist");
-    if (datalist) {
-      datalist.innerHTML = this.materialsList
-        .map(
-          (m) =>
-            `<option value="${this.escapeHtml(m.material_name)}" data-id="${m.id}" data-cost="${parseFloat(m.unit_cost || 0).toFixed(4)}"></option>`,
-        )
-        .join("");
-    }
-
-    const qtyEl = row.querySelector(".reject-qty");
-    const costEl = row.querySelector(".reject-cost");
-    const totalEl = row.querySelector(".reject-total");
-    const removeBtn = row.querySelector(".qa-remove-row");
-
-    const updateTotal = () => {
-      row.dataset.totalMode = "auto";
-      const qty = parseFloat(qtyEl.value) || 0;
-      const cost = parseFloat(costEl.value) || 0;
-      if (totalEl) totalEl.value = (qty * cost).toFixed(2);
-      this.recalculateTotals();
-    };
-
-    const setManualTotal = () => {
-      row.dataset.totalMode = "manual";
-      this.recalculateTotals();
-    };
-
-    const syncFromMaterialName = () => {
-      const name = nameInput.value.trim();
-      const match = this.materialsList.find(
-        (m) => m.material_name.toLowerCase() === name.toLowerCase(),
-      );
-      if (match) {
-        row.dataset.materialId = match.id;
-        if (costEl) costEl.value = parseFloat(match.unit_cost || 0).toFixed(4);
-        updateTotal();
-      } else {
-        row.dataset.materialId = "";
-      }
-    };
-
-    nameInput.addEventListener("input", syncFromMaterialName);
-    qtyEl.addEventListener("input", updateTotal);
-    costEl.addEventListener("input", updateTotal);
-    totalEl.addEventListener("input", setManualTotal);
-    removeBtn.addEventListener("click", () => this.removeDynamicRow(removeBtn));
-
-    if (rejectData?.material_id) {
-      row.dataset.materialId = rejectData.material_id;
-    }
-
-    if (rejectData?.name) {
-      nameInput.value = rejectData.name;
-      syncFromMaterialName();
-    } else {
-      updateTotal();
-    }
-  }
-
-  addItemRow(itemData = null) {
-    const container = document.getElementById("qaItemsContainer");
-    if (!container) return;
-
-    const rowId =
-      "item_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
-    const row = document.createElement("div");
-    row.className = "qa-dynamic-row";
-    row.id = rowId;
-
-    const description = itemData ? this.escapeHtml(itemData.description) : "";
-
-    row.innerHTML = `
-      <div class="qa-material-name-field">
-          <input type="text" class="item-name" placeholder="Enter item name..." value="${description}">
-      </div>
-      <input type="number" class="item-qty qty-input" placeholder="QTY" step="1" min="0" value="${itemData?.quantity || 1}">
-      <input type="number" class="item-price price-input" placeholder="0.00" step="0.01" value="${itemData?.unit_price || 0}">
-      <input type="number" class="item-total total-input" placeholder="0.00" step="0.01" value="${itemData?.total || 0}" readonly>
-      <button class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
-  
-  `;
-
-    container.appendChild(row);
-
-    const qtyEl = row.querySelector(".item-qty");
-    const priceEl = row.querySelector(".item-price");
-    const removeBtn = row.querySelector(".qa-remove-row");
-
-    const updateTotal = () => {
-      const qty = parseFloat(qtyEl.value) || 0;
-      const price = parseFloat(priceEl.value) || 0;
-      const totalInput = row.querySelector(".item-total");
-      if (totalInput) totalInput.value = (qty * price).toFixed(2);
-      this.recalculateTotals();
-    };
-
-    qtyEl.addEventListener("input", updateTotal);
-    priceEl.addEventListener("input", updateTotal);
-    removeBtn.addEventListener("click", () => this.removeDynamicRow(removeBtn));
   }
 
   // ─── REJECT ROWS ──────────────────────────────────────────────────────────
@@ -1489,26 +1157,28 @@ class QuotationAuditIntegration {
       rejectData?.name || rejectData?.material_name || "",
     );
     const quantity = rejectData?.quantity || 1;
-    const unitCost = rejectData?.unit_cost || 0;
-    const totalCost = rejectData?.total_cost || quantity * unitCost;
+    const unitCost = parseFloat(rejectData?.unit_cost || 0);
+    const totalCost =
+      rejectData?.total_cost !== undefined && rejectData?.total_cost !== null
+        ? parseFloat(rejectData.total_cost)
+        : quantity * unitCost;
 
     row.innerHTML = `
-            <div class="qa-material-name-field">
-                <input type="text" class="reject-name-input qa-input-full" list="qa-reject-suggestions-${rowId}" placeholder="Type or choose reject item..." value="${rejectName}">
-                <datalist id="qa-reject-suggestions-${rowId}"></datalist>
-            </div>
-            <input type="number" class="reject-qty qty-input" placeholder="QTY" step="1" min="0" value="${quantity}">
-            <input type="number" class="reject-cost cost-input" placeholder="Cost/Unit" step="0.0001" value="${parseFloat(unitCost).toFixed(4)}">
-            <input type="number" class="reject-total total-input" placeholder="Total" step="0.01" value="${parseFloat(totalCost).toFixed(2)}">
-            <button class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
-             
-        `;
+      <div class="qa-material-name-field">
+          <input type="text" class="reject-name-input qa-input-full" list="qa-reject-suggestions-${rowId}" placeholder="Type or choose reject item..." value="${rejectName}">
+          <datalist id="qa-reject-suggestions-${rowId}"></datalist>
+      </div>
+      <input type="number" class="reject-qty qty-input" placeholder="QTY" step="1" min="0" value="${quantity}">
+      <input type="number" class="reject-cost cost-input" placeholder="0.00" step="0.0001" value="${unitCost.toFixed(4)}">
+      <input type="number" class="reject-total total-input" placeholder="0.00" step="0.01" value="${totalCost.toFixed(2)}">
+      <button class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
+  `;
 
     container.appendChild(row);
 
     const nameInput = row.querySelector(".reject-name-input");
     const datalist = row.querySelector("datalist");
-    if (datalist) {
+    if (datalist && this.materialsList) {
       datalist.innerHTML = this.materialsList
         .map(
           (m) =>
@@ -1537,22 +1207,30 @@ class QuotationAuditIntegration {
 
     const syncFromMaterialName = () => {
       const name = nameInput.value.trim();
-      const match = this.materialsList.find(
-        (m) => m.material_name.toLowerCase() === name.toLowerCase(),
-      );
+      const match = this.materialsList
+        ? this.materialsList.find(
+            (m) => m.material_name.toLowerCase() === name.toLowerCase(),
+          )
+        : null;
       if (match) {
         row.dataset.materialId = match.id;
-        if (costEl) costEl.value = parseFloat(match.unit_cost || 0).toFixed(4);
-        updateTotal();
+        if (costEl && parseFloat(match.unit_cost || 0) > 0) {
+          costEl.value = parseFloat(match.unit_cost || 0).toFixed(4);
+        }
       } else {
         row.dataset.materialId = "";
       }
+      updateTotal();
     };
 
     nameInput.addEventListener("input", syncFromMaterialName);
+    nameInput.addEventListener("change", syncFromMaterialName);
     qtyEl.addEventListener("input", updateTotal);
+    qtyEl.addEventListener("change", updateTotal);
     costEl.addEventListener("input", updateTotal);
+    costEl.addEventListener("change", updateTotal);
     totalEl.addEventListener("input", setManualTotal);
+    totalEl.addEventListener("change", setManualTotal);
     removeBtn.addEventListener("click", () => this.removeDynamicRow(removeBtn));
 
     if (rejectData?.material_id) {
@@ -1579,19 +1257,31 @@ class QuotationAuditIntegration {
     row.className = "qa-dynamic-row";
     row.id = rowId;
 
-    const description = itemData ? this.escapeHtml(itemData.description) : "";
+    const description = itemData
+      ? this.escapeHtml(itemData.description || itemData.name || itemData.item_name || "")
+      : "";
+    const quantity = itemData?.quantity || 1;
+    const unitPrice = parseFloat(itemData?.unit_price || 0);
+    const total =
+      itemData?.total !== undefined
+        ? itemData.total
+        : itemData?.total_amount !== undefined
+          ? itemData.total_amount
+          : quantity * unitPrice;
 
     row.innerHTML = `
-            <input type="text" class="item-name" placeholder="Item name" value="${description}" style="flex:2; padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px; font-size:13px; background:#fff;">
-            <input type="number" class="item-qty qty-input" placeholder="QTY" step="1" min="0" value="${itemData?.quantity || 1}" style="flex:0.8;">
-            <input type="number" class="item-price price-input" placeholder="Unit Price" step="0.01" value="${itemData?.unit_price || 0}" style="flex:1;">
-            <input type="number" class="item-total total-input" placeholder="Total Amount" step="0.01" value="${itemData?.total || 0}" style="flex:1;" readonly>
-            <button class="qa-remove-row" style="flex:0.3;"><i class="fa-solid fa-trash"></i></button>
-          
-        `;
+      <div class="qa-material-name-field">
+          <input type="text" class="item-name" placeholder="Enter item name..." value="${description}">
+      </div>
+      <input type="number" class="item-qty qty-input" placeholder="QTY" step="1" min="0" value="${quantity}">
+      <input type="number" class="item-price price-input" placeholder="0.00" step="0.01" value="${unitPrice.toFixed(2)}">
+      <input type="number" class="item-total total-input" placeholder="0.00" step="0.01" value="${parseFloat(total).toFixed(2)}" readonly>
+      <button class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
+  `;
 
     container.appendChild(row);
 
+    const nameEl = row.querySelector(".item-name");
     const qtyEl = row.querySelector(".item-qty");
     const priceEl = row.querySelector(".item-price");
     const removeBtn = row.querySelector(".qa-remove-row");
@@ -1604,37 +1294,147 @@ class QuotationAuditIntegration {
       this.recalculateTotals();
     };
 
-    qtyEl.addEventListener("input", updateTotal);
-    priceEl.addEventListener("input", updateTotal);
-    removeBtn.addEventListener("click", () => this.removeDynamicRow(removeBtn));
+    if (nameEl) {
+      nameEl.addEventListener("input", () => this.recalculateTotals());
+      nameEl.addEventListener("change", () => this.recalculateTotals());
+    }
+    if (qtyEl) {
+      qtyEl.addEventListener("input", updateTotal);
+      qtyEl.addEventListener("change", updateTotal);
+    }
+    if (priceEl) {
+      priceEl.addEventListener("input", updateTotal);
+      priceEl.addEventListener("change", updateTotal);
+    }
+    if (removeBtn) removeBtn.addEventListener("click", () => this.removeDynamicRow(removeBtn));
+
+    updateTotal();
   }
+
+  addOverheadRow(itemData = null) {
+    const container = document.getElementById("qaOverheadContainer");
+    if (!container) return;
+
+    const rowId = "overhead_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+    const row = document.createElement("div");
+    row.className = "qa-dynamic-row";
+    row.id = rowId;
+
+    const item = itemData?.item || itemData?.name || "";
+    const quantity = itemData?.quantity || itemData?.qty || 0;
+    const unitCost = itemData?.unit_cost || itemData?.cost || 0;
+    const percentage = itemData?.percentage || 0;
+    const total = itemData?.total || itemData?.total_cost || 0;
+
+    row.innerHTML = `
+      <div class="qa-material-name-field">
+          <input type="text" class="ov-item qa-input-full" placeholder="Enter item..." value="${this.escapeHtml(item)}" style="padding: 5px 8px; border: 1px solid #e2e8f0; border-radius: 4px; background: #ffffff; color: #0f172a; font-size: 12px; width: 100%;">
+      </div>
+      <input type="number" class="ov-qty qty-input" placeholder="0" step="1" min="0" value="${quantity}">
+      <input type="number" class="ov-cost cost-input" placeholder="0.00" step="0.01" min="0" value="${unitCost}">
+      <input type="number" class="ov-pct qty-input" placeholder="0" step="0.01" min="0" value="${percentage}">
+      <input type="number" class="ov-total cost-input" placeholder="0.00" step="0.01" min="0" value="${parseFloat(total).toFixed(2)}">
+      <button type="button" class="qa-remove-row"><i class="fa-solid fa-trash"></i></button>
+    `;
+
+    container.appendChild(row);
+
+    const ovItemEl = row.querySelector(".ov-item");
+    const qtyEl = row.querySelector(".ov-qty");
+    const costEl = row.querySelector(".ov-cost");
+    const pctEl = row.querySelector(".ov-pct");
+    const totalEl = row.querySelector(".ov-total");
+    const removeBtn = row.querySelector(".qa-remove-row");
+
+    const updateRowTotal = () => {
+      const qty = parseFloat(qtyEl?.value) || 0;
+      const cost = parseFloat(costEl?.value) || 0;
+      const pctStr = pctEl?.value !== undefined ? String(pctEl.value).trim() : "";
+      const pct = parseFloat(pctStr) || 0;
+
+      let rowTot = 0;
+      if (pctStr !== "") {
+        rowTot = qty * cost * pct;
+      } else {
+        rowTot = qty * cost;
+      }
+
+      if (totalEl) totalEl.value = rowTot.toFixed(2);
+      this.recalculateTotals();
+    };
+
+    if (ovItemEl) {
+        ovItemEl.addEventListener("input", () => {
+            const selectedItemName = ovItemEl.value.trim();
+            if (selectedItemName) {
+                let foundQty = 0;
+                let foundCost = 0;
+                document.querySelectorAll("#qaItemsContainer .qa-dynamic-row").forEach((iRow) => {
+                    const name = iRow.querySelector(".item-name")?.value?.trim() || "";
+                    if (name.toLowerCase() === selectedItemName.toLowerCase()) {
+                        foundQty = parseFloat(iRow.querySelector(".item-qty")?.value) || 0;
+                        foundCost = parseFloat(iRow.querySelector(".item-price")?.value) || 0;
+                    }
+                });
+                if (qtyEl && foundQty > 0 && parseFloat(qtyEl.value) === 0) {
+                    qtyEl.value = foundQty;
+                }
+                if (costEl && foundCost > 0 && parseFloat(costEl.value) === 0) {
+                    costEl.value = foundCost.toFixed(2);
+                }
+            }
+            updateRowTotal();
+        });
+    }
+
+    if (qtyEl) {
+      qtyEl.addEventListener("input", updateRowTotal);
+      qtyEl.addEventListener("change", updateRowTotal);
+    }
+    if (costEl) {
+      costEl.addEventListener("input", updateRowTotal);
+      costEl.addEventListener("change", updateRowTotal);
+    }
+    if (pctEl) {
+      pctEl.addEventListener("input", updateRowTotal);
+      pctEl.addEventListener("change", updateRowTotal);
+    }
+    if (totalEl) {
+      totalEl.addEventListener("input", () => this.recalculateTotals());
+      totalEl.addEventListener("change", () => this.recalculateTotals());
+    }
+    
+    if (removeBtn) {
+      removeBtn.addEventListener("click", () => {
+        row.remove();
+        this.recalculateTotals();
+      });
+    }
+
+    if (!itemData) {
+      this.recalculateTotals();
+    }
+  }
+
 
   removeDynamicRow(button) {
     const row = button.closest(".qa-dynamic-row");
     if (row) {
       const rowId = row.id;
-      this.materialSelectors = this.materialSelectors.filter(
-        (s) => s.rowId !== rowId,
-      );
-      this.rejectSelectors = this.rejectSelectors.filter(
-        (s) => s.rowId !== rowId,
-      );
+      this.materialSelectors = this.materialSelectors.filter((s) => s.rowId !== rowId);
+      this.rejectSelectors = this.rejectSelectors.filter((s) => s.rowId !== rowId);
       row.remove();
       this.recalculateTotals();
     }
   }
 
   clearAuditRows() {
-    const materialsContainer = document.getElementById(
-      "qaMaterialCostsContainer",
-    );
+    const materialsContainer = document.getElementById("qaMaterialCostsContainer");
     const rejectsContainer = document.getElementById("qaRejectCostsContainer");
     const itemsContainer = document.getElementById("qaItemsContainer");
-
     if (materialsContainer) materialsContainer.innerHTML = "";
     if (rejectsContainer) rejectsContainer.innerHTML = "";
     if (itemsContainer) itemsContainer.innerHTML = "";
-
     this.materialSelectors = [];
     this.rejectSelectors = [];
   }
@@ -1645,31 +1445,18 @@ class QuotationAuditIntegration {
       itemNameInput.value = "";
       itemNameInput.placeholder = "Enter audit name...";
     }
-
+    const remarksEl = document.getElementById("qaRemarks");
+    if (remarksEl) remarksEl.value = "";
     this.clearAuditRows();
-
+    this.resetOverheadFields();
     const createdBy = document.getElementById("qaCreatedBy");
     const auditedBy = document.getElementById("qaAuditedBy");
     const acknowledgedBy = document.getElementById("qaAcknowledgedBy");
-
     if (createdBy) createdBy.value = "";
     if (auditedBy) auditedBy.value = "";
     if (acknowledgedBy) acknowledgedBy.value = "";
-
     this.clearQuotationInfo();
-    this.resetOverheadSection();
-    this.resetElectricityFields();
     this.recalculateTotals();
-
-    const panel = document.getElementById("qaOverheadPanel");
-    const icon = document.getElementById("qaOverheadIcon");
-    const badge = document.getElementById("qaOverheadBadge");
-    if (panel) {
-      panel.classList.remove("open");
-      panel.style.maxHeight = "0px";
-    }
-    if (icon) icon.classList.remove("open");
-    if (badge) badge.textContent = "Click to expand";
   }
 
   clearQuotationInfo() {
@@ -1678,7 +1465,6 @@ class QuotationAuditIntegration {
     const contactPersonEl = document.getElementById("qaContactPerson");
     const addressEl = document.getElementById("qaCustomerAddress");
     const emailEl = document.getElementById("qaCustomerEmail");
-
     if (quoteNumberEl) quoteNumberEl.textContent = "—";
     if (customerNameEl) customerNameEl.textContent = "—";
     if (contactPersonEl) contactPersonEl.textContent = "—";
@@ -1686,199 +1472,120 @@ class QuotationAuditIntegration {
     if (emailEl) emailEl.textContent = "—";
   }
 
+  resetOverheadFields() {
+    const container = document.getElementById("qaOverheadContainer");
+    if (container) container.innerHTML = "";
+  }
+
+  attachOverheadListeners() {
+    this.updateOverheadItemDropdown();
+  }
+
+  updateOverheadItemDropdown() {
+    // Deprecated: Overhead items are now text inputs instead of dropdowns.
+  }
+
   // ─── RECALCULATE TOTALS ──────────────────────────────────────────────────
 
   recalculateTotals() {
+    this.updateOverheadItemDropdown();
     let materialTotal = 0;
     let rejectTotal = 0;
     let amountTotal = 0;
 
+    // Materials Used Total
     document
       .querySelectorAll("#qaMaterialCostsContainer .qa-dynamic-row")
       .forEach((row) => {
         const totalInput = row.querySelector(".material-total");
         const qtyInput = row.querySelector(".material-qty");
         const costInput = row.querySelector(".material-cost");
-        if (row.dataset.totalMode === "manual" && totalInput) {
+        if (row.dataset.totalMode === "manual" && totalInput && parseFloat(totalInput.value) >= 0) {
           materialTotal += parseFloat(totalInput.value) || 0;
         } else if (qtyInput && costInput) {
-          materialTotal +=
-            (parseFloat(qtyInput.value) || 0) *
-            (parseFloat(costInput.value) || 0);
+          const rowTot = (parseFloat(qtyInput.value) || 0) * (parseFloat(costInput.value) || 0);
+          materialTotal += rowTot;
+          if (totalInput) totalInput.value = rowTot.toFixed(2);
         }
       });
 
+    // Rejects / Wastage Total
     document
       .querySelectorAll("#qaRejectCostsContainer .qa-dynamic-row")
       .forEach((row) => {
         const totalInput = row.querySelector(".reject-total");
         const qtyInput = row.querySelector(".reject-qty");
         const costInput = row.querySelector(".reject-cost");
-        if (row.dataset.totalMode === "manual" && totalInput) {
+        if (row.dataset.totalMode === "manual" && totalInput && parseFloat(totalInput.value) >= 0) {
           rejectTotal += parseFloat(totalInput.value) || 0;
         } else if (qtyInput && costInput) {
-          rejectTotal +=
-            (parseFloat(qtyInput.value) || 0) *
-            (parseFloat(costInput.value) || 0);
+          const rowTot = (parseFloat(qtyInput.value) || 0) * (parseFloat(costInput.value) || 0);
+          rejectTotal += rowTot;
+          if (totalInput) totalInput.value = rowTot.toFixed(2);
         }
       });
 
+    // Items Produced Total (Total Sales)
     document
-      .querySelectorAll("#qaItemsContainer .item-total")
-      .forEach((input) => {
-        amountTotal += parseFloat(input.value) || 0;
+      .querySelectorAll("#qaItemsContainer .qa-dynamic-row")
+      .forEach((row) => {
+        const totalInput = row.querySelector(".item-total");
+        const qtyInput = row.querySelector(".item-qty");
+        const priceInput = row.querySelector(".item-price");
+        const qty = parseFloat(qtyInput?.value) || 0;
+        const price = parseFloat(priceInput?.value) || 0;
+        const tot = qty * price;
+        if (totalInput) totalInput.value = tot.toFixed(2);
+        amountTotal += tot;
       });
 
-    const profit = amountTotal - (materialTotal + rejectTotal);
+    // Fixed Overhead Cost calculation
+    let overheadTotal = 0;
+    document.querySelectorAll("#qaOverheadContainer .qa-dynamic-row").forEach(row => {
+      const ovQtyEl = row.querySelector(".ov-qty");
+      const ovCostEl = row.querySelector(".ov-cost");
+      const ovPctEl = row.querySelector(".ov-pct");
+      const ovTotalEl = row.querySelector(".ov-total");
+
+      const ovQty = parseFloat(ovQtyEl?.value) || 0;
+      const ovCost = parseFloat(ovCostEl?.value) || 0;
+      const pctStr = ovPctEl?.value !== undefined ? String(ovPctEl.value).trim() : "";
+      const ovPct = parseFloat(pctStr) || 0;
+
+      let rowTotal = 0;
+      if (pctStr !== "") {
+        rowTotal = ovQty * ovCost * ovPct;
+      } else {
+        rowTotal = ovQty * ovCost;
+      }
+
+      if (ovTotalEl) ovTotalEl.value = rowTotal.toFixed(2);
+      overheadTotal += rowTotal;
+    });
+
+    const totalCost = materialTotal + rejectTotal + overheadTotal;
+    const profit = amountTotal - totalCost;
 
     const materialCostEl = document.getElementById("qaTotalMaterialCost");
     const rejectCostEl = document.getElementById("qaTotalRejectCost");
+    const overheadCostEl = document.getElementById("qaTotalOverheadCost");
     const amountDueEl = document.getElementById("qaTotalAmountDue");
+    const totalCostEl = document.getElementById("qaTotalCost");
     const profitEl = document.getElementById("qaProfit");
 
-    if (materialCostEl)
-      materialCostEl.textContent = `₱${materialTotal.toFixed(2)}`;
+    if (materialCostEl) materialCostEl.textContent = `₱${materialTotal.toFixed(2)}`;
     if (rejectCostEl) rejectCostEl.textContent = `₱${rejectTotal.toFixed(2)}`;
+    if (overheadCostEl) overheadCostEl.textContent = `₱${overheadTotal.toFixed(2)}`;
     if (amountDueEl) amountDueEl.textContent = `₱${amountTotal.toFixed(2)}`;
+    if (totalCostEl) totalCostEl.textContent = `₱${totalCost.toFixed(2)}`;
     if (profitEl) {
       profitEl.textContent = `₱${profit.toFixed(2)}`;
       profitEl.className = `value ${profit >= 0 ? "positive" : "negative"}`;
     }
   }
 
-  // ============================================================
-  // OVERHEAD & ELECTRICITY COMPUTATION
-  // ============================================================
-
-  renderOverheadRows() {
-    return this.overheadCategories
-      .map(
-        (cat) => `
-            <tr data-key="${cat.key}">
-                <td class="category-label">${this.escapeHtml(cat.label)}</td>
-                <td style="text-align:right;">
-                    <input type="number" class="overhead-cost-input" data-key="${cat.key}" min="0" step="0.01" placeholder="0" value="0">
-                </td>
-            </tr>
-        `,
-      )
-      .join("");
-  }
-
-  attachOverheadListeners() {
-    document.querySelectorAll(".overhead-cost-input").forEach((input) => {
-      input.addEventListener("input", () => this.updateOverheadComputation());
-    });
-
-    const workingHoursInput = document.getElementById("qaWorkingHours");
-    if (workingHoursInput) {
-      workingHoursInput.addEventListener("input", () =>
-        this.updateOverheadComputation(),
-      );
-    }
-
-    const elecShop = document.getElementById("qaElecShop");
-    const elecProduction = document.getElementById("qaElecProduction");
-    if (elecShop) {
-      elecShop.addEventListener("input", () =>
-        this.updateOverheadComputation(),
-      );
-    }
-    if (elecProduction) {
-      elecProduction.addEventListener("input", () =>
-        this.updateOverheadComputation(),
-      );
-    }
-  }
-
-  calculateTotalOverhead() {
-    let total = 0;
-    document.querySelectorAll(".overhead-cost-input").forEach((input) => {
-      total += parseFloat(input.value) || 0;
-    });
-    return total;
-  }
-
-  calculateOverheadPerHour(totalOverhead, workingHours) {
-    const hours = parseFloat(workingHours) || 0;
-    if (hours <= 0) return 0;
-    return totalOverhead / hours;
-  }
-
-  updateOverheadComputation() {
-    const total = this.calculateTotalOverhead();
-    const workingHours =
-      parseFloat(document.getElementById("qaWorkingHours")?.value) || 0;
-    const perHour = this.calculateOverheadPerHour(total, workingHours);
-
-    const totalEl = document.getElementById("qaTotalMonthlyOverhead");
-    const perHourEl = document.getElementById("qaOverheadPerHour");
-
-    if (totalEl) totalEl.textContent = `₱${total.toFixed(2)}`;
-    if (perHourEl) perHourEl.textContent = `₱${perHour.toFixed(2)} / hour`;
-
-    const panel = document.getElementById("qaOverheadPanel");
-    if (
-      panel &&
-      panel.classList.contains("open") &&
-      panel.style.maxHeight !== "none"
-    ) {
-      panel.style.maxHeight = panel.scrollHeight + "px";
-    }
-  }
-
-  collectElectricityData() {
-    return {
-      shop: parseFloat(document.getElementById("qaElecShop")?.value) || 0,
-      production:
-        parseFloat(document.getElementById("qaElecProduction")?.value) || 0,
-    };
-  }
-
-  collectOverheadData() {
-    const categories = {};
-    document.querySelectorAll(".overhead-cost-input").forEach((input) => {
-      const key = input.dataset.key;
-      categories[key] = parseFloat(input.value) || 0;
-    });
-
-    const totalMonthlyOverhead = this.calculateTotalOverhead();
-    const workingHours =
-      parseFloat(document.getElementById("qaWorkingHours")?.value) || 0;
-    const overheadPerHour = this.calculateOverheadPerHour(
-      totalMonthlyOverhead,
-      workingHours,
-    );
-
-    return {
-      categories,
-      total_monthly_overhead: totalMonthlyOverhead,
-      working_hours: workingHours,
-      overhead_per_hour: overheadPerHour,
-    };
-  }
-
-  resetOverheadSection() {
-    document.querySelectorAll(".overhead-cost-input").forEach((input) => {
-      input.value = 0;
-    });
-
-    const workingHoursInput = document.getElementById("qaWorkingHours");
-    if (workingHoursInput) workingHoursInput.value = 250;
-
-    this.updateOverheadComputation();
-  }
-
-  resetElectricityFields() {
-    const elecShop = document.getElementById("qaElecShop");
-    const elecProduction = document.getElementById("qaElecProduction");
-    if (elecShop) elecShop.value = 0;
-    if (elecProduction) elecProduction.value = 0;
-  }
-
   // ─── SUBMIT AUDIT ─────────────────────────────────────────────────────────
 
-  // Replace the submitAudit method in quotation_audit_integration.js
   async submitAudit() {
     // Collect materials
     const materials = [];
@@ -1958,9 +1665,24 @@ class QuotationAuditIntegration {
         }
       });
 
-    // Get audit name
+    // Collect overhead from dynamic rows
+    const overhead = [];
+    document.querySelectorAll("#qaOverheadContainer .qa-dynamic-row").forEach(row => {
+      const ovItem = row.querySelector(".ov-item")?.value?.trim() || "";
+      const ovQty = parseFloat(row.querySelector(".ov-qty")?.value) || 0;
+      const ovCost = parseFloat(row.querySelector(".ov-cost")?.value) || 0;
+      const ovPct = parseFloat(row.querySelector(".ov-pct")?.value) || 0;
+      const ovTotal = parseFloat(row.querySelector(".ov-total")?.value) || 0;
+      if (ovItem || ovTotal > 0) {
+        overhead.push({ item: ovItem, quantity: ovQty, unit_cost: ovCost, percentage: ovPct, total: ovTotal });
+      }
+    });
+
+    // Collect audit name & remarks
     const auditName =
       document.getElementById("qaAuditItemName")?.value?.trim() || "";
+    const remarks =
+      document.getElementById("qaRemarks")?.value?.trim() || "";
 
     // Validate
     if (materials.length === 0 && items.length === 0) {
@@ -1971,22 +1693,6 @@ class QuotationAuditIntegration {
       return;
     }
 
-    // Collect electricity and overhead data
-    const electricity = {
-      shop: parseFloat(document.getElementById("qaElecShop")?.value) || 0,
-      production:
-        parseFloat(document.getElementById("qaElecProduction")?.value) || 0,
-    };
-
-    const overheadData = {};
-    document.querySelectorAll(".overhead-cost-input").forEach((input) => {
-      const key = input.dataset.key;
-      overheadData[key] = parseFloat(input.value) || 0;
-    });
-
-    const workingHours =
-      parseFloat(document.getElementById("qaWorkingHours")?.value) || 250;
-
     // Build payload
     const payload = {
       audit_id:
@@ -1995,22 +1701,20 @@ class QuotationAuditIntegration {
           : null,
       quotation_id: this.currentQuotation?.id || null,
       audit_name: auditName,
+      remarks: remarks,
       items: items,
       materials: materials,
       rejects: rejects,
+      overhead: overhead,
       created_by: document.getElementById("qaCreatedBy")?.value?.trim() || "",
       audited_by: document.getElementById("qaAuditedBy")?.value?.trim() || "",
       acknowledged_by:
         document.getElementById("qaAcknowledgedBy")?.value?.trim() || "",
-      electricity: electricity,
-      overhead: overheadData,
-      working_hours: workingHours,
       auto_compute: true,
     };
 
     console.log("Submitting payload:", payload);
 
-    // If audit_id is null but we're in edit mode, something is wrong
     if (this.isEditMode && !payload.audit_id) {
       this.showNotification("Error: Missing audit ID for update", "error");
       return;
@@ -2031,7 +1735,6 @@ class QuotationAuditIntegration {
         body: JSON.stringify(payload),
       });
 
-      // First check if response is OK
       if (!response.ok) {
         const text = await response.text();
         console.error("Server response (non-OK):", text);
@@ -2051,7 +1754,6 @@ class QuotationAuditIntegration {
             : "Audit created successfully! Inventory has been updated.",
           "success",
         );
-        // Refresh data
         if (typeof matReloadMaterials === "function") matReloadMaterials(true);
         if (typeof matReloadLogs === "function") matReloadLogs(true);
         if (typeof quotationManager?.fetchQuotations === "function") {

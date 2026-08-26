@@ -17,8 +17,8 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/../../connect/config.php';
-require_once __DIR__ . '/../../vendor/autoload.php';
+require_once dirname(dirname(__DIR__)) . '/connect/config.php';
+require_once dirname(dirname(__DIR__)) . '/vendor/autoload.php';
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -158,10 +158,13 @@ try {
 
     // ── Logo (base64) - this image contains ALL header text (Address, Contact, Email)
     $logoSrc  = '';
-    $logoPath = __DIR__ . '/../../assets/images/delivery_receipt_header.png';
-    if (file_exists($logoPath)) {
-        $logoData = base64_encode(file_get_contents($logoPath));
-        $logoSrc  = 'data:image/png;base64,' . $logoData;
+    $logoPath = dirname(dirname(__DIR__)) . '/assets/images/delivery_receipt_header.png';
+    if (!empty($logoPath) && file_exists($logoPath)) {
+        $rawLogo = @file_get_contents($logoPath);
+        if ($rawLogo !== false) {
+            $logoData = base64_encode($rawLogo);
+            $logoSrc  = 'data:image/png;base64,' . $logoData;
+        }
     }
 
     // ── Build item table rows ───────────────────────────────────────────────
@@ -519,10 +522,33 @@ body {
 </html>';
 
     // ── Dompdf ─────────────────────────────────────────────────────────────
+    $tempDir = dirname(dirname(__DIR__)) . '/uploads/temp';
+    if (!is_dir($tempDir)) {
+        @mkdir($tempDir, 0755, true);
+    }
+
+    $fontDir = dirname(dirname(__DIR__)) . '/uploads/font_cache';
+    if (!is_dir($fontDir)) {
+        @mkdir($fontDir, 0755, true);
+    }
+
     $opts = new Options();
     $opts->set('defaultFont',          'Helvetica');
-    $opts->set('isRemoteEnabled',      false);
+    $opts->set('isRemoteEnabled',      true);
     $opts->set('isHtml5ParserEnabled', true);
+
+    if (is_dir($tempDir) && is_writable($tempDir)) {
+        $opts->set('tempDir', $tempDir);
+    }
+    if (is_dir($fontDir) && is_writable($fontDir)) {
+        $opts->set('fontDir', $fontDir);
+        $opts->set('fontCache', $fontDir);
+    }
+
+    $chrootPath = realpath(dirname(dirname(__DIR__)));
+    if (!empty($chrootPath)) {
+        $opts->set('chroot', $chrootPath);
+    }
 
     $dompdf = new Dompdf($opts);
     $dompdf->loadHtml($html);
@@ -536,16 +562,29 @@ body {
     }
 
     // ── Save to disk ───────────────────────────────────────────────────────
-    $uploadDir = __DIR__ . '/../../uploads/delivery_receipts/';
+    $uploadDir = dirname(dirname(__DIR__)) . '/uploads/delivery_receipts/';
     if (!is_dir($uploadDir)) {
-        mkdir($uploadDir, 0755, true);
+        @mkdir($uploadDir, 0755, true);
+    }
+
+    if (!is_dir($uploadDir) || !is_writable($uploadDir)) {
+        $uploadDir = $tempDir . '/';
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0755, true);
+        }
     }
 
     $filename = 'delivery_receipt_' . $drNumber . '_' . date('Ymd_His') . '.pdf';
     $filePath = $uploadDir . $filename;
-    $pdfUrl   = '/Anything_Inside_Website/uploads/delivery_receipts/' . $filename;
 
-    file_put_contents($filePath, $pdfOutput);
+    // Dynamic web relative path calculation
+    $scriptDir  = dirname($_SERVER['SCRIPT_NAME'] ?? '');
+    $baseWebDir = preg_replace('#/api/admin_site/?$#i', '', $scriptDir);
+    $pdfUrl     = rtrim($baseWebDir, '/') . '/uploads/delivery_receipts/' . $filename;
+
+    if (file_put_contents($filePath, $pdfOutput) === false) {
+        throw new Exception('Failed to write Delivery Receipt PDF file: ' . $filePath);
+    }
 
     // ── Update DB ──────────────────────────────────────────────────────────
     $pdo->prepare("UPDATE delivery_receipts SET pdf_url = ? WHERE id = ?")

@@ -10,8 +10,10 @@ $name = $_SESSION['full_name'] ?? strtolower($_SESSION['role']);
 <header class="top-nav">
 
     <div class="header-left">
-        
-<span>Hello, <?= htmlspecialchars($name) ?></span>
+        <button id="mobileNavToggle" class="mobile-nav-toggle" aria-label="Open Navigation">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <span class="greeting-text">Hello, <?= htmlspecialchars($name) ?></span>
     </div>
 
     <div class="header-right">

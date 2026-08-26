@@ -1,17 +1,11 @@
 <?php
 session_start();
 require_once __DIR__ . '/../../../connect/config.php';
-require_once __DIR__ . '/../../../vendor/autoload.php';
 
-use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
-
-if (ob_get_level()) ob_end_clean();
+while (ob_get_level()) {
+    ob_end_clean();
+}
 ob_start();
-
 try {
     $pdo = getDBConnection();
 
@@ -41,11 +35,24 @@ try {
 
     $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
+    // Clear any output buffer
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
 
-    // Set headers
-    $headers = [
+    // Send headers for CSV download
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="products_export_' . date('Y-m-d_H-i-s') . '.csv"');
+    header('Cache-Control: max-age=0, must-revalidate');
+    header('Pragma: public');
+
+    $output = fopen('php://output', 'w');
+
+    // Output UTF-8 BOM for Excel compatibility
+    fprintf($output, "\xEF\xBB\xBF");
+
+    // Write CSV headers
+    fputcsv($output, [
         'Product Type',
         'Product Name',
         'SKU',
@@ -56,62 +63,25 @@ try {
         'Description',
         'Status',
         'Materials Used'
-    ];
+    ]);
 
-    // Style headers
-    $headerStyle = [
-        'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
-        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '2C3E50']],
-        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
-    ];
-
-    foreach (range('A', 'J') as $col) {
-        $sheet->getColumnDimension($col)->setAutoSize(true);
-    }
-
-    // Write headers
-    $col = 'A';
-    foreach ($headers as $header) {
-        $sheet->setCellValue($col . '1', $header);
-        $sheet->getStyle($col . '1')->applyFromArray($headerStyle);
-        $col++;
-    }
-
-    // Write data
-    $row = 2;
+    // Write CSV data rows
     foreach ($products as $product) {
-        $sheet->setCellValue('A' . $row, $product['product_type'] ?? 'Uncategorized');
-        $sheet->setCellValue('B' . $row, $product['product_name']);
-        $sheet->setCellValue('C' . $row, $product['sku'] ?? '');
-        $sheet->setCellValue('D' . $row, $product['price'] ?? 0);
-        $sheet->setCellValue('E' . $row, $product['stock'] ?? 0);
-        $sheet->setCellValue('F' . $row, $product['unit'] ?? 'piece');
-        $sheet->setCellValue('G' . $row, $product['material_type'] ?? 'assembled_product');
-        $sheet->setCellValue('H' . $row, $product['description'] ?? '');
-        $sheet->setCellValue('I' . $row, $product['status'] ?? 'active');
-        $sheet->setCellValue('J' . $row, $product['materials'] ?? '');
-        $row++;
+        fputcsv($output, [
+            $product['product_type'] ?? 'Uncategorized',
+            $product['product_name'],
+            $product['sku'] ?? '',
+            $product['price'] ?? 0,
+            $product['stock'] ?? 0,
+            $product['unit'] ?? 'piece',
+            $product['material_type'] ?? 'assembled_product',
+            $product['description'] ?? '',
+            $product['status'] ?? 'active',
+            $product['materials'] ?? ''
+        ]);
     }
 
-    // Apply borders to data
-    $styleArray = [
-        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
-    ];
-    $sheet->getStyle('A2:J' . ($row - 1))->applyFromArray($styleArray);
-
-    // Clear any output buffer
-    if (ob_get_level()) ob_end_clean();
-
-    // Send headers ONLY after all processing is complete
-    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    header('Content-Disposition: attachment; filename="products_export_' . date('Y-m-d_H-i-s') . '.xlsx"');
-    header('Cache-Control: max-age=0, must-revalidate');
-    header('Pragma: public');
-
-    // Create writer and output
-    $writer = new Xlsx($spreadsheet);
-    $writer->save('php://output');
+    fclose($output);
     exit;
 
 } catch (Exception $e) {

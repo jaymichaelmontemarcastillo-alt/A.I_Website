@@ -66,6 +66,8 @@ const matInitEditItemModal = () => {
 };
 
 // Open Edit Item Modal
+// Open Edit Item Modal
+// Open Edit Item Modal
 window.matOpenEditItemModal = (
   materialId,
   materialName,
@@ -73,8 +75,10 @@ window.matOpenEditItemModal = (
   shopStock,
   phStock,
   unitCost,
+  remarks,
 ) => {
   console.log("Opening Edit Modal for:", materialName);
+  console.log("Remarks from database:", remarks);
 
   // Set form values
   const idInput = document.getElementById("matEditItemId");
@@ -92,7 +96,10 @@ window.matOpenEditItemModal = (
   if (shopStockInput) shopStockInput.value = shopStock;
   if (phStockInput) phStockInput.value = phStock;
   if (unitCostInput) unitCostInput.value = unitCost;
-  if (remarksInput) remarksInput.value = "";
+  if (remarksInput) {
+    remarksInput.value = remarks || "";
+    console.log("Set remarks input to:", remarksInput.value);
+  }
   if (errorDiv) errorDiv.innerHTML = "";
 
   // Update total preview
@@ -103,32 +110,8 @@ window.matOpenEditItemModal = (
   if (modal) {
     modal.style.display = "flex";
     document.body.style.overflow = "hidden";
-    // Focus on name input
     setTimeout(() => nameInput?.focus(), 100);
   }
-};
-
-// Close Edit Item Modal
-const matCloseEditItemModal = () => {
-  const modal = document.getElementById("matEditItemModal");
-  if (modal) {
-    modal.style.display = "none";
-    document.body.style.overflow = "";
-  }
-  // Clear error message
-  const errorDiv = document.getElementById("matEditItemError");
-  if (errorDiv) errorDiv.innerHTML = "";
-};
-
-// Update total stock preview for edit modal
-const matUpdateEditTotalPreview = () => {
-  const shopStock =
-    parseInt(document.getElementById("matEditShopStock")?.value) || 0;
-  const phStock =
-    parseInt(document.getElementById("matEditPhStock")?.value) || 0;
-  const total = shopStock + phStock;
-  const totalSpan = document.getElementById("matEditTotalValue");
-  if (totalSpan) totalSpan.innerText = total;
 };
 
 // Update item via API
@@ -144,6 +127,8 @@ const matUpdateItem = async () => {
   const unitCost =
     parseFloat(document.getElementById("matEditUnitCost")?.value) || 0;
   const remarks = document.getElementById("matEditRemarks")?.value.trim() || "";
+
+  console.log("Submitting with remarks:", remarks);
 
   const errorDiv = document.getElementById("matEditItemError");
   const confirmBtn = document.getElementById("matEditItemConfirmBtn");
@@ -198,23 +183,28 @@ const matUpdateItem = async () => {
   }
 
   try {
+    const payload = {
+      id: parseInt(id),
+      material_name: materialName,
+      type: type,
+      shop_stock: shopStock,
+      ph_stock: phStock,
+      unit_cost: unitCost,
+      remarks: remarks,
+    };
+
+    console.log("Sending payload:", payload);
+
     const response = await fetch(UPDATE_MATERIAL_API, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        id: parseInt(id),
-        material_name: materialName,
-        type: type,
-        shop_stock: shopStock,
-        ph_stock: phStock,
-        unit_cost: unitCost,
-        remarks: remarks,
-      }),
+      body: JSON.stringify(payload),
     });
 
     const result = await response.json();
+    console.log("Response from server:", result);
 
     if (result.success) {
       if (errorDiv) errorDiv.innerHTML = "";
@@ -243,6 +233,29 @@ const matUpdateItem = async () => {
       confirmBtn.innerHTML = '<i class="fa-solid fa-save"></i> Save Changes';
     }
   }
+};
+
+// Close Edit Item Modal
+const matCloseEditItemModal = () => {
+  const modal = document.getElementById("matEditItemModal");
+  if (modal) {
+    modal.style.display = "none";
+    document.body.style.overflow = "";
+  }
+  // Clear error message
+  const errorDiv = document.getElementById("matEditItemError");
+  if (errorDiv) errorDiv.innerHTML = "";
+};
+
+// Update total stock preview for edit modal
+const matUpdateEditTotalPreview = () => {
+  const shopStock =
+    parseInt(document.getElementById("matEditShopStock")?.value) || 0;
+  const phStock =
+    parseInt(document.getElementById("matEditPhStock")?.value) || 0;
+  const total = shopStock + phStock;
+  const totalSpan = document.getElementById("matEditTotalValue");
+  if (totalSpan) totalSpan.innerText = total;
 };
 
 // Toast notification function (if not already defined)

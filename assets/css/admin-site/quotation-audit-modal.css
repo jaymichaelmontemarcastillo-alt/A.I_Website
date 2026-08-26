@@ -718,16 +718,22 @@ body.dark-mode .qa-audit-overlay {
 }
 
 /* ============================================================
-   2i. TOTALS SUMMARY
+   2i. TOTALS SUMMARY & REMARKS
    ============================================================ */
 .qa-totals-summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 16px;
   background: #f8fafc;
   border-radius: 6px;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border: 1px solid #f1f5f9;
+}
+
+.qa-remarks-textarea {
+  resize: vertical;
+  min-height: 70px;
+  font-family: inherit;
 }
 
 .qa-totals-summary div {
@@ -1554,8 +1560,21 @@ body.dark-mode .searchable-select-input .selected-text.placeholder {
   grid-template-columns: 2fr 0.8fr 1fr 1fr 0.3fr;
 }
 
+/* Overhead header - 5 columns */
+.qa-dynamic-container.qa-overhead-header .qa-table-header {
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 0.65fr) minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 0.85fr) 26px;
+  gap: 5px;
+}
+
 .qa-dynamic-container .qa-table-header span {
   padding: 0 4px;
+}
+
+.qa-dynamic-container.qa-overhead-header .qa-table-header span {
+  padding: 0 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .qa-dynamic-container .qa-dynamic-row {
@@ -1578,6 +1597,26 @@ body.dark-mode .searchable-select-input .selected-text.placeholder {
 /* Item row - 4 columns */
 .qa-dynamic-container.qa-item-header .qa-dynamic-row {
   grid-template-columns: 2fr 0.8fr 1fr 1fr 0.3fr;
+}
+
+/* Overhead row - 5 columns */
+.qa-dynamic-container.qa-overhead-header .qa-dynamic-row {
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 0.65fr) minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 0.85fr) 26px;
+  gap: 5px;
+}
+
+.qa-dynamic-container.qa-overhead-header .qty-input {
+  min-width: 0;
+  padding: 5px 3px;
+}
+
+.qa-dynamic-container.qa-overhead-header .cost-input {
+  min-width: 0;
+  padding: 5px 4px;
+}
+
+.qa-dynamic-container.qa-overhead-header .qa-remove-row {
+  justify-self: center;
 }
 
 .qa-dynamic-container .qa-dynamic-row:hover {
@@ -1834,9 +1873,20 @@ body.dark-mode
     gap: 4px;
   }
 
+  .qa-dynamic-container.qa-overhead-header .qa-dynamic-row {
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 0.65fr) minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 0.85fr) 26px;
+    gap: 4px;
+  }
+
   .qa-dynamic-container.qa-material-header .qa-table-header,
   .qa-dynamic-container.qa-item-header .qa-table-header {
     grid-template-columns: 1fr 1fr 1fr 1fr 0.3fr;
+    gap: 4px;
+    font-size: 8px;
+  }
+
+  .qa-dynamic-container.qa-overhead-header .qa-table-header {
+    grid-template-columns: minmax(0, 1.8fr) minmax(0, 0.65fr) minmax(0, 0.8fr) minmax(0, 0.95fr) minmax(0, 0.85fr) 26px;
     gap: 4px;
     font-size: 8px;
   }
@@ -1872,5 +1922,68 @@ body.dark-mode
   .qa-dynamic-container .qa-prefill-badge {
     grid-column: 1;
     justify-self: start;
+  }
+}
+
+/* ============================================================
+   OVERHEAD COST - Fixed Form
+   ============================================================ */
+.qa-overhead-fixed-form {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-top: 6px;
+}
+
+.qa-overhead-form-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.qa-overhead-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.qa-overhead-field label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.qa-overhead-field select.qa-input-full,
+.qa-overhead-field input.qa-input-full {
+  padding: 7px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+  color: #0f172a;
+  transition: border-color 0.2s;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.qa-overhead-field input[readonly].qa-input-full {
+  background: #f1f5f9;
+  color: #475569;
+  cursor: default;
+}
+
+.qa-overhead-field select.qa-input-full:focus,
+.qa-overhead-field input.qa-input-full:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+@media (max-width: 600px) {
+  .qa-overhead-form-row {
+    grid-template-columns: 1fr 1fr;
   }
 }

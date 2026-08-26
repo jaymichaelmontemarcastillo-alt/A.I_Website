@@ -17,8 +17,10 @@
 /* 🌙 DARK MODE */
 body.dark-mode {
   --primary-yellow: #f6c34a;
-  --primary-blue: #0f172a --hover-blue: #12395f;
-  --dark-blue: #0f172a --dark-mode-border: #d1d1d1;
+  --primary-blue: #0f172a;
+  --hover-blue: #12395f;
+  --dark-blue: #0f172a;
+  --dark-mode-border: #d1d1d1;
   --sidebar-white: #0f172a;
   --bg-light: #000000;
   --text-dark: #fdfdfd;

@@ -57,16 +57,17 @@ document.addEventListener("DOMContentLoaded", function () {
   const deleteCloseBtn = $("#deleteCloseBtn");
 
   // Import Modal
-  const importModal = $("#importModal");
-  const importForm = $("#importForm");
-  const excelFile = $("#excelFile");
-  const importSubmitBtn = $("#importSubmitBtn");
-  const importCloseBtn = $("#importCloseBtn");
-  const importCancelBtn = $("#importCancelBtn");
-  const importProgress = $("#importProgress");
-  const progressFill = $("#progressFill");
-  const progressStatus = $("#progressStatus");
-  const importResult = $("#importResult");
+  const importModal      = $("#importModal");
+  const importForm       = $("#importForm");
+  const importFile       = $("#importFile");      // unified file input (was: excelFile)
+  const importFileHint   = $("#importFileHint");  // live format hint paragraph
+  const importSubmitBtn  = $("#importSubmitBtn");
+  const importCloseBtn   = $("#importCloseBtn");
+  const importCancelBtn  = $("#importCancelBtn");
+  const importProgress   = $("#importProgress");
+  const progressFill     = $("#progressFill");
+  const progressStatus   = $("#progressStatus");
+  const importResult     = $("#importResult");
 
   // Import Error Modal
   const importErrorModal = $("#importErrorModal");
@@ -243,17 +244,17 @@ document.addEventListener("DOMContentLoaded", function () {
       const status = p.stock_status || "in_stock";
       html += `
                 <tr data-id="${p.id}">
-                    <td><p>${escape(p.name)}</p></td>
-                    <td><span class="badge-type">${escape(p.product_type_name || "N/A")}</span></td>
-                    <td class="tbl-price">₱${parseFloat(p.price).toFixed(2)}</td>
-                    <td class="tbl-stock">${p.stock || 0}</td>
-                    <td>${statusMap[status] || statusMap.in_stock}</td>
-                    <td>
-                        <div class="tbl-actions">
-                            <button class="btn-action edit" data-id="${p.id}">
+                    <td class="col-name"><p>${escape(p.name)}</p></td>
+                    <td class="col-type"><span class="badge-type">${escape(p.product_type_name || "N/A")}</span></td>
+                    <td class="col-num">₱${parseFloat(p.price).toFixed(2)}</td>
+                    <td class="col-num">${p.stock || 0}</td>
+                    <td class="col-status">${statusMap[status] || statusMap.in_stock}</td>
+                    <td class="col-action tbl-actions">
+                        <div style="display:flex; align-items:center; justify-content:center; gap:6px;">
+                            <button class="btn-action edit" data-id="${p.id}" title="Edit Product">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <button class="btn-action delete" data-id="${p.id}">
+                            <button class="btn-action delete" data-id="${p.id}" title="Delete Product" style="color:#ef4444;">
                                 <i class="fa-solid fa-trash"></i> 
                             </button>
                         </div>
@@ -481,14 +482,14 @@ document.addEventListener("DOMContentLoaded", function () {
                         <select class="mat-select" name="material_ids[]">
                             <option value="">— Select material —</option>
                             ${materialsList
-                              .map(
-                                (m) => `
+        .map(
+          (m) => `
                                 <option value="${m.id}" ${m.id == matId ? "selected" : ""}>
                                     ${escape(m.material_name)} (${escape(m.type || "N/A")})
                                 </option>
                             `,
-                              )
-                              .join("")}
+        )
+        .join("")}
                         </select>
                     </div>
                     <div class="form-group">
@@ -710,20 +711,28 @@ document.addEventListener("DOMContentLoaded", function () {
   // ==========================================
   // IMPORT
   // ==========================================
+
+  /**
+   * Show an error in the import error modal with a human-readable title and message.
+   * Used when the server returns a structured error (error_type + message).
+   */
   function openImportErrorModal(errorType, message) {
     const titleMap = {
-      column_mismatch:
-        '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> File Doesn\'t Match Expected Format',
-      invalid_type:
-        '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> File Doesn\'t Match Expected Format',
-      empty_file:
-        '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> File Doesn\'t Match Expected Format',
+      column_mismatch: '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> File Format Problem',
+      invalid_type:    '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> Unsupported File Type',
+      empty_file:      '<i class="fa-solid fa-file-circle-xmark" style="color: var(--clr-danger);"></i> Empty File',
     };
+
     importErrorTitle.innerHTML =
       titleMap[errorType] ||
-      '<i class="fa-solid fa-triangle-exclamation" style="color: var(--clr-danger);"></i> There Was a Problem';
-    importErrorMessage.textContent =
-      message || "Something went wrong during the import. Please try again.";
+      '<i class="fa-solid fa-triangle-exclamation" style="color: var(--clr-danger);"></i> Import Error';
+
+    importErrorMessage.innerHTML =
+      '<div style="text-align:left; background:#fff0f0; border:1px solid #ffcdd2; color:#b71c1c;' +
+      'padding:12px; border-radius:6px; font-size:13px; word-break:break-all;' +
+      'white-space:pre-wrap; max-height:250px; overflow-y:auto;">' +
+      (message || 'No error message was captured.') + '</div>';
+
     openModal(importErrorModal);
   }
 
@@ -738,13 +747,14 @@ document.addEventListener("DOMContentLoaded", function () {
     openImportModal();
   });
 
+  /** Reset and open the import modal */
   function openImportModal() {
     importForm.reset();
-    importProgress.style.display = "none";
-    importResult.style.display = "none";
-    importSubmitBtn.disabled = false;
-    importSubmitBtn.innerHTML =
-      '<i class="fa-solid fa-upload"></i> Import Products';
+    importProgress.style.display  = "none";
+    importResult.style.display    = "none";
+    importSubmitBtn.disabled      = false;
+    importSubmitBtn.innerHTML     = '<i class="fa-solid fa-upload"></i> Import Products';
+    if (importFileHint) importFileHint.textContent = "";
     openModal(importModal);
   }
 
@@ -752,27 +762,90 @@ document.addEventListener("DOMContentLoaded", function () {
     closeModal(importModal);
   }
 
+  /**
+   * Show a live hint below the file input describing the chosen file format.
+   * Wired to the input's "change" event.
+   */
+  function onImportFileChange() {
+    if (!importFile || !importFileHint) return;
+
+    const file = importFile.files[0];
+    if (!file) { importFileHint.textContent = ""; return; }
+
+    const ext = file.name.split(".").pop().toLowerCase();
+
+    if (ext === "xlsx") {
+      importFileHint.innerHTML = '<i class="fa-solid fa-file-excel" style="color:#16a34a;"></i>&nbsp;Excel file selected — will be imported as XLSX';
+    } else if (ext === "csv") {
+      importFileHint.innerHTML = '<i class="fa-solid fa-file-csv" style="color:#0ea5e9;"></i>&nbsp;CSV file selected — will be imported as CSV';
+    } else {
+      importFileHint.innerHTML = '<span style="color:#dc2626;"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;Unsupported format — please choose .csv or .xlsx</span>';
+    }
+  }
+
+  // Attach the hint listener
+  importFile?.addEventListener("change", onImportFileChange);
+
+  // Wire up Product Dropzone drag & drop
+  const productDropzone = $("#productDropzone");
+  if (productDropzone && importFile) {
+    ['dragenter', 'dragover'].forEach(eventName => {
+      productDropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        productDropzone.style.borderColor = '#2563eb';
+        productDropzone.style.background  = '#eff6ff';
+      }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      productDropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        productDropzone.style.borderColor = '#cbd5e1';
+        productDropzone.style.background  = '#f8fafc';
+      }, false);
+    });
+
+    productDropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files && files.length > 0) {
+        importFile.files = files;
+        onImportFileChange();
+      }
+    }, false);
+  }
+
+  /**
+   * Handle the import form submit.
+   *
+   * Accepted formats: .csv and .xlsx
+   * The form field name is set per format so the PHP endpoint can detect it:
+   *   CSV  -> field "csv_file"
+   *   XLSX -> field "xlsx_file"
+   */
   function handleImport(e) {
     e.preventDefault();
 
-    const file = excelFile.files[0];
+    const file = importFile ? importFile.files[0] : null;
     if (!file) {
-      toast("Please select an Excel file", "error");
+      toast("Please select a CSV (.csv) or Excel (.xlsx) file", "error");
       return;
     }
 
     const ext = file.name.split(".").pop().toLowerCase();
-    if (!["xlsx", "xls"].includes(ext)) {
-      toast("Please upload a valid Excel file (.xlsx or .xls)", "error");
+    if (ext !== "csv" && ext !== "xlsx") {
+      toast(`Unsupported file type ".${ext}" — please upload a .csv or .xlsx file.`, "error");
       return;
     }
 
     importProgress.style.display = "block";
-    importResult.style.display = "none";
-    importSubmitBtn.disabled = true;
-    importSubmitBtn.innerHTML =
-      '<i class="fa-solid fa-spinner fa-spin"></i> Importing...';
+    importResult.style.display   = "none";
+    importSubmitBtn.disabled     = true;
+    importSubmitBtn.innerHTML    = '<i class="fa-solid fa-spinner fa-spin"></i> Importing...';
 
+    // Animate progress bar
     let progress = 0;
     const interval = setInterval(() => {
       progress += Math.random() * 10;
@@ -780,14 +853,54 @@ document.addEventListener("DOMContentLoaded", function () {
       progressFill.style.width = progress + "%";
     }, 200);
 
+    // Build FormData with the correct field name for the server to identify the format
     const formData = new FormData();
-    formData.append("excel_file", file);
+    if (ext === "xlsx") {
+      formData.append("xlsx_file", file);   // XLSX field
+    } else {
+      formData.append("csv_file", file);    // CSV field
+    }
+    formData.append("file", file);           // generic fallback
 
-    fetch(`${API}/import_products.php`, {
-      method: "POST",
-      body: formData,
-    })
-      .then((res) => res.json())
+    /**
+     * POST to the import endpoint with one automatic retry if an
+     * InfinityFree/iFastNet bot-protection challenge intercepts the request.
+     */
+    const sendRequest = async (isRetry = false) => {
+      const res  = await fetch(`${API}/import_products.php`, {
+        method: "POST",
+        credentials: "same-origin",
+        body: formData,
+      });
+
+      let text = await res.text();
+      text = text.trim().replace(/^\uFEFF/, ""); // strip BOM
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        // Detect InfinityFree security challenge response
+        if (text.includes("aes.js") || text.includes("__test=")) {
+          if (!isRetry) {
+            toast("Authenticating with server security system...", "info");
+            await fetch(window.location.href, { credentials: "same-origin" }).catch(() => {});
+            await new Promise((r) => setTimeout(r, 800));
+            return sendRequest(true);
+          }
+          throw new Error(
+            "InfinityFree Security System (iFastNet Bot Protection) blocked this request. " +
+            "Please refresh the page (F5) once and try again."
+          );
+        }
+        const preview = text ? text.substring(0, 300) : "EMPTY RESPONSE (0 BYTES)";
+        throw new Error("Server returned a non-JSON response:\n\n" + preview);
+      }
+
+      return data;
+    };
+
+    sendRequest()
       .then((data) => {
         clearInterval(interval);
         progressFill.style.width = "100%";
@@ -798,33 +911,28 @@ document.addEventListener("DOMContentLoaded", function () {
             importResult.style.display = "block";
 
             let html = `
-                            <div class="import-result">
-                                <p class="success"><i class="fa-solid fa-check-circle"></i> ${data.message}</p>
-                                <div class="summary">
-                                    <div class="stat">
-                                        <div class="num">${data.details.imported}</div>
-                                        <div class="lbl">New Products</div>
-                                    </div>
-                                    <div class="stat">
-                                        <div class="num">${data.details.updated}</div>
-                                        <div class="lbl">Updated Products</div>
-                                    </div>
-                                    <div class="stat">
-                                        <div class="num">${data.details.errors.length}</div>
-                                        <div class="lbl">Errors</div>
-                                    </div>
-                                </div>
-                        `;
+              <div class="import-result">
+                <p class="success"><i class="fa-solid fa-check-circle"></i> ${data.message}</p>
+                <div class="summary">
+                  <div class="stat">
+                    <div class="num">${data.details.imported}</div>
+                    <div class="lbl">New Products</div>
+                  </div>
+                  <div class="stat">
+                    <div class="num">${data.details.updated}</div>
+                    <div class="lbl">Updated</div>
+                  </div>
+                  <div class="stat">
+                    <div class="num">${data.details.errors.length}</div>
+                    <div class="lbl">Errors</div>
+                  </div>
+                </div>`;
 
             if (data.details.errors.length > 0) {
-              html += `
-                                <div class="errors">
-                                    <p><strong>Errors:</strong></p>
-                                    <ul>
-                                        ${data.details.errors.map((err) => `<li>${err}</li>`).join("")}
-                                    </ul>
-                                </div>
-                            `;
+              html += `<div class="errors">
+                <p><strong>Errors:</strong></p>
+                <ul>${data.details.errors.map((err) => `<li>${err}</li>`).join("")}</ul>
+              </div>`;
             }
 
             html += "</div>";
@@ -835,37 +943,27 @@ document.addEventListener("DOMContentLoaded", function () {
               fetchProducts(currentPage);
               toast("Import completed successfully!", "success");
             }, 1500);
+
           } else {
-            // Backend returned a structured, user-friendly error.
-            // Log the technical detail for developers; show the friendly
-            // message to the user in a dedicated error modal.
+            // Structured error from the server
             console.error(
-              "❌ Import failed [" + (data.error_type || "general") + "]:",
+              "Import failed [" + (data.error_type || "general") + "]:",
               data.technical_message || data.message,
             );
-
             closeImportModal();
             openImportErrorModal(data.error_type, data.message);
-
             importSubmitBtn.disabled = false;
-            importSubmitBtn.innerHTML =
-              '<i class="fa-solid fa-upload"></i> Import Products';
+            importSubmitBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Import Products';
           }
         }, 500);
       })
       .catch((err) => {
         clearInterval(interval);
-        console.error("❌ Import error (network or invalid response):", err);
-
+        console.error("Import error:", err);
         closeImportModal();
-        openImportErrorModal(
-          "general",
-          "We couldn't complete the import due to a technical problem. Please check your connection and try again.",
-        );
-
+        openImportErrorModal("debug", "NETWORK / RESPONSE ERROR:\n" + (err.message || err));
         importSubmitBtn.disabled = false;
-        importSubmitBtn.innerHTML =
-          '<i class="fa-solid fa-upload"></i> Import Products';
+        importSubmitBtn.innerHTML = '<i class="fa-solid fa-upload"></i> Import Products';
       });
   }
 

@@ -42,9 +42,24 @@ try {
     $shopStock = (int) ($input['shop_stock'] ?? 0);
     $phStock = (int) ($input['ph_stock'] ?? 0);
     $unitCost = (float) ($input['unit_cost'] ?? 0);
+    $costPerPack = (float) ($input['cost_per_pack'] ?? $input['total_cost'] ?? 0);
+    $piecesPerPack = (int) ($input['pieces_per_pack'] ?? $input['qty_per_pack'] ?? 1);
+    if ($piecesPerPack <= 0) {
+        $piecesPerPack = 1;
+    }
+
     $totalStock = $shopStock + $phStock;
-    $totalCost = $totalStock * $unitCost;
-    $piecesPerPack = 1; // Default value
+    if ($costPerPack > 0) {
+        $totalCost = $costPerPack;
+        if ($unitCost == 0 && $piecesPerPack > 0) {
+            $unitCost = $costPerPack / $piecesPerPack;
+        }
+    } else {
+        $totalCost = $totalStock * $unitCost;
+        if ($unitCost > 0 && $piecesPerPack > 0) {
+            $costPerPack = $unitCost * $piecesPerPack;
+        }
+    }
     $remarks = trim($input['remarks'] ?? '');
 
     // Validation
@@ -87,7 +102,7 @@ try {
         $shopStock,
         $phStock,
         $totalStock,
-        $totalCost,
+        $costPerPack > 0 ? $costPerPack : $totalCost,
         $piecesPerPack,
         $unitCost,
         $remarks

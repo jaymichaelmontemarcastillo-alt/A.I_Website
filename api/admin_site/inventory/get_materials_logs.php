@@ -86,8 +86,8 @@ try {
     $useMaterialsLogs = $tableCheck && $tableCheck->rowCount() > 0;
 
     if ($useMaterialsLogs) {
-        // Count total
-        $countSQL = "SELECT COUNT(*) FROM materials_logs il $whereSQL";
+        // Count total (must use same JOINs as the data query for consistent counts)
+        $countSQL = "SELECT COUNT(*) FROM materials_logs il LEFT JOIN materials m ON m.id = il.material_id $whereSQL";
         $countStmt = $pdo->prepare($countSQL);
         $countStmt->execute($params);
         $total = (int) ($countStmt->fetchColumn() ?? 0);
@@ -96,7 +96,7 @@ try {
         $sql = "SELECT
                     il.id,
                     il.material_id,
-                    m.material_name,
+                    COALESCE(m.material_name, CONCAT('Deleted Material #', il.material_id)) AS material_name,
                     m.type AS material_type,
                     il.change_type,
                     il.quantity,
@@ -109,7 +109,7 @@ try {
                     il.created_at,
                     il.location
                 FROM materials_logs il
-                JOIN materials m ON m.id = il.material_id
+                LEFT JOIN materials m ON m.id = il.material_id
                 LEFT JOIN admins a ON a.AdminID = il.admin_id
                 $whereSQL
                 ORDER BY il.created_at DESC
@@ -130,8 +130,8 @@ try {
         $colCheck = $pdo->query("SHOW COLUMNS FROM inventory_logs LIKE 'location'");
         $hasLocation = $colCheck && $colCheck->rowCount() > 0;
 
-        // Count total
-        $countSQL = "SELECT COUNT(*) FROM inventory_logs il $whereSQL";
+        // Count total (must use same JOINs as the data query for consistent counts)
+        $countSQL = "SELECT COUNT(*) FROM inventory_logs il LEFT JOIN materials m ON m.id = il.material_id $whereSQL";
         $countStmt = $pdo->prepare($countSQL);
         $countStmt->execute($params);
         $total = (int) ($countStmt->fetchColumn() ?? 0);
@@ -142,7 +142,7 @@ try {
         $sql = "SELECT
                     il.id,
                     il.material_id,
-                    m.material_name,
+                    COALESCE(m.material_name, CONCAT('Deleted Material #', il.material_id)) AS material_name,
                     m.type AS material_type,
                     il.change_type,
                     il.quantity,
@@ -156,7 +156,7 @@ try {
                     $locationSelect
                     ba.items as audit_items
                 FROM inventory_logs il
-                JOIN materials m ON m.id = il.material_id
+                LEFT JOIN materials m ON m.id = il.material_id
                 LEFT JOIN admins a ON a.AdminID = il.admin_id
                 LEFT JOIN bom_audit ba ON ba.id = il.audit_id
                 $whereSQL
