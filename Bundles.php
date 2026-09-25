@@ -10,17 +10,17 @@ include 'includes/header.php';
 <style>
 /* ========== INTEGRATED THEME VARIABLES ========== */
 #bundle-page {
-  --primary: #0a2a44; /* Deep Navy Background */
-  --accent: #f4ba31;  /* Warm Amber Accent */
-  --bg-dark: #0a2a44; 
+  --primary: #0a2a44;
+  --accent: #f4ba31;
+  --bg: #f5f8fb;
   --white: #ffffff;
-  --text-on-dark: #ffffff;
-  --text-muted: rgba(255, 255, 255, 0.7);
+  --text: #1a2a44;
+  --text-light: #5c6b7a;
   --radius: 20px;
-  --shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
   
-  background: var(--bg-dark); /* Applied globally */
-  color: var(--text-on-dark);
+  background: var(--primary); /* Applied globally to remove white gaps */
+  color: var(--text);
   font-family: "Poppins", sans-serif;
   margin: 0;
   padding: 0;
@@ -40,14 +40,14 @@ include 'includes/header.php';
 }
 
 #bundle-page .tnrm { font-family: "TNRM", "Georgia", serif; }
-#bundle-page .gw-font { font-family: "GWbently", serif; color: var(--accent); }
+#bundle-page .gw-font { font-family: "GWbently", serif; color: var(--accent); font-weight: normal; }
 
 /* ---------- GLOBAL TAG/LABEL ---------- */
 #bundle-page .tag {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(244, 186, 49, 0.15); /* Translucent Amber */
+  background: rgba(246, 195, 74, 0.18); /* Translucent Amber */
   color: var(--accent);
   border-radius: 999px;
   padding: 10px 18px;
@@ -62,7 +62,7 @@ include 'includes/header.php';
 #bundle-page .hero-frame {
   background: linear-gradient(135deg, #0a2a44 0%, #1a4a6e 100%);
   color: white;
-  min-height: 100vh;
+  padding: 150px 0 100px;
   display: flex;
   align-items: center;
   text-align: center;
@@ -86,13 +86,14 @@ include 'includes/header.php';
   font-size: clamp(3.5rem, 10vw, 7rem);
   display: block;
   margin-top: -10px;
+  font-weight: normal;
 }
 
-/* ---------- WIZARD STEPS (Deep Navy Background) ---------- */
+/* ---------- WIZARD STEPS ---------- */
 .wizard-step {
   display: none; 
   padding: 80px 0;
-  background: var(--bg-dark); /* Navy blue background for every step */
+  background: var(--primary); /* Blue background */
 }
 
 .wizard-step.active {
@@ -111,10 +112,11 @@ include 'includes/header.php';
 }
 
 .section-head h2 {
-  font-family: "TNRM", serif;
-  font-size: clamp(2.2rem, 4vw, 3rem);
+  font-family: "TNRM", "Georgia", serif;
+  font-size: clamp(2rem, 3.5vw, 3rem);
   color: var(--white); /* White text for contrast */
   font-weight: 400;
+  line-height: 1.08;
 }
 
 .selection-grid {
@@ -126,47 +128,55 @@ include 'includes/header.php';
   padding: 0 20px;
 }
 
-/* ---------- CARDS (White Content) ---------- */
+/* ---------- CARDS ---------- */
 .selection-card {
   background: var(--white);
-  padding: 40px 20px;
+  padding: 30px 20px;
   border-radius: var(--radius);
   text-align: center;
   border: 2px solid transparent;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
   transition: all 0.3s ease;
   cursor: pointer;
-  color: var(--primary); /* Text inside cards remains navy */
+  color: var(--text);
 }
 
 .icon-circle {
-  width: 70px;
-  height: 70px;
-  margin: 0 auto 20px;
-  background: rgba(10, 42, 68, 0.05);
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 14px;
+  background: rgba(245, 197, 66, 0.15);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  color: var(--primary);
-  transition: 0.3s;
+  font-size: 26px;
+  color: var(--accent);
+  transition: all 0.3s ease;
 }
 
 .selection-card h3 {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+.selection-card p {
+  font-size: 14px;
+  color: var(--text-light);
+  line-height: 1.6;
 }
 
 .selection-card:hover {
   border-color: var(--accent);
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow);
 }
 
 .selection-card:hover .icon-circle {
   background: var(--accent);
-  color: var(--primary);
+  color: white;
 }
 
 /* ---------- BUTTONS ---------- */
@@ -197,7 +207,7 @@ include 'includes/header.php';
   margin-top: 60px;
   text-align: center;
   padding: 50px;
-  background: rgba(255, 255, 255, 0.05); /* Very subtle translucent white */
+  background: rgba(255, 255, 255, 0.05);
   border-radius: var(--radius);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -239,14 +249,14 @@ include 'includes/header.php';
     <div class="hero-container">
       <span class="tag">GIFT BUNDLES — Find Your Gift</span>
       <h1>Thoughtful Gifts,<br><span class="gw-font">Made Easy.</span></h1>
-      <p style="font-size: 1.2rem; margin-bottom: 30px; color: var(--text-muted);">Personalized gift bundles made for the people and moments that matter.</p>
+      <p style="font-size: 1.2rem; margin-bottom: 30px; color: rgba(255, 255, 255, 0.9);">Personalized gift bundles made for the people and moments that matter.</p>
       <button class="btn-highlight" onclick="goToStep(2)">
         Explore Gift Bundles <i class="fas fa-arrow-right"></i>
       </button>
     </div>
   </section>
 
-  <!-- FRAME 2: WHO (Deep Navy) -->
+  <!-- FRAME 2: WHO -->
   <section class="wizard-step" id="frame-2">
     <div class="container">
       <div class="section-head">
@@ -282,7 +292,7 @@ include 'includes/header.php';
     </div>
   </section>
 
-  <!-- FRAME 3: OCCASION (Deep Navy) -->
+  <!-- FRAME 3: OCCASION -->
   <section class="wizard-step" id="frame-3">
     <div class="container">
       <div class="section-head">
@@ -318,7 +328,7 @@ include 'includes/header.php';
     </div>
   </section>
 
-  <!-- FRAME 4: BUDGET (Deep Navy) -->
+  <!-- FRAME 4: BUDGET -->
   <section class="wizard-step" id="frame-4">
     <div class="container">
       <div class="section-head">
@@ -329,44 +339,42 @@ include 'includes/header.php';
         <div class="selection-card" onclick="selectOption('budget', '300-500', 5)">
           <div class="icon-circle"><i class="fas fa-leaf"></i></div>
           <h3>₱300–₱500</h3>
-          <p style="color: #666; font-size: 0.8rem;">Small & thoughtful</p>
+          <p>Small & thoughtful</p>
         </div>
         <div class="selection-card" onclick="selectOption('budget', '500-1000', 5)">
           <div class="icon-circle"><i class="fas fa-star"></i></div>
           <h3>₱500–₱1,000</h3>
-          <p style="color: #666; font-size: 0.8rem;">Something special</p>
+          <p>Something special</p>
         </div>
         <div class="selection-card" onclick="selectOption('budget', '1000-1500', 5)">
           <div class="icon-circle"><i class="fas fa-box-open"></i></div>
           <h3>₱1,000–₱1,500</h3>
-          <p style="color: #666; font-size: 0.8rem;">A complete gift</p>
+          <p>A complete gift</p>
         </div>
         <div class="selection-card" onclick="selectOption('budget', '1500+', 5)">
           <div class="icon-circle"><i class="fas fa-crown"></i></div>
           <h3>₱1,500+</h3>
-          <p style="color: #666; font-size: 0.8rem;">Premium & personalized</p>
+          <p>Premium & personalized</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- FRAME 5: RESULTS (Deep Navy) -->
+  <!-- FRAME 5: RESULTS -->
   <section class="wizard-step" id="frame-5">
     <div class="container">
       <div class="section-head">
         <span class="tag">Personalized Results</span>
-        <h2 id="match-title">We found these gifts.</h2>
-      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+        <h2 id="match-title" style="display: inline-block; margin-bottom: 30px; text-align: center;">We found these gifts.</h2>
 
-      <div class="selection-grid">
         <!-- Results Card -->
-        <article class="selection-card" style="cursor: default; padding: 0; overflow: hidden; text-align: left;">
-          <img src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=600" style="width:100%; height:250px; object-fit:cover;">
+        <article id="result-card" class="selection-card" style="cursor: default; padding: 0; overflow: hidden; text-align: left; width: 100%; transition: max-width 0.3s ease;">
+          <img src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=600" style="width:100%; height:160px; object-fit:cover;">
           <div style="padding: 25px;">
             <h3 style="margin-bottom: 5px;">Birthday Self-Care Bundle</h3>
             <p style="color: var(--primary); font-weight: 700; font-size: 1.4rem; margin-bottom: 10px;">₱799</p>
-            <p style="font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 20px;">Personalized mug + pouch + treats + luxury gift packaging.</p>
-            <button class="btn-highlight" style="width:100%; justify-content: center;">Add to Cart</button>
+            <p style="font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 0;">Personalized mug + pouch + treats + luxury gift packaging.</p>
           </div>
         </article>
       </div>
@@ -375,7 +383,8 @@ include 'includes/header.php';
       <div style="margin-top: 80px; text-align: center;">
         
         <!-- Optional: Keep the "Change Filter" chips above the help box -->
-        <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">Not quite what you're looking for?</p>
+        <!-- Optional: Keep the "Change Filter" chips above the help box -->
+        <p style="color: var(--text-light); margin-bottom: 15px; font-size: 0.9rem;">Not quite what you're looking for?</p>
         <div class="chip-container" style="margin-bottom: 50px;">
           <div class="chip" onclick="goToStep(2)">Change Recipient</div>
           <div class="chip" onclick="goToStep(3)">Change Occasion</div>
@@ -385,57 +394,12 @@ include 'includes/header.php';
         <!-- THE REQUESTED DESIGN BOX -->
         <div style="max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.05); padding: 60px; border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.1);">
           <h2 class="tnrm" style="font-size: 2.5rem; margin-bottom: 20px; color: white;">Not sure what would work for you?</h2>
-          <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 35px;">
+          <p style="font-size: 1.1rem; color: rgba(255, 255, 255, 0.8); margin-bottom: 35px;">
             You don't have to figure it all out yourself. Tell us your budget, quantity, and purpose—we'll help you find the right option.
           </p>
-          <a href="contact.php" class="btn-highlight">
-            <i class="fas fa-comment-dots"></i> Message Us
-          </a>
-        </div>
-      </div>
-
-    </div>
-  </section><!-- FRAME 5: RESULTS (Deep Navy) -->
-  <section class="wizard-step" id="frame-5">
-    <div class="container">
-      <div class="section-head">
-        <span class="tag">Personalized Results</span>
-        <h2 id="match-title">We found these gifts.</h2>
-      </div>
-
-      <div class="selection-grid">
-        <!-- Results Card -->
-        <article class="selection-card" style="cursor: default; padding: 0; overflow: hidden; text-align: left;">
-          <img src="https://images.unsplash.com/photo-1549465220-1a8b9238cd48?q=80&w=600" style="width:100%; height:250px; object-fit:cover;">
-          <div style="padding: 25px;">
-            <h3 style="margin-bottom: 5px;">Birthday Self-Care Bundle</h3>
-            <p style="color: var(--primary); font-weight: 700; font-size: 1.4rem; margin-bottom: 10px;">₱799</p>
-            <p style="font-size: 13px; color: #555; line-height: 1.5; margin-bottom: 20px;">Personalized mug + pouch + treats + luxury gift packaging.</p>
-            <button class="btn-highlight" style="width:100%; justify-content: center;">Add to Cart</button>
-          </div>
-        </article>
-      </div>
-
-      <!-- NEW DESIGN INTEGRATED HERE -->
-      <div style="margin-top: 80px; text-align: center;">
-        
-        <!-- Optional: Keep the "Change Filter" chips above the help box -->
-        <p style="color: var(--text-muted); margin-bottom: 15px; font-size: 0.9rem;">Not quite what you're looking for?</p>
-        <div class="chip-container" style="margin-bottom: 50px;">
-          <div class="chip" onclick="goToStep(2)">Change Recipient</div>
-          <div class="chip" onclick="goToStep(3)">Change Occasion</div>
-          <div class="chip" onclick="goToStep(4)">Change Budget</div>
-        </div>
-
-        <!-- THE REQUESTED DESIGN BOX -->
-        <div style="max-width: 800px; margin: 0 auto; background: rgba(255,255,255,0.05); padding: 60px; border-radius: var(--radius); border: 1px solid rgba(255,255,255,0.1);">
-          <h2 class="tnrm" style="font-size: 2.5rem; margin-bottom: 20px; color: white;">Not sure what would work for you?</h2>
-          <p style="font-size: 1.1rem; color: var(--text-muted); margin-bottom: 35px;">
-            You don't have to figure it all out yourself. Tell us your budget, quantity, and purpose—we'll help you find the right option.
-          </p>
-          <a href="contact.php" class="btn-highlight">
-            <i class="fas fa-comment-dots"></i> Message Us
-          </a>
+              <a href="https://www.facebook.com/profile.php?id=61572947390035" target="_blank" rel="noopener" class="btn btn-secondary btn-highlight">
+                <i class="fab fa-facebook"></i> Visit our fb page
+            </a>
         </div>
       </div>
 
@@ -465,12 +429,24 @@ function goToStep(step) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function alignCardToTitle() {
+  const title = document.getElementById('match-title');
+  const card = document.getElementById('result-card');
+  if (title && card) {
+    card.style.maxWidth = title.getBoundingClientRect().width + 'px';
+  }
+}
+
 function selectOption(category, value, nextStep) {
   selections[category] = value;
   
   if (nextStep === 5) {
     const title = document.getElementById('match-title');
-    title.innerHTML = `We found these gifts <span class="gw-font">${selections.recipient.toLowerCase()}</span>.`;
+    title.innerHTML = `We found these gifts <span style="color: var(--accent);">${selections.recipient.toLowerCase()}</span>.`;
+    
+    // Align card to perfectly match the title's width
+    setTimeout(alignCardToTitle, 10);
+    window.addEventListener('resize', alignCardToTitle);
   }
   
   goToStep(nextStep);

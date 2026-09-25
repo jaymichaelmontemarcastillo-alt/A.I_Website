@@ -9,7 +9,7 @@ include 'includes/header.php';
     <!-- FRAME 1: HERO -->
     <section class="hero">
         <div class="hero-inner">
-            <h2 class="reveal-init reveal-fade-in-up">We Make Ideas Into <br><span class="gw-font">Something You Can Hold.</span></h2>
+            <h2 class="reveal-init reveal-fade-in-up">We Help you make your ideas <br><span class="gw-font">Into Something You Can Hold.</span></h2>
             <p class="hero-sub reveal-init reveal-fade-in-up reveal-delay-1">From personalized gifts to custom prints and merchandise, we help turn your ideas into something meaningful and ready to give.</p>
             <p class="hero-sub reveal-init reveal-fade-in-up reveal-delay-2">We simplify printing, packaging, and gifting for businesses and individuals who want premium, memorable results without the stress of managing multiple vendors.</p>
         </div>
@@ -48,7 +48,7 @@ include 'includes/header.php';
         </div>
     </section>
 
-    <!-- FRAME 4: PREVIOUS WORKS -->
+    <!-- FRAME 4: PREVIOUS WORKS 
     <section class="section gallery-section">
         <div class="container">
             <div class="section-head light reveal-init reveal-fade-in-up">
@@ -67,13 +67,23 @@ include 'includes/header.php';
                 <div class="gallery-item reveal-init reveal-fade-in-up reveal-delay-2">
                     <img src="assets/images/products/product6.jpg" alt="Work 3">
                 </div>
+
+                <div class="gallery-item reveal-init reveal-fade-in-up">
+                    <img src="assets/images/products/product3.jpg" alt="Work 1">
+                </div>
+                <div class="gallery-item reveal-init reveal-fade-in-up reveal-delay-1">
+                    <img src="assets/images/products/product5.jpg" alt="Work 2">
+                </div>
+                <div class="gallery-item reveal-init reveal-fade-in-up reveal-delay-2">
+                    <img src="assets/images/products/product7.jpg" alt="Work 3">
+                </div>
             </div>
             <div style="text-align: center; margin-top: 40px;" class="reveal-init reveal-fade-in-up">
                 <a href="product.php" class="btn btn-secondary btn-highlight">View Our Works</a>
             </div>
         </div>
     </section>
-
+-->
     <!-- OUR PROMISE (Impact Section Pattern) -->
     <section class="section impact">
         <div class="container">

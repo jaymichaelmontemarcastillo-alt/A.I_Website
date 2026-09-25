@@ -1,3 +1,4 @@
+
 <?php
 // Ensure baseDir is set
 if (!isset($baseDir)) {
@@ -15,14 +16,16 @@ $showSearch = in_array($currentPage, ['product.php', 'Bundles.php']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anything Inside</title>
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
+    <link rel="stylesheet" href="<?php echo $baseDir; ?>assets/css/customer-site/product.css?v=<?php echo filemtime($baseDir . 'assets/css/customer-site/product.css'); ?>">
     <link rel="stylesheet" href="<?php echo $baseDir; ?>assets/css/customer-site/style.css">
     <link rel="stylesheet" href="<?php echo $baseDir; ?>assets/css/customer-site/notifications.css">
 
     <?php if (in_array($currentPage, ['index.php', 'product.php', 'AboutUs.php', 'Bundles.php'])): ?>
-    <link rel="stylesheet" href="<?php echo $baseDir; ?>assets/css/customer-site/home.css">
+    <link rel="stylesheet" href="<?php echo $baseDir; ?>assets/css/customer-site/home.css?v=<?php echo filemtime($baseDir . 'assets/css/customer-site/home.css'); ?>">
     <?php endif; ?>
 
     <style>
@@ -31,6 +34,13 @@ $showSearch = in_array($currentPage, ['product.php', 'Bundles.php']);
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        /* ===== IMAGE LOADING SPINNER ===== */
+        .img-loading-spinner {
+            background: #f8f9fa url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50"><circle cx="25" cy="25" r="20" fill="none" stroke="%230a2a44" stroke-width="4" stroke-dasharray="31.4 31.4"><animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite"/></circle></svg>') no-repeat center center !important;
+            background-size: 40px 40px !important;
+            color: transparent !important;
         }
 
         /* ===== HEADER OVERRIDES ===== */
@@ -309,6 +319,28 @@ $showSearch = in_array($currentPage, ['product.php', 'Bundles.php']);
                 }
     </style>
 
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Apply loading spinner to images, excluding logos
+            const images = document.querySelectorAll("img:not(.logo-header):not(.logo)");
+            images.forEach(img => {
+                // Also add lazy loading to images that don't have it
+                if (!img.hasAttribute("loading")) {
+                    img.setAttribute("loading", "lazy");
+                }
+                
+                if (!img.complete) {
+                    img.classList.add("img-loading-spinner");
+                    img.addEventListener("load", function() {
+                        img.classList.remove("img-loading-spinner");
+                    });
+                    img.addEventListener("error", function() {
+                        img.classList.remove("img-loading-spinner");
+                    });
+                }
+            });
+        });
+    </script>
 </head>
 
 <body>

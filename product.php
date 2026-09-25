@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 // Database connection removed as requested
@@ -9,7 +10,7 @@ include 'includes/header.php';
     <!-- FRAME 1: HERO -->
     <section class="hero">
         <div class="hero-inner">
-            <h2 class="reveal-init reveal-fade-in-up reveal-delay-1">Custom <span class="gw-font">Merch</span></h2>
+            <h2 class="reveal-init reveal-fade-in-up reveal-delay-1">Custom <span class="gw-font">Merchandise</span></h2>
             
             <p class="hero-sub reveal-init reveal-fade-in-up reveal-delay-2 tnrm">Made for Your Purpose</p>
 
@@ -26,34 +27,38 @@ include 'includes/header.php';
                 <h2>What We Offer</h2>
             </div>
             <div class="problem-grid">
-                <div class="problem-card reveal-init reveal-fade-in-up">
+                <div class="problem-card reveal-init reveal-fade-in-up" role="button" tabindex="0" data-product-type="Wearables" data-product-details="T-shirts, Uniforms, and Tote Bags">
                     <div class="icon-circle"><i class="fas fa-tshirt"></i></div>
                     <h3>Wearables</h3>
                     <p>T-shirts • Uniforms • Tote Bags</p>
                 </div>
-                <div class="problem-card reveal-init reveal-fade-in-up reveal-delay-1">
+                <div class="problem-card reveal-init reveal-fade-in-up reveal-delay-1" role="button" tabindex="0" data-product-type="Drinkware" data-product-details="Mugs, Tumblers, and Bottles">
                     <div class="icon-circle"><i class="fas fa-mug-hot"></i></div>
                     <h3>Drinkware</h3>
                     <p>Mugs • Tumblers • Bottles</p>
                 </div>
-                <div class="problem-card reveal-init reveal-fade-in-up reveal-delay-2">
+                <div class="problem-card reveal-init reveal-fade-in-up reveal-delay-2" role="button" tabindex="0" data-product-type="Giveaways" data-product-details="Keychains, Pins, and Small Items">
                     <div class="icon-circle"><i class="fas fa-icons"></i></div>
                     <h3>Giveaways</h3>
                     <p>Keychains • Pins • Small Items</p>
                 </div>
-                <div class="problem-card reveal-init reveal-fade-in-up reveal-delay-3">
+                <div class="problem-card reveal-init reveal-fade-in-up reveal-delay-3" role="button" tabindex="0" data-product-type="Print & Branding" data-product-details="Stickers, Labels, Tags, and Packaging">
                     <div class="icon-circle"><i class="fas fa-box"></i></div>
                     <h3>Print & Branding</h3>
                     <p>Stickers • Labels • Tags • Packaging</p>
                 </div>
             </div>
-            <div style="text-align: center; margin-top: 50px;" class="reveal-init reveal-zoom-in">
-                <a href="#previous-works" class="btn btn-highlight">See What We Can Make</a>
+            <div id="product-detail" class="product-detail" aria-live="polite" hidden>
+                <p class="product-detail-label">Selected product type</p>
+                <h3 id="product-detail-title"></h3>
+                <p id="product-detail-description"></p>
+                <div id="product-image-grid" class="product-image-grid"></div>
             </div>
+
         </div>
     </section>
 
-    <!-- FRAME 3: CHOOSE WHAT YOU NEED -->
+    <!-- FRAME 3: CHOOSE WHAT YOU NEED 
     <section id="choose-need" class="section solution">
         <div class="container">
             <div class="section-head reveal-init reveal-fade-in-up">
@@ -84,7 +89,7 @@ include 'includes/header.php';
             </div>
         </div>
     </section>
-
+-->
     <!-- FRAME 4: HOW IT WORKS -->
     <section class="section steps">
         <div class="container">
@@ -139,68 +144,195 @@ include 'includes/header.php';
         </div>
     </section>
 
-    <!-- FRAME 5: GALLERY -->
-    <section id="previous-works" class="section gallery-section">
-        <div class="container">
-            <div class="section-head light reveal-init reveal-fade-in-up">
-                <h2 style="margin-bottom: 15px;">See What We've Made</h2>
-                <div class="impact-content reveal-init reveal-fade-in">
-                   <p class="impact-text">A few of the custom projects we've created for our clients.</p>
-                </div>
-            </div>
-            <div class="gallery-grid">
-              
-                <div class="gallery-item gallery-item-large reveal-init reveal-fade-in-up">
-                    <img src="assets/images/products/product10.jpg" alt="Premium custom gift set">
-                </div>
-               
-                <div class="gallery-item reveal-init reveal-fade-in-up reveal-delay-1">
-                    <img src="assets/images/products/product9.jpg" alt="Corporate merchandise">
-                </div>
-               
-                <div class="gallery-item gallery-item-tall reveal-init reveal-fade-in-up reveal-delay-2">
-                    <img src="assets/images/products/product8.jpg" alt="Curated corporate bundle">
-                </div>
-           
-                <div class="gallery-item reveal-init reveal-fade-in-up reveal-delay-1">
-                    <img src="assets/images/products/product3.jpg" alt="Event giveaway swag">
-                </div>
-               
-                <div class="gallery-item reveal-init reveal-fade-in-up">
-                    <img src="assets/images/products/product4.png" alt="Branded swag kit">
-                </div>
-             
-                <div class="gallery-item reveal-init reveal-fade-in-up reveal-delay-1">
-                    <img src="assets/images/products/product2.jpeg" alt="Welcome onboarding kit">
-                </div>
-           
-                <div class="gallery-item gallery-item-wide reveal-init reveal-fade-in-up reveal-delay-2">
-                    <img src="assets/images/products/product11.jpg" alt="Appreciation gift set">
-                </div>
-            </div>
-            <div style="text-align: center; margin-top: 40px;" class="reveal-init reveal-fade-in-up">
-                <a href="contact.php" class="btn btn-secondary btn-highlight">Want Something Similar?</a>
-            </div>
-        </div>
-    </section>
 
-    <!-- FRAME 6: NOT SURE -->
+
+    <!-- FRAME 6: NOT SURE 
     <section class="section impact" style="text-align: center; padding: 120px 20px;">
         <div class="container reveal-init reveal-fade-in-up">
             <h2 class="tnrm" style="font-size: 2.5rem; margin-bottom: 20px;">Not sure what would work for you?</h2>
             <p class="impact-text" style="font-size: 1.1rem; margin-bottom: 35px;">
                 You don't have to figure it all out yourself. Tell us your budget, quantity, and purpose—we'll help you find the right option.
             </p>
-            <a href="contact.php" class="btn btn-secondary btn-highlight">
-                <i class="fas fa-comment-dots"></i> Message Us
+            <a href="https://www.facebook.com/profile.php?id=61572947390035" target="_blank" rel="noopener" class="btn btn-secondary btn-highlight">
+                <i class="fab fa-facebook"></i> Visit our fb page
             </a>
         </div>
     </section>
-
+-->
 </main>
 
+<?php
+    $base_dir = 'assets/Product-Images/';
+    $categories = [
+        'Wearables' => 'wearables',
+        'Drinkware' => 'drinkware',
+        'Giveaways' => 'giveaways',
+        'Print & Branding' => 'print&branding'
+    ];
+
+    $productImagesData = [];
+    foreach ($categories as $key => $folder) {
+        $path = $base_dir . $folder;
+        $images = [];
+        if (is_dir($path)) {
+            $files = scandir($path);
+            foreach ($files as $file) {
+                if ($file !== '.' && $file !== '..') {
+                    $images[] = $file;
+                }
+            }
+        }
+        $productImagesData[$key] = $images;
+    }
+?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    const productCards = document.querySelectorAll('#merch-page .problem-card');
+    const productDetail = document.getElementById('product-detail');
+    const productDetailTitle = document.getElementById('product-detail-title');
+    const productDetailDescription = document.getElementById('product-detail-description');
+    const productImageGrid = document.getElementById('product-image-grid');
+    
+    const productImages = <?php echo json_encode($productImagesData); ?>;
+
+    /* ===== Per-category layout maps =====
+       Each entry: { file, col, row, colSpan, rowSpan }
+       col/row are 1-indexed CSS grid positions.
+    */
+    const categoryLayouts = {
+        'Drinkware': [
+            { file: 'drinkware7.JPEG', col: 1, row: 1, colSpan: 1, rowSpan: 2 },
+            { file: 'drinkware5.jpg',  col: 2, row: 1, colSpan: 1, rowSpan: 1, position: 'bottom center' },
+            { file: 'drinkware4.jpg',  col: 3, row: 1, colSpan: 1, rowSpan: 2 },
+            { file: 'drinkware2.JPEG', col: 2, row: 2, colSpan: 1, rowSpan: 1 },
+            { file: 'drinkware6.jpg',  col: 1, row: 3, colSpan: 1, rowSpan: 1.5 },
+            { file: 'drinkware3.jpg',  col: 3, row: 3, colSpan: 1, rowSpan: 1.5 },
+            { file: 'drinkware1.jpg',  col: 3, row: 3, colSpan: 1, rowSpan: 1.5 }
+        ],
+        'Print & Branding': [
+            { file: 'pb2.jpg',  col: 1, row: 1, colSpan: 1, rowSpan: 2 }, // Glass Award (Left Tall)
+            { file: 'pb1.jpg',  col: 2, row: 1, colSpan: 1, rowSpan: 1 }, // Pink Ribbons (Center Top)
+            { file: 'pb3.jpg',  col: 3, row: 1, colSpan: 1, rowSpan: 2 }, // Certificates (Right Tall)
+            { file: 'pb4.jpg',  col: 2, row: 2, colSpan: 1, rowSpan: 2 }, // Notebooks (Center Tall)
+            { file: 'pb5.jpg',  col: 1, row: 3, colSpan: 1, rowSpan: 1 }, // Pens (Left Bottom)
+            { file: 'pb6.JPEG', col: 3, row: 3, colSpan: 1, rowSpan: 1 }  // Umbrellas (Right Bottom)
+        ]
+    };
+
+    function showProductDetails(card) {
+        const productType = card.dataset.productType;
+        const imageFolder = productType.toLowerCase().replace(' & ', '&').replace(' ', '');
+        productDetailTitle.textContent = productType;
+        productDetailDescription.textContent = card.dataset.productDetails;
+        productImageGrid.innerHTML = '';
+
+        const layout = categoryLayouts[productType];
+
+        if (layout) {
+            /* ---- Use explicit Masonry layout ---- */
+            productImageGrid.className = 'product-image-grid grid-masonry';
+            
+            // Create 3 column containers
+            const cols = [
+                document.createElement('div'),
+                document.createElement('div'),
+                document.createElement('div')
+            ];
+            cols.forEach(col => col.className = 'masonry-col');
+
+            layout.forEach(function(item) {
+                const imagePath = 'assets/Product-Images/' + imageFolder + '/' + item.file;
+                const figure = document.createElement('figure');
+                figure.className = 'product-image-tile';
+
+                const img = document.createElement('img');
+                img.src = imagePath;
+                img.alt = productType + ' example';
+                img.loading = 'lazy';
+                img.tabIndex = 0;
+                
+                if (item.contain) {
+                    img.style.objectFit = 'contain';
+                }
+                if (item.position) {
+                    img.style.objectPosition = item.position;
+                }
+
+                img.addEventListener('error', function() {
+                    figure.remove();
+                });
+
+                figure.appendChild(img);
+                
+                // Append to the specific column (item.col is 1, 2, or 3)
+                const colIndex = item.col - 1;
+                if (cols[colIndex]) {
+                    cols[colIndex].appendChild(figure);
+                }
+            });
+
+            // Append columns to grid
+            cols.forEach(col => productImageGrid.appendChild(col));
+        } else {
+            /* ---- Auto layout for other categories ---- */
+            productImageGrid.classList.add('grid-auto');
+            productImageGrid.classList.remove('grid-figma');
+
+            productImages[productType].forEach(function(imageName) {
+                const imagePath = 'assets/Product-Images/' + imageFolder + '/' + imageName;
+                const figure = document.createElement('figure');
+                figure.className = 'product-image-tile';
+
+                const img = document.createElement('img');
+                img.src = imagePath;
+                img.alt = productType + ' example';
+                img.loading = 'lazy';
+                img.tabIndex = 0;
+
+                function setOrientation() {
+                    if (img.naturalWidth && img.naturalHeight) {
+                        const ratio = img.naturalWidth / img.naturalHeight;
+                        figure.classList.remove('tile-landscape', 'tile-portrait');
+                        if (ratio >= 1) {
+                            figure.classList.add('tile-landscape');
+                        } else {
+                            figure.classList.add('tile-portrait');
+                        }
+                    }
+                }
+
+                img.addEventListener('load', setOrientation);
+                img.addEventListener('error', function() {
+                    figure.remove();
+                });
+
+                figure.appendChild(img);
+                productImageGrid.appendChild(figure);
+
+                if (img.complete) {
+                    setOrientation();
+                }
+            });
+        }
+
+        productDetail.hidden = false;
+        productCards.forEach(productCard => productCard.classList.remove('is-selected'));
+        card.classList.add('is-selected');
+    }
+
+    productCards.forEach(card => {
+        card.addEventListener('click', function() {
+            showProductDetails(card);
+        });
+
+        card.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                showProductDetails(card);
+            }
+        });
+    });
+
     const observerOptions = {
         threshold: 0.12,
         rootMargin: '0px 0px -40px 0px'

@@ -12,10 +12,10 @@ include 'includes/header.php';
             
             <p class="hero-sub reveal-init reveal-fade-in-up reveal-delay-1">We help you bring your ideas to life with custom pieces and heartfelt gift sets<br>crafted with love, without the headache.</p>
             <div class="hero-gallery">
-                <div class="hero-image reveal-init reveal-zoom-in"><img src="assets/images/products/product5.jpg" alt="Ribbon-tied gift box"></div>
-                <div class="hero-image reveal-init reveal-zoom-in reveal-delay-1"><img src="assets/images/products/product12.jpg" alt="Curated mug and candle gift set"></div>
-                <div class="hero-image reveal-init reveal-zoom-in reveal-delay-2"><img src="assets/images/products/product11.jpg" alt="Coffee lover's gift set"></div>
-                <div class="hero-image reveal-init reveal-zoom-in reveal-delay-3"><img src="assets/images/products/product8.jpg" alt="Notebook, pen, and tumbler gift set"></div>
+                <div class="hero-image reveal-init reveal-zoom-in"><img src="assets/images/products/product5.jpg" alt="Ribbon-tied gift box" loading="eager"></div>
+                <div class="hero-image reveal-init reveal-zoom-in reveal-delay-1"><img src="assets/images/products/product12.jpg" alt="Curated mug and candle gift set" loading="eager"></div>
+                <div class="hero-image reveal-init reveal-zoom-in reveal-delay-2"><img src="assets/images/products/product11.jpg" alt="Coffee lover's gift set" loading="eager"></div>
+                <div class="hero-image reveal-init reveal-zoom-in reveal-delay-3"><img src="assets/images/products/product8.jpg" alt="Notebook, pen, and tumbler gift set" loading="eager"></div>
             </div>
 
 
@@ -220,7 +220,7 @@ include 'includes/header.php';
     <section id="inquiry-section" class="inquiry-section">
         <div class="container inquiry-grid-container">
             <div class="inquiry-text-col reveal-init reveal-fade-in-left">
-                <h3 style="white-space: nowrap;">We'll take care of the details.<br><span class="highlight">You bring the idea</span></h3>
+<h3 style="white-space: nowrap;">                <span class="highlight">You bring the idea</span><br>We'll take care of the details.</h3>
                 <p class="cta-subtitle">Not sure what to choose yet? That’s okay.<br>Tell us what you have in mind, and we’ll help turn it into something thoughtful, practical, and ready to give.</p>
 
             </div>
