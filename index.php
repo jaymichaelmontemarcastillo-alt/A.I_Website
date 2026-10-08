@@ -220,8 +220,8 @@ include 'includes/header.php';
     <section id="inquiry-section" class="inquiry-section">
         <div class="container inquiry-grid-container">
             <div class="inquiry-text-col reveal-init reveal-fade-in-left">
-<h3 style="white-space: nowrap;">                <span class="highlight">You bring the idea</span><br>We'll take care of the details.</h3>
-                <p class="cta-subtitle">Not sure what to choose yet? That’s okay.<br>Tell us what you have in mind, and we’ll help turn it into something thoughtful, practical, and ready to give.</p>
+                <h3 style="text-align: center; width: 100%;"><span class="highlight">You bring the idea</span><br>We'll take care of the details.</h3>
+                <p class="cta-subtitle" style="text-align: center;">Not sure what to choose yet? That's okay.<br>Tell us what you have in mind, and we'll help turn it into something thoughtful, practical, and ready to give.</p>
 
             </div>
             <div class="inquiry-form-col reveal-init reveal-fade-in-right">
@@ -325,6 +325,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.reveal-init').forEach(element => {
         revealObserver.observe(element);
     });
+
+    if (window.location.hash === '#inquiry-section') {
+        setTimeout(() => {
+            const firstNameInput = document.getElementById('firstName');
+            if (firstNameInput) firstNameInput.focus();
+        }, 500);
+    }
 });
 
 document.getElementById('attachReference').addEventListener('change', function(e) {

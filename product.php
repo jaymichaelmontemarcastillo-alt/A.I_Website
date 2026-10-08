@@ -10,15 +10,16 @@ include 'includes/header.php';
     <!-- FRAME 1: HERO -->
     <section class="hero">
         <div class="hero-inner">
-            <h2 class="reveal-init reveal-fade-in-up reveal-delay-1">Custom <span class="gw-font">Merchandise</span></h2>
+            <h2 class="reveal-init reveal-fade-in-up reveal-delay-1">Custom <span class="gw-font" style="font-size: 1.55em;">Merchandise</span></h2>
             
             <p class="hero-sub reveal-init reveal-fade-in-up reveal-delay-2 tnrm">Made for Your Purpose</p>
 
             <div class="hero-buttons reveal-init reveal-fade-in-up reveal-delay-3">
-                <a href="#choose-need" class="btn btn-secondary btn-highlight">Start Your Custom Order</a>
+                <a href="index.php#inquiry-section" id="start-order-btn" class="btn btn-secondary btn-highlight">Start Your Custom Order</a>
             </div>
         </div>
     </section>
+
 
     <!-- FRAME 2: WHAT WE OFFER -->
     <section class="section problem">
@@ -200,6 +201,20 @@ document.addEventListener('DOMContentLoaded', function() {
        col/row are 1-indexed CSS grid positions.
     */
     const categoryLayouts = {
+        'Wearables': [
+            { file: 'wearable2.jpg',  col: 1, row: 1, colSpan: 1, rowSpan: 1, contain: true },
+            { file: 'wearable3.JPEG', col: 2, row: 1, colSpan: 1, rowSpan: 1, contain: true },
+            { file: 'wearable6.jpg',  col: 3, row: 1, colSpan: 1, rowSpan: 1, contain: true },
+            { file: 'wearable5.jpg',  col: 1, row: 2, colSpan: 1, rowSpan: 1, contain: true },
+            { file: 'wearable4.jpg',  col: 2, row: 2, colSpan: 1, rowSpan: 1, contain: true },
+            { file: 'wearable1.jpg',  col: 3, row: 2, colSpan: 1, rowSpan: 1, contain: true }
+        ],
+        'Giveaways': [
+            { file: 'giveaway4.jpg', col: 1, row: 1, contain: true },
+            { file: 'giveaway1.jpg', col: 2, row: 1, contain: true },
+            { file: 'giveaway2.jpg', col: 3, row: 1, contain: true },
+            { file: 'giveaway3.jpg', col: 4, row: 1, contain: true }
+        ],
         'Drinkware': [
             { file: 'drinkware7.JPEG', col: 1, row: 1, colSpan: 1, rowSpan: 2 },
             { file: 'drinkware5.jpg',  col: 2, row: 1, colSpan: 1, rowSpan: 1, position: 'bottom center' },
@@ -232,13 +247,15 @@ document.addEventListener('DOMContentLoaded', function() {
             /* ---- Use explicit Masonry layout ---- */
             productImageGrid.className = 'product-image-grid grid-masonry';
             
-            // Create 3 column containers
-            const cols = [
-                document.createElement('div'),
-                document.createElement('div'),
-                document.createElement('div')
-            ];
-            cols.forEach(col => col.className = 'masonry-col');
+            // Create necessary column containers dynamically
+            let maxCol = 3;
+            layout.forEach(item => { if (item.col > maxCol) maxCol = item.col; });
+            const cols = [];
+            for (let i = 0; i < maxCol; i++) {
+                const col = document.createElement('div');
+                col.className = 'masonry-col';
+                cols.push(col);
+            }
 
             layout.forEach(function(item) {
                 const imagePath = 'assets/Product-Images/' + imageFolder + '/' + item.file;
@@ -264,7 +281,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 figure.appendChild(img);
                 
-                // Append to the specific column (item.col is 1, 2, or 3)
+                // Append to the specific column
                 const colIndex = item.col - 1;
                 if (cols[colIndex]) {
                     cols[colIndex].appendChild(figure);
@@ -272,7 +289,11 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // Append columns to grid
-            cols.forEach(col => productImageGrid.appendChild(col));
+            cols.forEach(col => {
+                if (col.hasChildNodes()) {
+                    productImageGrid.appendChild(col);
+                }
+            });
         } else {
             /* ---- Auto layout for other categories ---- */
             productImageGrid.classList.add('grid-auto');
