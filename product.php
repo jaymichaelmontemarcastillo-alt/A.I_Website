@@ -12,10 +12,10 @@ include 'includes/header.php';
         <div class="hero-inner">
             <h2 class="reveal-init reveal-fade-in-up reveal-delay-1">Custom <span class="gw-font" style="font-size: 1.55em;">Merchandise</span></h2>
             
-            <p class="hero-sub reveal-init reveal-fade-in-up reveal-delay-2 tnrm">Made for Your Purpose</p>
+            <p class="hero-sub reveal-init reveal-fade-in-up reveal-delay-2 tnrm">Turn your idea into something tangible</p>
 
             <div class="hero-buttons reveal-init reveal-fade-in-up reveal-delay-3">
-                <a href="index.php#inquiry-section" id="start-order-btn" class="btn btn-secondary btn-highlight">Start Your Custom Order</a>
+                <a href="index.php#inquiry-section" id="start-order-btn" class="btn btn-secondary btn-highlight">Explore Items</a>
             </div>
         </div>
     </section>
