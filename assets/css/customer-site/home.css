@@ -223,7 +223,7 @@ body {
   font-family: "GWbently", serif;
   font-weight: normal;
   font-style: normal;
-  color: var(--accent);
+  color: #ffffff;
   font-size: clamp(4rem, 12vw, 8rem);
 }
 
@@ -250,6 +250,14 @@ body {
   color: rgba(255, 255, 255, 0.85);
   max-width: 800px;
   margin: 0 auto 32px;
+}
+
+#merch-page .hero-sub {
+  font-size: clamp(2rem, 6vw, 4rem);
+}
+
+#merch-page .hero-sub.gw-font {
+  font-family: "GWbently", serif;
 }
 
 .hero-buttons {
@@ -1063,6 +1071,10 @@ body {
     font-size: clamp(2.2rem, 5vw, 3rem);
   }
 
+  #merch-page .hero-sub {
+    font-size: clamp(2.2rem, 5vw, 3rem);
+  }
+
   .hero-gallery {
     grid-template-columns: repeat(2, 1fr);
     border-radius: 0;
@@ -1180,6 +1192,10 @@ body {
 
   .hero-sub {
     font-size: 15px;
+  }
+
+  #merch-page .hero-sub {
+    font-size: 1.8rem;
   }
 
   .hero-gallery {
